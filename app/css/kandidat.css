@@ -1,0 +1,359 @@
+/* =========================================
+   KANDIDAT DASHBOARD
+========================================= */
+
+.kandidat-dashboard {
+  min-height: 100vh;
+
+  display: flex;
+
+  background: #f6f8f7;
+}
+
+
+/* =========================================
+   SIDEBAR
+========================================= */
+
+.kandidat-sidebar {
+  width: 250px;
+
+  min-height: 100vh;
+
+  position: fixed;
+
+  left: 0;
+  top: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  background: #ffffff;
+
+  border-right: 1px solid #e5e7eb;
+
+  z-index: 100;
+}
+
+
+/* =========================================
+   BRAND
+========================================= */
+
+.kandidat-brand {
+  height: 75px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  padding: 0 20px;
+
+  border-bottom: 1px solid #eeeeee;
+}
+
+.kandidat-brand img {
+  width: 42px;
+  height: 42px;
+
+  object-fit: cover;
+
+  border-radius: 8px;
+}
+
+.kandidat-brand strong {
+  display: block;
+
+  color: #16803c;
+
+  font-size: 17px;
+}
+
+.kandidat-brand span {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #9ca3af;
+
+  font-size: 11px;
+}
+
+
+/* =========================================
+   USER PROFILE
+========================================= */
+
+.kandidat-sidebar-profile {
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  margin: 18px 15px;
+
+  padding: 12px;
+
+  border-radius: 10px;
+
+  background: #f4f8f5;
+}
+
+.kandidat-avatar {
+  width: 40px;
+  height: 40px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #dff2e4;
+
+  color: #16803c;
+
+  font-size: 15px;
+
+  font-weight: 700;
+}
+
+.kandidat-sidebar-profile strong {
+  display: block;
+
+  max-width: 145px;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  color: #374151;
+
+  font-size: 13px;
+}
+
+.kandidat-sidebar-profile span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #9ca3af;
+
+  font-size: 11px;
+}
+
+
+/* =========================================
+   NAVIGATION
+========================================= */
+
+.kandidat-navigation {
+  padding: 0 13px;
+
+  flex: 1;
+}
+
+.nav-title {
+  margin: 10px 8px;
+
+  color: #9ca3af;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.7px;
+}
+
+.nav-title.second {
+  margin-top: 25px;
+}
+
+.kandidat-navigation a {
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  margin-bottom: 4px;
+
+  padding: 11px 12px;
+
+  border-radius: 8px;
+
+  text-decoration: none;
+
+  color: #6b7280;
+
+  font-size: 13px;
+
+  transition: 0.2s;
+}
+
+.kandidat-navigation a span {
+  width: 22px;
+
+  text-align: center;
+
+  font-size: 16px;
+}
+
+.kandidat-navigation a:hover {
+  background: #f1f7f3;
+
+  color: #16803c;
+}
+
+.kandidat-navigation a.active {
+  background: #e8f5eb;
+
+  color: #16803c;
+
+  font-weight: 600;
+}
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+.kandidat-sidebar-bottom {
+  padding: 15px;
+
+  border-top: 1px solid #eeeeee;
+}
+
+.kandidat-logout {
+  width: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  padding: 11px 12px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: #dc2626;
+
+  cursor: pointer;
+
+  font-size: 13px;
+
+  text-align: left;
+}
+
+.kandidat-logout:hover {
+  background: #fef2f2;
+}
+
+
+/* =========================================
+   MAIN CONTENT
+========================================= */
+
+.kandidat-main {
+  width: calc(100% - 250px);
+
+  min-height: 100vh;
+
+  margin-left: 250px;
+
+  padding: 30px;
+}
+
+
+/* =========================================
+   LOADING
+========================================= */
+
+.kandidat-loading {
+  min-height: 100vh;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  color: #6b7280;
+
+  font-size: 14px;
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 768px) {
+
+  .kandidat-sidebar {
+    width: 70px;
+  }
+
+  .kandidat-brand {
+    justify-content: center;
+
+    padding: 0;
+  }
+
+  .kandidat-brand div,
+  .kandidat-sidebar-profile div,
+  .kandidat-navigation a:not(.active)::after {
+    display: none;
+  }
+
+  .kandidat-sidebar-profile {
+    justify-content: center;
+
+    margin: 15px 8px;
+  }
+
+  .kandidat-navigation {
+    padding: 0 8px;
+  }
+
+  .kandidat-navigation a {
+    justify-content: center;
+
+    padding: 12px 5px;
+  }
+
+  .kandidat-navigation a span {
+    margin: 0;
+  }
+
+  .kandidat-sidebar-bottom {
+    padding: 8px;
+  }
+
+  .kandidat-logout {
+    justify-content: center;
+
+    padding: 12px 5px;
+  }
+
+  .kandidat-main {
+    width: calc(100% - 70px);
+
+    margin-left: 70px;
+
+    padding: 20px;
+  }
+}

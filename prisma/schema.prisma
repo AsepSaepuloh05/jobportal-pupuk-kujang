@@ -7,17 +7,227 @@ datasource db {
   provider = "postgresql"
 }
 
+// =====================================================
+// USER
+// =====================================================
+
+model User {
+  id              Int      @id @default(autoincrement())
+  email           String   @unique
+  createdAt       DateTime @default(now())
+  nama            String
+  nik             String   @unique
+  password        String
+  alamat          String?
+  role            Role     @default(KANDIDAT)
+  dokumenProfil   DokumenProfil?
+  dokumenKandidat DokumenKandidat[]
+  pendidikan      Pendidikan[]
+  pengalaman      Pengalaman[]
+  sertifikasi     Sertifikasi[]
+
+  @@map("user")
+}
+
+// =====================================================
+// DOKUMEN PROFIL LAMA
+// =====================================================
+
+model DokumenProfil {
+  id Int @id @default(autoincrement())
+
+  userId Int @unique
+
+  namaFile   String
+  namaAsli   String
+  pathFile   String
+  tipeFile   String
+  ukuranFile Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("dokumen_profil")
+}
+
+// =====================================================
+// DOKUMEN KANDIDAT
+// =====================================================
+
+model DokumenKandidat {
+  id Int @id @default(autoincrement())
+
+  userId       Int
+  jenisDokumen JenisDokumen
+
+  namaFile   String
+  namaAsli   String
+  pathFile   String
+  tipeFile   String
+  ukuranFile Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jenisDokumen])
+  @@map("dokumen_kandidat")
+}
+
+// =====================================================
+// PENDIDIKAN
+// IJAZAH DISATUKAN DI SINI
+// =====================================================
+
+model Pendidikan {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  jenjang      String
+  institusi    String
+  jurusan      String
+  tahunMulai   String
+  tahunSelesai String
+  nilai        String?
+
+  // Data ijazah
+  ijazahNamaFile   String?
+  ijazahNamaAsli   String?
+  ijazahPathFile   String?
+  ijazahTipeFile   String?
+  ijazahUkuranFile Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pendidikan")
+}
+
+// =====================================================
+// PENGALAMAN KERJA
+// =====================================================
+
+model Pengalaman {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  posisi       String
+  perusahaan   String
+  lokasi       String?
+  tahunMulai   String
+  tahunSelesai String?
+  deskripsi    String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pengalaman")
+}
+
+// =====================================================
+// SERTIFIKASI
+// =====================================================
+
+model Sertifikasi {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  nama              String
+  penerbit          String
+  nomor             String?
+  tanggalTerbit     String?
+  tanggalKadaluarsa String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sertifikasi")
+}
+
+// =====================================================
+// ENUM JENIS DOKUMEN
+// =====================================================
+
+enum JenisDokumen {
+  CV
+  KTP
+  IJAZAH
+  TRANSKRIP
+  LAINNYA
+
+  @@map("jenis_dokumen")
+}
+
+// =====================================================
+// ENUM ROLE
+// =====================================================
+
 enum Role {
   KANDIDAT
   HR
+
+  @@map("role")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  nama      String
-  email     String   @unique
-  nik       String   @unique
-  password  String
-  role      Role     @default(KANDIDAT)
-  createdAt DateTime @default(now())
+// =====================================================
+// ENUM STATUS LOWONGAN
+// =====================================================
+
+enum StatusLowongan {
+  AKTIF
+  DRAFT
+  DITUTUP
+
+  @@map("status_lowongan")
+}
+
+// =====================================================
+// LOWONGAN
+// =====================================================
+
+enum TahapanSeleksi {
+  SCREENING
+  ASSESSMENT
+  INTERVIEW
+  TECHNICAL_TEST
+  MCU
+  OFFERING
+
+  @@map("tahapan_seleksi")
+}
+
+model Lowongan {
+  id              Int             @id @default(autoincrement())
+  posisi          String
+  departemen      String
+  lokasi          String
+  tipe            String
+  status          StatusLowongan  @default(DRAFT)
+  pelamar         Int             @default(0)
+  deskripsi       String?         @db.Text
+  persyaratan     String?         @db.Text
+  kategori        String?
+  pendidikan      String?
+  pengalaman      String?
+  tanggungJawab   String?         @db.Text
+  tahapanSeleksi  TahapanSeleksi[] @default([SCREENING, ASSESSMENT, INTERVIEW, TECHNICAL_TEST, MCU, OFFERING])
+  gajiMin         Int?
+  gajiMax         Int?
+  tanggalBerakhir DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@map("lowongan")
 }

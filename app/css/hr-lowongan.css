@@ -1,0 +1,663 @@
+.lowongan-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.lowongan-top h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  color: #173f2b;
+}
+
+.lowongan-top p {
+  margin: 0;
+  color: #718096;
+  font-size: 14px;
+}
+
+.btn-create-job {
+  border: none;
+  background: #1d8a4a;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  transition: 0.2s;
+}
+
+.btn-create-job:hover {
+  background: #146b38;
+  transform: translateY(-1px);
+}
+
+.btn-create-job span {
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* STATISTICS */
+
+.lowongan-statistics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.lowongan-stat-card {
+  background: white;
+  border: 1px solid #e6ece8;
+  border-radius: 12px;
+  padding: 18px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.lowongan-stat-icon {
+  width: 45px;
+  height: 45px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+  font-size: 21px;
+}
+
+.lowongan-stat-icon.green {
+  background: #e7f7ed;
+}
+
+.lowongan-stat-icon.blue {
+  background: #e8f1ff;
+}
+
+.lowongan-stat-icon.orange {
+  background: #fff1df;
+}
+
+.lowongan-stat-icon.purple {
+  background: #f0eaff;
+}
+
+.lowongan-stat-card span {
+  display: block;
+  color: #718096;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.lowongan-stat-card strong {
+  font-size: 24px;
+  color: #1f2937;
+}
+
+/* PANEL */
+
+.lowongan-panel {
+  background: white;
+  border: 1px solid #e6ece8;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* FILTER */
+
+.lowongan-filter {
+  padding: 18px 20px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  border-bottom: 1px solid #edf1ee;
+}
+
+.search-box {
+  width: 340px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  border: 1px solid #dce4df;
+  border-radius: 8px;
+
+  padding: 10px 13px;
+
+  background: #fff;
+}
+
+.search-box span {
+  font-size: 15px;
+}
+
+.search-box input {
+  width: 100%;
+  border: none;
+  outline: none;
+
+  font-size: 13px;
+  color: #374151;
+}
+
+.search-box input::placeholder {
+  color: #9ca3af;
+}
+
+.lowongan-filter select {
+  border: 1px solid #dce4df;
+  border-radius: 8px;
+
+  padding: 10px 14px;
+
+  background: white;
+  color: #374151;
+
+  font-size: 13px;
+  outline: none;
+
+  cursor: pointer;
+}
+
+/* TABLE */
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.lowongan-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1050px;
+}
+
+.lowongan-table th {
+  text-align: left;
+
+  padding: 14px 18px;
+
+  background: #f8faf9;
+
+  color: #718096;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 0.4px;
+
+  border-bottom: 1px solid #e7ece9;
+}
+
+.lowongan-table td {
+  padding: 16px 18px;
+
+  color: #4a5568;
+
+  font-size: 13px;
+
+  border-bottom: 1px solid #edf1ee;
+
+  white-space: nowrap;
+}
+
+.lowongan-table tbody tr:hover {
+  background: #fafdfb;
+}
+
+/* POSITION */
+
+.position-cell {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.position-cell strong {
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.position-icon {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 8px;
+
+  background: #e8f6ed;
+  color: #168345;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* STATUS */
+
+.status-badge {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 5px 10px;
+
+  border-radius: 20px;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-badge.aktif {
+  background: #e7f7ed;
+  color: #168345;
+}
+
+.status-badge.draft {
+  background: #fff4df;
+  color: #b7791f;
+}
+
+.status-badge.ditutup {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* ACTION */
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.action-buttons button {
+  width: 32px;
+  height: 32px;
+
+  border: 1px solid #e2e8e5;
+  border-radius: 7px;
+
+  background: white;
+
+  cursor: pointer;
+
+  font-size: 13px;
+
+  transition: 0.2s;
+}
+
+.action-buttons button:hover {
+  background: #edf8f1;
+  border-color: #b9dec5;
+}
+
+.action-buttons button.delete:hover {
+  background: #fff0f0;
+  border-color: #f2b8b8;
+}
+
+/* EMPTY */
+
+.empty-data {
+  text-align: center !important;
+  padding: 50px !important;
+  color: #9ca3af !important;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1100px) {
+  .lowongan-statistics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .lowongan-top {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .lowongan-statistics {
+    grid-template-columns: 1fr;
+  }
+
+  .lowongan-filter {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+}
+
+/* =========================
+   FORM LOWONGAN (TAMBAH/EDIT)
+========================= */
+
+.lowongan-form-panel {
+  max-width: 720px;
+  background: white;
+  border: 1px solid #e6ece8;
+  border-radius: 14px;
+  padding: 28px;
+}
+
+.lowongan-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.lowongan-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lowongan-form-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.lowongan-form-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.lowongan-form-field input,
+.lowongan-form-field select {
+  padding: 11px 13px;
+  border: 1px solid #dce4df;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937;
+  background: white;
+  outline: none;
+}
+
+.lowongan-form-field input:focus,
+.lowongan-form-field select:focus {
+  border-color: #1d8a4a;
+}
+
+.lowongan-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.lowongan-form-actions button {
+  padding: 12px 20px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.lowongan-form-submit {
+  background: #1d8a4a;
+  color: white;
+}
+
+.lowongan-form-submit:hover {
+  background: #146b38;
+}
+
+.lowongan-form-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lowongan-form-cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.lowongan-form-cancel:hover {
+  background: #e5e7eb;
+}
+
+.lowongan-form-error {
+  background: #fff0f0;
+  color: #d93025;
+  border: 1px solid #ffd0d0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 700px) {
+  .lowongan-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lowongan-form-actions {
+    flex-direction: column;
+  }
+}
+
+/* =========================
+   DETAIL LOWONGAN
+========================= */
+
+.lowongan-detail-panel {
+  max-width: 720px;
+  background: white;
+  border: 1px solid #e6ece8;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.lowongan-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 26px 28px;
+  border-bottom: 1px solid #edf1ee;
+}
+
+.lowongan-detail-icon {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #e8f6ed;
+  color: #168345;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.lowongan-detail-header h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  color: #1f2937;
+}
+
+.lowongan-detail-header p {
+  margin: 0;
+  color: #718096;
+  font-size: 13px;
+}
+
+.lowongan-detail-body {
+  padding: 26px 28px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.lowongan-detail-item span {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+}
+
+.lowongan-detail-item strong {
+  display: block;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.lowongan-detail-footer {
+  padding: 22px 28px;
+  border-top: 1px solid #edf1ee;
+  display: flex;
+  gap: 12px;
+}
+
+.lowongan-detail-footer button {
+  padding: 12px 20px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.lowongan-detail-edit {
+  background: #1d8a4a;
+  color: white;
+}
+
+.lowongan-detail-edit:hover {
+  background: #146b38;
+}
+
+.lowongan-detail-back {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.lowongan-detail-back:hover {
+  background: #e5e7eb;
+}
+
+@media (max-width: 700px) {
+  .lowongan-detail-body {
+    grid-template-columns: 1fr;
+  }
+
+  .lowongan-detail-footer {
+    flex-direction: column;
+  }
+}
+
+/* =========================
+   TEXTAREA & FIELD TAMBAHAN
+========================= */
+
+.lowongan-form-field textarea {
+  padding: 11px 13px;
+  border: 1px solid #dce4df;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937;
+  background: white;
+  outline: none;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 90px;
+}
+
+.lowongan-form-field textarea:focus {
+  border-color: #1d8a4a;
+}
+
+.lowongan-form-hint {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: -2px;
+}
+
+/* =========================
+   DETAIL: DESKRIPSI & PERSYARATAN
+========================= */
+
+.lowongan-detail-section {
+  padding: 26px 28px;
+  border-top: 1px solid #edf1ee;
+}
+
+.lowongan-detail-section h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.lowongan-detail-section p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #4b5563;
+  white-space: pre-line;
+}
+
+.lowongan-detail-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lowongan-detail-list li {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4b5563;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.lowongan-detail-list li:last-child {
+  border-bottom: none;
+}
+
+.lowongan-detail-list li::before {
+  content: "•";
+  color: #1d8a4a;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.lowongan-expired-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #fff4d6;
+  color: #a16207;
+  font-size: 11px;
+  font-weight: 600;
+}
