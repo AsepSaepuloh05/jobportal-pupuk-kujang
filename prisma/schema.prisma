@@ -25,8 +25,33 @@ model User {
   pendidikan      Pendidikan[]
   pengalaman      Pengalaman[]
   sertifikasi     Sertifikasi[]
+  lamaran         Lamaran[]
 
   @@map("user")
+}
+
+enum StatusLamaran {
+  DIPROSES
+  INTERVIEW
+  LOLOS
+  DITOLAK
+
+  @@map("status_lamaran")
+}
+
+model Lamaran {
+  id         Int           @id @default(autoincrement())
+  userId     Int
+  lowonganId Int
+  status     StatusLamaran @default(DIPROSES)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lowongan Lowongan @relation(fields: [lowonganId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lowonganId])
+  @@map("lamaran")
 }
 
 // =====================================================
@@ -228,6 +253,8 @@ model Lowongan {
   tanggalBerakhir DateTime?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+
+  lamaran         Lamaran[]
 
   @@map("lowongan")
 }

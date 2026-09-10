@@ -48,6 +48,105 @@ export default function LowonganPage() {
   const [detailError, setDetailError] = useState("");
 
   // =====================================================
+  // STATUS LAMAR (CV/KTP, SUDAH LAMAR ATAU BELUM)
+  // =====================================================
+
+  const [cekLamarLoading, setCekLamarLoading] = useState(true);
+  const [punyaCV, setPunyaCV] = useState(false);
+  const [punyaKTP, setPunyaKTP] = useState(false);
+  const [sudahLamar, setSudahLamar] = useState(false);
+  const [submittingLamar, setSubmittingLamar] = useState(false);
+  const [lamarMessage, setLamarMessage] = useState("");
+
+  useEffect(() => {
+    if (!selectedJob) return;
+
+    const cekStatusLamar = async () => {
+      try {
+        setCekLamarLoading(true);
+        setLamarMessage("");
+
+        const [dokumenRes, lamaranRes] = await Promise.all([
+          fetch("/api/profil/dokumen"),
+          fetch("/api/lamaran"),
+        ]);
+
+        if (dokumenRes.ok) {
+          const dokumenData = await dokumenRes.json();
+          const dokumen = dokumenData.dokumen || [];
+
+          setPunyaCV(
+            dokumen.some(
+              (d: { jenisDokumen: string }) =>
+                d.jenisDokumen === "CV"
+            )
+          );
+          setPunyaKTP(
+            dokumen.some(
+              (d: { jenisDokumen: string }) =>
+                d.jenisDokumen === "KTP"
+            )
+          );
+        }
+
+        if (lamaranRes.ok) {
+          const lamaranData = await lamaranRes.json();
+          const list = Array.isArray(lamaranData)
+            ? lamaranData
+            : [];
+
+          setSudahLamar(
+            list.some(
+              (item: { lowonganId: number }) =>
+                item.lowonganId === selectedJob.id
+            )
+          );
+        }
+      } catch (error) {
+        console.error("CEK STATUS LAMAR ERROR:", error);
+      } finally {
+        setCekLamarLoading(false);
+      }
+    };
+
+    cekStatusLamar();
+  }, [selectedJob]);
+
+  const handleLamar = async () => {
+    if (!selectedJob || submittingLamar) return;
+
+    setLamarMessage("");
+    setSubmittingLamar(true);
+
+    try {
+      const response = await fetch("/api/lamaran", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lowonganId: selectedJob.id }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Gagal mengirim lamaran");
+      }
+
+      setSudahLamar(true);
+      setLamarMessage("Lamaran berhasil dikirim!");
+    } catch (error) {
+      console.error("LAMAR ERROR:", error);
+
+      setLamarMessage(
+        error instanceof Error
+          ? error.message
+          : "Gagal mengirim lamaran"
+      );
+    } finally {
+      setSubmittingLamar(false);
+    }
+  };
+
+  // =====================================================
   // GET LOWONGAN
   // =====================================================
 
@@ -398,15 +497,15 @@ export default function LowonganPage() {
             location ||
             departemen !== "Semua") && (
 
-            <button
-              type="button"
-              onClick={resetFilter}
-              className="text-xs font-bold text-[#4da477] hover:text-[#315c4a]"
-            >
-              Reset Filter
-            </button>
+              <button
+                type="button"
+                onClick={resetFilter}
+                className="text-xs font-bold text-[#4da477] hover:text-[#315c4a]"
+              >
+                Reset Filter
+              </button>
 
-          )}
+            )}
 
         </div>
 
@@ -782,26 +881,76 @@ export default function LowonganPage() {
                       sudah lengkap sebelum melamar.
                     </p>
 
-                    <button
-                      type="button"
-                      disabled={
-                        selectedJob.status !== "AKTIF"
-                      }
-                      onClick={() => {
-                        alert(
-                          "Fitur lamaran dapat diarahkan ke halaman login/lamar."
-                        );
-                      }}
-                      className={`mt-5 w-full rounded-xl px-4 py-3 text-xs font-black ${
-                        selectedJob.status === "AKTIF"
-                          ? "bg-[#315c4a] text-white hover:bg-[#234236]"
-                          : "cursor-not-allowed bg-[#c9d6cf] text-white"
-                      }`}
-                    >
-                      {selectedJob.status === "AKTIF"
-                        ? "Lamar Sekarang →"
-                        : "Lowongan Ditutup"}
-                    </button>
+                    {selectedJob.status !== "AKTIF" ? (
+
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-5 w-full cursor-not-allowed rounded-xl bg-[#c9d6cf] px-4 py-3 text-xs font-black text-white"
+                      >
+                        Lowongan Ditutup
+                      </button>
+
+                    ) : cekLamarLoading ? (
+
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-5 w-full cursor-not-allowed rounded-xl bg-[#c9d6cf] px-4 py-3 text-xs font-black text-white"
+                      >
+                        Memeriksa...
+                      </button>
+
+                    ) : sudahLamar ? (
+
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-5 w-full rounded-xl bg-[#dceee5] px-4 py-3 text-xs font-black text-[#234236]"
+                      >
+                        ✓ Sudah Dilamar
+                      </button>
+
+                    ) : !punyaCV || !punyaKTP ? (
+
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            (window.location.href = "/kandidat/profil")
+                          }
+                          className="mt-5 w-full rounded-xl bg-[#b56b00] px-4 py-3 text-xs font-black text-white hover:bg-[#9c5c00]"
+                        >
+                          Lengkapi CV &amp; KTP Dulu
+                        </button>
+
+                        <p className="mt-2 text-[11px] text-[#899b91]">
+                          CV dan KTP wajib diunggah sebelum melamar.
+                        </p>
+                      </>
+
+                    ) : (
+
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleLamar}
+                          disabled={submittingLamar}
+                          className="mt-5 w-full rounded-xl bg-[#315c4a] px-4 py-3 text-xs font-black text-white hover:bg-[#234236] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {submittingLamar
+                            ? "Mengirim..."
+                            : "Lamar Sekarang →"}
+                        </button>
+
+                        {lamarMessage && (
+                          <p className="mt-2 text-[11px] text-red-500">
+                            {lamarMessage}
+                          </p>
+                        )}
+                      </>
+
+                    )}
 
                   </div>
 
