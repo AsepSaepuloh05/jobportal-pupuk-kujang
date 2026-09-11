@@ -117,11 +117,7 @@ export default function SidebarKandidat() {
       href: "/kandidat/lamaran",
       icon: FileText,
     },
-    {
-      label: "Jadwal Seleksi",
-      href: "/kandidat/jadwal",
-      icon: CalendarDays,
-    },
+    
   ];
 
   // ============================================================
