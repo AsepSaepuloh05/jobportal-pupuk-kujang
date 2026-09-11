@@ -27,6 +27,7 @@ export async function GET() {
                         lokasi: true,
                         tipe: true,
                         status: true,
+                        deskripsi: true,
                     },
                 },
             },
