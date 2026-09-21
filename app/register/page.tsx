@@ -54,7 +54,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.replace("/login");
+      router.replace(`/verify-email?email=${encodeURIComponent(email.trim())}`);
     } catch (error) {
       console.error("REGISTER ERROR:", error);
       setError("Tidak dapat terhubung ke server.");

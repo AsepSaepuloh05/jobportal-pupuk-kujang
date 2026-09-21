@@ -30,6 +30,8 @@ interface Dokumen {
   url?: string;
 }
 
+type ViewMode = "card" | "list";
+
 export default function LowonganPage() {
   const searchParams = useSearchParams();
 
@@ -39,10 +41,14 @@ export default function LowonganPage() {
   const [keyword, setKeyword] = useState(
     searchParams.get("keyword") || ""
   );
+
   const [location, setLocation] = useState(
     searchParams.get("location") || ""
   );
+
   const [departemen, setDepartemen] = useState("");
+
+  const [viewMode, setViewMode] = useState<ViewMode>("card");
 
   const [selectedJob, setSelectedJob] = useState<Lowongan | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -239,7 +245,8 @@ export default function LowonganPage() {
       );
     } catch (error: any) {
       setApplicationMessage(
-        error?.message || "Terjadi kesalahan saat mengirim lamaran."
+        error?.message ||
+          "Terjadi kesalahan saat mengirim lamaran."
       );
     } finally {
       setApplicationLoading(false);
@@ -251,7 +258,10 @@ export default function LowonganPage() {
       .map((job) => job.departemen)
       .filter(Boolean);
 
-    return ["Semua Departemen", ...Array.from(new Set(values))];
+    return [
+      "Semua Departemen",
+      ...Array.from(new Set(values)),
+    ];
   }, [jobs]);
 
   const filteredJobs = useMemo(() => {
@@ -336,8 +346,8 @@ export default function LowonganPage() {
               </h1>
 
               <p className="mt-1 text-xs text-[#71877b] sm:text-sm">
-                Temukan peluang kerja yang sesuai dengan kemampuan dan
-                pengalaman Anda.
+                Temukan peluang kerja yang sesuai dengan
+                kemampuan dan pengalaman Anda.
               </p>
             </div>
           </div>
@@ -362,7 +372,8 @@ export default function LowonganPage() {
                 </p>
 
                 <p className="text-[11px] text-[#8a9b92]">
-                  Temukan posisi yang sesuai dengan kebutuhan Anda
+                  Temukan posisi yang sesuai dengan kebutuhan
+                  Anda
                 </p>
               </div>
             </div>
@@ -376,7 +387,9 @@ export default function LowonganPage() {
                 <input
                   type="text"
                   value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
+                  onChange={(e) =>
+                    setKeyword(e.target.value)
+                  }
                   placeholder="Cari posisi atau departemen..."
                   className="w-full bg-transparent text-xs text-[#234236] outline-none placeholder:text-[#9aa9a1]"
                 />
@@ -390,7 +403,9 @@ export default function LowonganPage() {
                 <input
                   type="text"
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  onChange={(e) =>
+                    setLocation(e.target.value)
+                  }
                   placeholder="Cari lokasi..."
                   className="w-full bg-transparent text-xs text-[#234236] outline-none placeholder:text-[#9aa9a1]"
                 />
@@ -457,7 +472,9 @@ export default function LowonganPage() {
       ===================================================== */}
 
       <section className="mx-auto max-w-[1200px] px-5 pb-12 pt-6 sm:px-8">
-        <div className="mb-4 flex items-center justify-between">
+        {/* TITLE + VIEW TOGGLE */}
+
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-black text-[#315c4a]">
               Lowongan Tersedia
@@ -467,14 +484,56 @@ export default function LowonganPage() {
               {filteredJobs.length} posisi tersedia
             </p>
           </div>
+
+          {/* VIEW MODE */}
+
+          <div className="flex w-fit items-center rounded-xl border border-[#dce9e2] bg-white p-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setViewMode("card")}
+              className={`flex h-8 items-center gap-2 rounded-lg px-3 text-[11px] font-bold transition ${
+                viewMode === "card"
+                  ? "bg-[#e8f6ee] text-[#3e9167]"
+                  : "text-[#8a9b92] hover:bg-[#f7faf8] hover:text-[#315c4a]"
+              }`}
+            >
+              <GridIcon />
+              Card
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`flex h-8 items-center gap-2 rounded-lg px-3 text-[11px] font-bold transition ${
+                viewMode === "list"
+                  ? "bg-[#e8f6ee] text-[#3e9167]"
+                  : "text-[#8a9b92] hover:bg-[#f7faf8] hover:text-[#315c4a]"
+              }`}
+            >
+              <ListIcon />
+              List
+            </button>
+          </div>
         </div>
 
+        {/* LOADING */}
+
         {loading ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div
+            className={
+              viewMode === "card"
+                ? "grid grid-cols-1 gap-4 md:grid-cols-2"
+                : "space-y-3"
+            }
+          >
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
-                className="h-[245px] animate-pulse rounded-2xl border border-[#e1eee7] bg-white"
+                className={`animate-pulse rounded-2xl border border-[#e1eee7] bg-white ${
+                  viewMode === "card"
+                    ? "h-[245px]"
+                    : "h-[150px]"
+                }`}
               />
             ))}
           </div>
@@ -489,8 +548,8 @@ export default function LowonganPage() {
             </h3>
 
             <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[#8a9b92]">
-              Coba ubah kata kunci, lokasi, atau departemen untuk
-              menemukan lowongan lainnya.
+              Coba ubah kata kunci, lokasi, atau departemen
+              untuk menemukan lowongan lainnya.
             </p>
 
             {(keyword || location || departemen) && (
@@ -503,7 +562,11 @@ export default function LowonganPage() {
               </button>
             )}
           </div>
-        ) : (
+        ) : viewMode === "card" ? (
+          /* =================================================
+             CARD VIEW
+          ================================================== */
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {filteredJobs.map((job) => (
               <article
@@ -610,6 +673,137 @@ export default function LowonganPage() {
               </article>
             ))}
           </div>
+        ) : (
+          /* =================================================
+             LIST VIEW
+          ================================================== */
+
+          <div className="space-y-3">
+            {filteredJobs.map((job) => (
+              <article
+                key={job.id}
+                className="group rounded-2xl border border-[#e1eee7] bg-white p-4 transition duration-200 hover:border-[#cfe2d8] hover:shadow-[0_8px_28px_rgba(49,92,74,0.07)] sm:p-5"
+              >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                  {/* ICON */}
+
+                  <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e8f6ee] lg:flex">
+                    <BuildingIcon />
+                  </div>
+
+                  {/* MAIN INFO */}
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {job.kategori && (
+                        <span className="rounded-full bg-[#e8f6ee] px-2.5 py-1 text-[10px] font-bold text-[#4da477]">
+                          {job.kategori}
+                        </span>
+                      )}
+
+                      <span className="rounded-full bg-[#f1f7f3] px-2.5 py-1 text-[10px] font-bold text-[#71877b]">
+                        {job.status}
+                      </span>
+                    </div>
+
+                    <h3 className="mt-2 truncate text-sm font-black text-[#315c4a] sm:text-base">
+                      {job.posisi}
+                    </h3>
+
+                    <p className="mt-1 text-[11px] font-medium text-[#71877b]">
+                      {job.departemen}
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <PinIcon />
+
+                        <span className="text-[10px] font-medium text-[#71877b]">
+                          {job.lokasi || "-"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <CapIcon />
+
+                        <span className="text-[10px] font-medium text-[#71877b]">
+                          {job.pendidikan || "-"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <BriefcaseIcon />
+
+                        <span className="text-[10px] font-medium text-[#71877b]">
+                          {job.tipe || "-"}
+                        </span>
+                      </div>
+
+                      {job.pengalaman && (
+                        <div className="flex items-center gap-1.5">
+                          <BriefcaseIcon />
+
+                          <span className="text-[10px] font-medium text-[#71877b]">
+                            {job.pengalaman}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* DEADLINE */}
+
+                  <div className="hidden min-w-[125px] border-l border-[#edf3ef] pl-5 lg:block">
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-[#9aa9a1]">
+                      {job.batasLamaran
+                        ? "Batas Lamaran"
+                        : job.berlakuHingga
+                        ? "Berlaku Hingga"
+                        : "Status"}
+                    </p>
+
+                    <p className="mt-1 text-[10px] font-bold text-[#315c4a]">
+                      {job.batasLamaran
+                        ? formatDate(job.batasLamaran)
+                        : job.berlakuHingga
+                        ? formatDate(job.berlakuHingga)
+                        : "Tersedia"}
+                    </p>
+                  </div>
+
+                  {/* BUTTON */}
+
+                  <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[#edf3ef] pt-3 lg:border-0 lg:pt-0">
+                    <div className="lg:hidden">
+                      <p className="text-[9px] font-bold uppercase tracking-wide text-[#9aa9a1]">
+                        {job.batasLamaran
+                          ? "Batas Lamaran"
+                          : job.berlakuHingga
+                          ? "Berlaku Hingga"
+                          : "Status"}
+                      </p>
+
+                      <p className="mt-0.5 text-[10px] font-bold text-[#315c4a]">
+                        {job.batasLamaran
+                          ? formatDate(job.batasLamaran)
+                          : job.berlakuHingga
+                          ? formatDate(job.berlakuHingga)
+                          : "Tersedia"}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => openDetail(job.id)}
+                      className="rounded-lg bg-[#4da477] px-4 py-2.5 text-[11px] font-bold text-white transition hover:bg-[#3e9167]"
+                    >
+                      Lihat Detail
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
         )}
       </section>
 
@@ -620,7 +814,8 @@ export default function LowonganPage() {
       <footer className="border-t border-[#e1eee7] bg-white">
         <div className="mx-auto max-w-[1200px] px-5 py-5 text-center sm:px-8">
           <p className="text-[10px] text-[#9aa9a1]">
-            Informasi lowongan pekerjaan diperbarui secara berkala.
+            Informasi lowongan pekerjaan diperbarui secara
+            berkala.
           </p>
         </div>
       </footer>
@@ -761,7 +956,9 @@ export default function LowonganPage() {
                       </p>
 
                       <p className="mt-1 text-xs font-black text-[#315c4a]">
-                        {formatDate(selectedJob.batasLamaran)}
+                        {formatDate(
+                          selectedJob.batasLamaran
+                        )}
                       </p>
                     </div>
 
@@ -771,7 +968,9 @@ export default function LowonganPage() {
                       </p>
 
                       <p className="mt-1 text-xs font-black text-[#315c4a]">
-                        {formatDate(selectedJob.berlakuHingga)}
+                        {formatDate(
+                          selectedJob.berlakuHingga
+                        )}
                       </p>
                     </div>
                   </div>
@@ -786,8 +985,8 @@ export default function LowonganPage() {
                         </h3>
 
                         <p className="mt-1 max-w-md text-[11px] leading-5 text-[#71877b]">
-                          Pastikan CV Anda sudah tersedia sebelum
-                          mengirimkan lamaran.
+                          Pastikan CV Anda sudah tersedia
+                          sebelum mengirimkan lamaran.
                         </p>
 
                         {!hasCV && !alreadyApplied && (
@@ -961,6 +1160,98 @@ function DetailItem({
         </div>
       </div>
     </div>
+  );
+}
+
+/* ============================================================
+   VIEW ICONS
+============================================================ */
+
+function GridIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className="h-3.5 w-3.5"
+    >
+      <rect
+        x="4"
+        y="4"
+        width="6"
+        height="6"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+
+      <rect
+        x="14"
+        y="4"
+        width="6"
+        height="6"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+
+      <rect
+        x="4"
+        y="14"
+        width="6"
+        height="6"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+
+      <rect
+        x="14"
+        y="14"
+        width="6"
+        height="6"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+    </svg>
+  );
+}
+
+function ListIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className="h-3.5 w-3.5"
+    >
+      <path
+        d="M8 6h12M8 12h12M8 18h12"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+
+      <circle
+        cx="4"
+        cy="6"
+        r="1"
+        fill="currentColor"
+      />
+
+      <circle
+        cx="4"
+        cy="12"
+        r="1"
+        fill="currentColor"
+      />
+
+      <circle
+        cx="4"
+        cy="18"
+        r="1"
+        fill="currentColor"
+      />
+    </svg>
   );
 }
 

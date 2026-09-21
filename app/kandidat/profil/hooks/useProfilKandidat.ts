@@ -72,8 +72,7 @@ export function useProfilKandidat() {
 
   const [pendidikan, setPendidikan] = useState<Pendidikan[]>([]);
 
-  const [showPendidikanModal, setShowPendidikanModal] =
-    useState(false);
+  const [showPendidikanModal, setShowPendidikanModal] = useState(false);
 
   const [editingPendidikanId, setEditingPendidikanId] =
     useState<number | null>(null);
@@ -83,7 +82,6 @@ export function useProfilKandidat() {
 
   const [savingPendidikan, setSavingPendidikan] = useState(false);
 
-  // File ijazah yang baru dipilih
   const [ijazahFile, setIjazahFile] = useState<File | null>(null);
 
   const [uploadingIjazah, setUploadingIjazah] = useState(false);
@@ -94,8 +92,7 @@ export function useProfilKandidat() {
 
   const [pengalaman, setPengalaman] = useState<Pengalaman[]>([]);
 
-  const [showPengalamanModal, setShowPengalamanModal] =
-    useState(false);
+  const [showPengalamanModal, setShowPengalamanModal] = useState(false);
 
   const [editingPengalamanId, setEditingPengalamanId] =
     useState<number | null>(null);
@@ -111,8 +108,7 @@ export function useProfilKandidat() {
 
   const [sertifikasi, setSertifikasi] = useState<Sertifikasi[]>([]);
 
-  const [showSertifikasiModal, setShowSertifikasiModal] =
-    useState(false);
+  const [showSertifikasiModal, setShowSertifikasiModal] = useState(false);
 
   const [editingSertifikasiId, setEditingSertifikasiId] =
     useState<number | null>(null);
@@ -120,8 +116,7 @@ export function useProfilKandidat() {
   const [sertifikasiForm, setSertifikasiForm] =
     useState<Sertifikasi>(initialSertifikasi);
 
-  const [savingSertifikasi, setSavingSertifikasi] =
-    useState(false);
+  const [savingSertifikasi, setSavingSertifikasi] = useState(false);
 
   // ============================================================
   // INITIAL LOAD
@@ -152,11 +147,7 @@ export function useProfilKandidat() {
 
       const data = await response.json();
 
-      if (
-        !data.success ||
-        !data.user ||
-        data.user.role !== "KANDIDAT"
-      ) {
+      if (!data.success || !data.user || data.user.role !== "KANDIDAT") {
         router.replace("/login");
         return;
       }
@@ -206,11 +197,9 @@ export function useProfilKandidat() {
       if (data.success && Array.isArray(data.dokumen)) {
         const map: Record<string, UploadedDokumen> = {};
 
-        data.dokumen.forEach(
-          (document: UploadedDokumen) => {
-            map[document.jenisDokumen.toLowerCase()] = document;
-          }
-        );
+        data.dokumen.forEach((document: UploadedDokumen) => {
+          map[document.jenisDokumen.toLowerCase()] = document;
+        });
 
         setUploadedDocs(map);
       }
@@ -234,11 +223,7 @@ export function useProfilKandidat() {
       const data = await res.json();
 
       if (data.success) {
-        setPendidikan(
-          data.pendidikan ||
-            data.data ||
-            []
-        );
+        setPendidikan(data.pendidikan || data.data || []);
       }
     } catch (error) {
       console.error("FETCH PENDIDIKAN ERROR:", error);
@@ -260,11 +245,7 @@ export function useProfilKandidat() {
       const data = await res.json();
 
       if (data.success) {
-        setPengalaman(
-          data.pengalaman ||
-            data.data ||
-            []
-        );
+        setPengalaman(data.pengalaman || data.data || []);
       }
     } catch (error) {
       console.error("FETCH PENGALAMAN ERROR:", error);
@@ -286,11 +267,7 @@ export function useProfilKandidat() {
       const data = await res.json();
 
       if (data.success) {
-        setSertifikasi(
-          data.sertifikasi ||
-            data.data ||
-            []
-        );
+        setSertifikasi(data.sertifikasi || data.data || []);
       }
     } catch (error) {
       console.error("FETCH SERTIFIKASI ERROR:", error);
@@ -360,8 +337,7 @@ export function useProfilKandidat() {
 
       if (!res.ok || !data.success) {
         alert(
-          data.message ||
-            "Gagal mengunggah foto profil."
+          data.message || "Gagal mengunggah foto profil."
         );
 
         setFotoPreview(null);
@@ -390,13 +366,9 @@ export function useProfilKandidat() {
       });
 
       if (profileRes.ok) {
-        const profileData =
-          await profileRes.json();
+        const profileData = await profileRes.json();
 
-        if (
-          profileData.success &&
-          profileData.user
-        ) {
+        if (profileData.success && profileData.user) {
           setUser(profileData.user);
         }
       }
@@ -446,8 +418,7 @@ export function useProfilKandidat() {
 
       if (!res.ok || !data.success) {
         alert(
-          data.message ||
-            "Gagal memperbarui profil."
+          data.message || "Gagal memperbarui profil."
         );
 
         return;
@@ -471,10 +442,7 @@ export function useProfilKandidat() {
 
       setEditingProfile(false);
     } catch (error) {
-      console.error(
-        "UPDATE PROFILE ERROR:",
-        error
-      );
+      console.error("UPDATE PROFILE ERROR:", error);
 
       alert(
         "Terjadi kesalahan saat memperbarui profil."
@@ -506,6 +474,7 @@ export function useProfilKandidat() {
       const formData = new FormData();
 
       formData.append("file", file);
+
       formData.append(
         "jenisDokumen",
         key.toUpperCase()
@@ -731,7 +700,6 @@ export function useProfilKandidat() {
         editingPendidikanId ??
         undefined;
 
-      // Upload ijazah setelah pendidikan berhasil dibuat
       if (ijazahFile && savedId) {
         await uploadIjazah(
           savedId,
@@ -774,8 +742,6 @@ export function useProfilKandidat() {
     const file =
       e.target.files?.[0];
 
-    // Reset input agar file yang sama
-    // dapat dipilih kembali
     e.target.value = "";
 
     if (!file) return;
@@ -900,7 +866,6 @@ export function useProfilKandidat() {
         return;
       }
 
-      // Update field ijazah sesuai schema terbaru
       setPendidikan((prev) =>
         prev.map((item) =>
           item.id === pendidikanId
@@ -916,8 +881,6 @@ export function useProfilKandidat() {
         )
       );
 
-      // Jika sedang edit pendidikan tersebut,
-      // bersihkan juga data ijazah pada form
       if (
         editingPendidikanId ===
         pendidikanId
@@ -1049,15 +1012,17 @@ export function useProfilKandidat() {
       const isEdit =
         editingPengalamanId !== null;
 
-      const url = isEdit
-        ? `/api/pengalaman/${editingPengalamanId}`
-        : "/api/pengalaman";
+      const url = "/api/pengalaman";
 
       const method = isEdit
         ? "PUT"
         : "POST";
 
       const body = {
+        ...(isEdit && {
+          id: editingPengalamanId,
+        }),
+
         posisi:
           pengalamanForm.posisi,
 
@@ -1065,19 +1030,16 @@ export function useProfilKandidat() {
           pengalamanForm.perusahaan,
 
         lokasi:
-          pengalamanForm.lokasi ||
-          null,
+          pengalamanForm.lokasi || null,
 
         tahunMulai:
           pengalamanForm.tahunMulai,
 
         tahunSelesai:
-          pengalamanForm.tahunSelesai ||
-          null,
+          pengalamanForm.tahunSelesai || null,
 
         deskripsi:
-          pengalamanForm.deskripsi ||
-          null,
+          pengalamanForm.deskripsi || null,
       };
 
       const res = await fetch(url, {
@@ -1088,7 +1050,21 @@ export function useProfilKandidat() {
         body: JSON.stringify(body),
       });
 
-      const data = await res.json();
+      let data;
+
+      try {
+        data = await res.json();
+      } catch {
+        console.error(
+          "SAVE PENGALAMAN: response bukan JSON"
+        );
+
+        alert(
+          "Response dari server tidak valid."
+        );
+
+        return;
+      }
 
       if (!res.ok || !data.success) {
         alert(
@@ -1139,13 +1115,33 @@ export function useProfilKandidat() {
 
     try {
       const res = await fetch(
-        `/api/pengalaman/${id}`,
+        "/api/pengalaman",
         {
           method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id,
+          }),
         }
       );
 
-      const data = await res.json();
+      let data;
+
+      try {
+        data = await res.json();
+      } catch {
+        console.error(
+          "DELETE PENGALAMAN: response bukan JSON"
+        );
+
+        alert(
+          "Response dari server tidak valid."
+        );
+
+        return;
+      }
 
       if (!res.ok || !data.success) {
         alert(
@@ -1209,8 +1205,8 @@ export function useProfilKandidat() {
 
   const saveSertifikasi = async () => {
     if (
-      !sertifikasiForm.nama ||
-      !sertifikasiForm.penerbit
+      !sertifikasiForm.nama.trim() ||
+      !sertifikasiForm.penerbit.trim()
     ) {
       alert(
         "Nama sertifikasi dan penerbit wajib diisi."
@@ -1225,28 +1221,51 @@ export function useProfilKandidat() {
       const isEdit =
         editingSertifikasiId !== null;
 
-      const url = isEdit
-        ? `/api/sertifikasi/${editingSertifikasiId}`
-        : "/api/sertifikasi";
+      /*
+       * API sertifikasi menggunakan:
+       *
+       * POST /api/sertifikasi
+       * PUT  /api/sertifikasi
+       *
+       * Untuk PUT, ID dikirim melalui body.
+       */
+
+      const url = "/api/sertifikasi";
 
       const method = isEdit
         ? "PUT"
         : "POST";
 
       const body = {
-        nama: sertifikasiForm.nama,
+        ...(isEdit && {
+          id: editingSertifikasiId,
+        }),
+
+        nama:
+          sertifikasiForm.nama.trim(),
+
         penerbit:
-          sertifikasiForm.penerbit,
+          sertifikasiForm.penerbit.trim(),
+
         nomor:
-          sertifikasiForm.nomor ||
+          sertifikasiForm.nomor?.trim() ||
           null,
+
         tanggalTerbit:
           sertifikasiForm.tanggalTerbit ||
           null,
+
         tanggalKadaluarsa:
           sertifikasiForm.tanggalKadaluarsa ||
           null,
       };
+
+      console.log(
+        isEdit
+          ? "UPDATE SERTIFIKASI:"
+          : "CREATE SERTIFIKASI:",
+        body
+      );
 
       const res = await fetch(url, {
         method,
@@ -1256,7 +1275,33 @@ export function useProfilKandidat() {
         body: JSON.stringify(body),
       });
 
-      const data = await res.json();
+      let data;
+
+      try {
+        data = await res.json();
+      } catch {
+        console.error(
+          "SAVE SERTIFIKASI: response bukan JSON",
+          {
+            status: res.status,
+            statusText: res.statusText,
+          }
+        );
+
+        alert(
+          "Response dari server tidak valid."
+        );
+
+        return;
+      }
+
+      console.log(
+        "SAVE SERTIFIKASI RESPONSE:",
+        {
+          status: res.status,
+          data,
+        }
+      );
 
       if (!res.ok || !data.success) {
         alert(
@@ -1306,14 +1351,42 @@ export function useProfilKandidat() {
     }
 
     try {
+      /*
+       * API DELETE sertifikasi menggunakan:
+       *
+       * DELETE /api/sertifikasi
+       *
+       * ID dikirim melalui body.
+       */
+
       const res = await fetch(
-        `/api/sertifikasi/${id}`,
+        "/api/sertifikasi",
         {
           method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id,
+          }),
         }
       );
 
-      const data = await res.json();
+      let data;
+
+      try {
+        data = await res.json();
+      } catch {
+        console.error(
+          "DELETE SERTIFIKASI: response bukan JSON"
+        );
+
+        alert(
+          "Response dari server tidak valid."
+        );
+
+        return;
+      }
 
       if (!res.ok || !data.success) {
         alert(
@@ -1346,44 +1419,29 @@ export function useProfilKandidat() {
   // ============================================================
 
   return {
-    // ==========================================================
     // CORE
-    // ==========================================================
-
     user,
     loading,
 
-    // ==========================================================
     // FOTO
-    // ==========================================================
-
     uploadingFoto,
     fotoPreview,
     fotoInputRef,
     handleFotoChange,
 
-    // ==========================================================
     // DOKUMEN
-    // ==========================================================
-
     uploadedDocs,
     uploading,
     fileInputRefs,
     handleUpload,
     handleDeleteDocument,
 
-    // ==========================================================
     // PREVIEW
-    // ==========================================================
-
     previewDoc,
     openPreview,
     closePreview,
 
-    // ==========================================================
     // EDIT PROFIL
-    // ==========================================================
-
     editingProfile,
     setEditingProfile,
     profileForm,
@@ -1391,10 +1449,7 @@ export function useProfilKandidat() {
     savingProfile,
     saveProfile,
 
-    // ==========================================================
     // PENDIDIKAN
-    // ==========================================================
-
     pendidikan,
     showPendidikanModal,
     setShowPendidikanModal,
@@ -1408,26 +1463,14 @@ export function useProfilKandidat() {
     savePendidikan,
     deletePendidikan,
 
-    // ==========================================================
     // IJAZAH
-    // ==========================================================
-
     ijazahFile,
     uploadingIjazah,
     handleIjazahFileChange,
-
-    // PENTING:
-    // Fungsi ini sebelumnya belum dikembalikan
-    // sehingga page.tsx membaca p.clearIjazahFile
-    // sebagai error TypeScript.
     clearIjazahFile,
-
     deleteIjazah,
 
-    // ==========================================================
     // PENGALAMAN
-    // ==========================================================
-
     pengalaman,
     showPengalamanModal,
     setShowPengalamanModal,
@@ -1441,10 +1484,7 @@ export function useProfilKandidat() {
     savePengalaman,
     deletePengalaman,
 
-    // ==========================================================
     // SERTIFIKASI
-    // ==========================================================
-
     sertifikasi,
     showSertifikasiModal,
     setShowSertifikasiModal,

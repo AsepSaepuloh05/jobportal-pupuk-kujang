@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
-// =====================================================
-// GET - Ambil semua sertifikasi milik user yang login
-// =====================================================
-
+/**
+ * ============================================================
+ * GET - Mengambil seluruh sertifikasi milik user yang login
+ * ============================================================
+ */
 export async function GET() {
   try {
     const userId = await getUserId();
@@ -39,17 +40,18 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        message: "Terjadi kesalahan pada server",
+        message: "Gagal mengambil data sertifikasi",
       },
       { status: 500 }
     );
   }
 }
 
-// =====================================================
-// POST - Tambah sertifikasi
-// =====================================================
-
+/**
+ * ============================================================
+ * POST - Menambahkan sertifikasi baru
+ * ============================================================
+ */
 export async function POST(request: NextRequest) {
   try {
     const userId = await getUserId();
@@ -68,33 +70,50 @@ export async function POST(request: NextRequest) {
 
     const nama = String(body.nama ?? "").trim();
     const penerbit = String(body.penerbit ?? "").trim();
-    const nomor = body.nomor ? String(body.nomor).trim() : null;
-    const tanggalTerbit = body.tanggalTerbit
-      ? String(body.tanggalTerbit).trim()
-      : null;
-    const tanggalKadaluarsa = body.tanggalKadaluarsa
-      ? String(body.tanggalKadaluarsa).trim()
-      : null;
 
-    // =================================================
-    // VALIDASI
-    // =================================================
+    const nomor =
+      body.nomor !== undefined &&
+      body.nomor !== null &&
+      String(body.nomor).trim() !== ""
+        ? String(body.nomor).trim()
+        : null;
 
-    if (!nama || !penerbit) {
+    const tanggalTerbit =
+      body.tanggalTerbit !== undefined &&
+      body.tanggalTerbit !== null &&
+      String(body.tanggalTerbit).trim() !== ""
+        ? String(body.tanggalTerbit).trim()
+        : null;
+
+    const tanggalKadaluarsa =
+      body.tanggalKadaluarsa !== undefined &&
+      body.tanggalKadaluarsa !== null &&
+      String(body.tanggalKadaluarsa).trim() !== ""
+        ? String(body.tanggalKadaluarsa).trim()
+        : null;
+
+    // Validasi field wajib
+    if (!nama) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            "Nama sertifikasi dan penerbit wajib diisi",
+          message: "Nama sertifikasi wajib diisi",
         },
         { status: 400 }
       );
     }
 
-    // =================================================
-    // CEK USER
-    // =================================================
+    if (!penerbit) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Penerbit sertifikasi wajib diisi",
+        },
+        { status: 400 }
+      );
+    }
 
+    // Pastikan user masih ada
     const user = await prisma.user.findUnique({
       where: {
         id: userId,
@@ -111,18 +130,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // =================================================
-    // SIMPAN SERTIFIKASI
-    // =================================================
-
+    // Simpan sertifikasi
     const sertifikasi = await prisma.sertifikasi.create({
       data: {
-        userId: userId,
-        nama: nama,
-        penerbit: penerbit,
-        nomor: nomor,
-        tanggalTerbit: tanggalTerbit,
-        tanggalKadaluarsa: tanggalKadaluarsa,
+        userId,
+        nama,
+        penerbit,
+        nomor,
+        tanggalTerbit,
+        tanggalKadaluarsa,
       },
     });
 
@@ -140,17 +156,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: "Terjadi kesalahan pada server",
+        message: "Gagal menambahkan sertifikasi",
       },
       { status: 500 }
     );
   }
 }
 
-// =====================================================
-// PUT - Edit sertifikasi
-// =====================================================
-
+/**
+ * ============================================================
+ * PUT - Mengubah sertifikasi
+ *
+ * Frontend harus mengirim:
+ * {
+ *   id: 1,
+ *   nama: "...",
+ *   penerbit: "...",
+ *   nomor: "...",
+ *   tanggalTerbit: "...",
+ *   tanggalKadaluarsa: "..."
+ * }
+ *
+ * Endpoint:
+ * PUT /api/sertifikasi
+ * ============================================================
+ */
 export async function PUT(request: NextRequest) {
   try {
     const userId = await getUserId();
@@ -167,22 +197,34 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
 
+    // Ambil ID dari body
     const id = Number(body.id);
 
     const nama = String(body.nama ?? "").trim();
     const penerbit = String(body.penerbit ?? "").trim();
-    const nomor = body.nomor ? String(body.nomor).trim() : null;
-    const tanggalTerbit = body.tanggalTerbit
-      ? String(body.tanggalTerbit).trim()
-      : null;
-    const tanggalKadaluarsa = body.tanggalKadaluarsa
-      ? String(body.tanggalKadaluarsa).trim()
-      : null;
 
-    // =================================================
-    // VALIDASI
-    // =================================================
+    const nomor =
+      body.nomor !== undefined &&
+      body.nomor !== null &&
+      String(body.nomor).trim() !== ""
+        ? String(body.nomor).trim()
+        : null;
 
+    const tanggalTerbit =
+      body.tanggalTerbit !== undefined &&
+      body.tanggalTerbit !== null &&
+      String(body.tanggalTerbit).trim() !== ""
+        ? String(body.tanggalTerbit).trim()
+        : null;
+
+    const tanggalKadaluarsa =
+      body.tanggalKadaluarsa !== undefined &&
+      body.tanggalKadaluarsa !== null &&
+      String(body.tanggalKadaluarsa).trim() !== ""
+        ? String(body.tanggalKadaluarsa).trim()
+        : null;
+
+    // Validasi ID
     if (!Number.isInteger(id) || id <= 0) {
       return NextResponse.json(
         {
@@ -193,21 +235,28 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (!nama || !penerbit) {
+    // Validasi field wajib
+    if (!nama) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            "Nama sertifikasi dan penerbit wajib diisi",
+          message: "Nama sertifikasi wajib diisi",
         },
         { status: 400 }
       );
     }
 
-    // =================================================
-    // CEK DATA MILIK USER
-    // =================================================
+    if (!penerbit) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Penerbit sertifikasi wajib diisi",
+        },
+        { status: 400 }
+      );
+    }
 
+    // Pastikan sertifikasi memang milik user yang login
     const existing = await prisma.sertifikasi.findFirst({
       where: {
         id: id,
@@ -219,26 +268,23 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: "Data sertifikasi tidak ditemukan",
+          message: "Sertifikasi tidak ditemukan",
         },
         { status: 404 }
       );
     }
 
-    // =================================================
-    // UPDATE
-    // =================================================
-
+    // Update sertifikasi
     const sertifikasi = await prisma.sertifikasi.update({
       where: {
         id: id,
       },
       data: {
-        nama: nama,
-        penerbit: penerbit,
-        nomor: nomor,
-        tanggalTerbit: tanggalTerbit,
-        tanggalKadaluarsa: tanggalKadaluarsa,
+        nama,
+        penerbit,
+        nomor,
+        tanggalTerbit,
+        tanggalKadaluarsa,
       },
     });
 
@@ -253,17 +299,26 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: "Terjadi kesalahan pada server",
+        message: "Gagal memperbarui sertifikasi",
       },
       { status: 500 }
     );
   }
 }
 
-// =====================================================
-// DELETE - Hapus sertifikasi
-// =====================================================
-
+/**
+ * ============================================================
+ * DELETE - Menghapus sertifikasi
+ *
+ * Frontend mengirim:
+ * {
+ *   id: 1
+ * }
+ *
+ * Endpoint:
+ * DELETE /api/sertifikasi
+ * ============================================================
+ */
 export async function DELETE(request: NextRequest) {
   try {
     const userId = await getUserId();
@@ -282,6 +337,7 @@ export async function DELETE(request: NextRequest) {
 
     const id = Number(body.id);
 
+    // Validasi ID
     if (!Number.isInteger(id) || id <= 0) {
       return NextResponse.json(
         {
@@ -292,10 +348,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // =================================================
-    // CEK DATA MILIK USER
-    // =================================================
-
+    // Pastikan sertifikasi milik user yang login
     const existing = await prisma.sertifikasi.findFirst({
       where: {
         id: id,
@@ -307,12 +360,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: "Data sertifikasi tidak ditemukan",
+          message: "Sertifikasi tidak ditemukan",
         },
         { status: 404 }
       );
     }
 
+    // Hapus sertifikasi
     await prisma.sertifikasi.delete({
       where: {
         id: id,
@@ -329,17 +383,18 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: "Terjadi kesalahan pada server",
+        message: "Gagal menghapus sertifikasi",
       },
       { status: 500 }
     );
   }
 }
 
-// =====================================================
-// GET USER ID DARI COOKIE
-// =====================================================
-
+/**
+ * ============================================================
+ * HELPER - Mengambil user ID dari cookie
+ * ============================================================
+ */
 async function getUserId(): Promise<number | null> {
   try {
     const cookieStore = await cookies();
@@ -354,13 +409,18 @@ async function getUserId(): Promise<number | null> {
     const userId = Number(userIdCookie);
 
     if (!Number.isInteger(userId) || userId <= 0) {
-      console.error("COOKIE user_id TIDAK VALID:", userIdCookie);
+      console.error(
+        "COOKIE user_id TIDAK VALID:",
+        userIdCookie
+      );
+
       return null;
     }
 
     return userId;
   } catch (error) {
     console.error("GET USER ID ERROR:", error);
+
     return null;
   }
 }

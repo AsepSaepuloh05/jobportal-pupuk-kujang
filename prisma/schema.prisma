@@ -258,3 +258,22 @@ model Lowongan {
 
   @@map("lowongan")
 }
+
+// =====================================================
+// VERIFIKASI EMAIL / OTP REGISTRASI
+// =====================================================
+
+model EmailVerification {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  nama         String
+  nik          String
+  passwordHash String
+  otpHash      String
+  expiresAt    DateTime
+  attempts     Int      @default(0)
+  lastSentAt   DateTime?
+  createdAt    DateTime @default(now())
+
+  @@map("email_verification")
+}

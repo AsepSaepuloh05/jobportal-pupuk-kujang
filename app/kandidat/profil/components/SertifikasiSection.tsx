@@ -1,13 +1,29 @@
 "use client";
 
-import { Award, CalendarDays, Pencil, Trash2 } from "lucide-react";
+import {
+  Award,
+  CalendarDays,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+
 import { Sertifikasi } from "../types";
 import { formatDate } from "../utils";
-import { AddButton, EmptyState, ModernSection } from "./Shared";
-import { Modal, ModalFooter, ModalInput } from "./ModalPrimitives";
+
+import {
+  AddButton,
+  EmptyState,
+  ModernSection,
+} from "./Shared";
+
+import {
+  Modal,
+  ModalFooter,
+  ModalInput,
+} from "./ModalPrimitives";
 
 /* ============================================================
-   ITEM ROW
+   CERTIFICATION ITEM
 ============================================================ */
 
 function CertificationItem({
@@ -21,29 +37,27 @@ function CertificationItem({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const certificationInitial = item.nama?.charAt(0)?.toUpperCase() || "S";
-
   return (
     <div
-      className={`relative flex gap-4 py-5 sm:gap-5 ${
+      className={`relative py-5 ${
         !last ? "border-b border-slate-100" : ""
       }`}
     >
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-sm font-bold text-amber-600 ring-1 ring-amber-100">
-        {certificationInitial}
-      </div>
-
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
+        {/* HEADER */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="text-[15px] font-bold leading-6 text-slate-900">
+            {/* NAMA */}
+            <h3 className="text-[15px] font-bold leading-6 text-slate-900 sm:text-base">
               {item.nama}
             </h3>
 
+            {/* PENERBIT */}
             <p className="mt-0.5 text-sm font-medium text-slate-600">
               {item.penerbit}
             </p>
 
+            {/* NOMOR */}
             {item.nomor && (
               <p className="mt-1.5 text-xs text-slate-400">
                 Nomor sertifikat:{" "}
@@ -54,12 +68,13 @@ function CertificationItem({
             )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-0.5">
+          {/* ACTION */}
+          <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
               onClick={onEdit}
-              className="rounded-lg p-2 text-slate-300 transition hover:bg-emerald-50 hover:text-emerald-600"
-              title="Edit"
+              className="rounded-lg p-2 text-slate-300 transition hover:bg-blue-50 hover:text-blue-600"
+              title="Edit sertifikasi"
             >
               <Pencil className="h-4 w-4" />
             </button>
@@ -67,14 +82,15 @@ function CertificationItem({
             <button
               type="button"
               onClick={onDelete}
-              className="rounded-lg p-2 text-slate-300 transition hover:bg-red-50 hover:text-red-500"
-              title="Hapus"
+              className="rounded-lg p-2 text-slate-300 transition hover:bg-red-50 hover:text-red-600"
+              title="Hapus sertifikasi"
             >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         </div>
 
+        {/* TANGGAL */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {item.tanggalTerbit && (
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-medium text-slate-600">
@@ -84,8 +100,9 @@ function CertificationItem({
           )}
 
           {item.tanggalKadaluarsa && (
-            <span className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-700">
-              Berlaku sampai {formatDate(item.tanggalKadaluarsa)}
+            <span className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-500">
+              Berlaku sampai{" "}
+              {formatDate(item.tanggalKadaluarsa)}
             </span>
           )}
         </div>
@@ -115,7 +132,11 @@ function SertifikasiModal({
 }) {
   return (
     <Modal
-      title={isEdit ? "Edit Sertifikasi" : "Tambah Sertifikasi"}
+      title={
+        isEdit
+          ? "Edit Sertifikasi"
+          : "Tambah Sertifikasi"
+      }
       description="Masukkan sertifikasi atau pelatihan yang dimiliki."
       onClose={() => {
         if (!saving) onClose();
@@ -126,7 +147,12 @@ function SertifikasiModal({
           label="Nama Sertifikasi"
           value={form.nama}
           placeholder="Contoh: Microsoft Azure Fundamentals"
-          onChange={(value) => setForm((prev) => ({ ...prev, nama: value }))}
+          onChange={(value) =>
+            setForm((prev) => ({
+              ...prev,
+              nama: value,
+            }))
+          }
         />
 
         <ModalInput
@@ -134,7 +160,10 @@ function SertifikasiModal({
           value={form.penerbit}
           placeholder="Contoh: Microsoft"
           onChange={(value) =>
-            setForm((prev) => ({ ...prev, penerbit: value }))
+            setForm((prev) => ({
+              ...prev,
+              penerbit: value,
+            }))
           }
         />
 
@@ -142,7 +171,12 @@ function SertifikasiModal({
           label="Nomor Sertifikat"
           value={form.nomor || ""}
           placeholder="Opsional"
-          onChange={(value) => setForm((prev) => ({ ...prev, nomor: value }))}
+          onChange={(value) =>
+            setForm((prev) => ({
+              ...prev,
+              nomor: value,
+            }))
+          }
         />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -151,7 +185,10 @@ function SertifikasiModal({
             type="date"
             value={form.tanggalTerbit || ""}
             onChange={(value) =>
-              setForm((prev) => ({ ...prev, tanggalTerbit: value }))
+              setForm((prev) => ({
+                ...prev,
+                tanggalTerbit: value,
+              }))
             }
           />
 
@@ -160,19 +197,26 @@ function SertifikasiModal({
             type="date"
             value={form.tanggalKadaluarsa || ""}
             onChange={(value) =>
-              setForm((prev) => ({ ...prev, tanggalKadaluarsa: value }))
+              setForm((prev) => ({
+                ...prev,
+                tanggalKadaluarsa: value,
+              }))
             }
           />
         </div>
       </div>
 
-      <ModalFooter onCancel={onClose} onSave={onSave} loading={saving} />
+      <ModalFooter
+        onCancel={onClose}
+        onSave={onSave}
+        loading={saving}
+      />
     </Modal>
   );
 }
 
 /* ============================================================
-   SECTION (exported)
+   SERTIFIKASI SECTION
 ============================================================ */
 
 export function SertifikasiSection({
@@ -204,11 +248,14 @@ export function SertifikasiSection({
     <>
       <ModernSection
         icon={<Award className="h-5 w-5" />}
-        iconStyle="amber"
+        iconStyle="emerald"
         title="Lisensi & Sertifikasi"
         description="Sertifikasi dan pelatihan yang mendukung kompetensi."
         action={
-          <AddButton label="Tambah Sertifikasi" onClick={onOpenTambah} />
+          <AddButton
+            label="Tambah Sertifikasi"
+            onClick={onOpenTambah}
+          />
         }
       >
         {items.length === 0 ? (
@@ -220,7 +267,7 @@ export function SertifikasiSection({
             onClick={onOpenTambah}
           />
         ) : (
-          <div className="mt-5">
+          <div className="mt-4">
             {items.map((item, index) => (
               <CertificationItem
                 key={item.id}

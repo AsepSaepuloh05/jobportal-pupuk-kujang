@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 
 type StatusLowongan = "AKTIF" | "DRAFT" | "DITUTUP";
 
+type ViewMode = "card" | "list";
+
 interface Lowongan {
   id: number;
   posisi: string;
@@ -40,6 +42,8 @@ export default function LowonganPage() {
   const [keyword, setKeyword] = useState(initialKeyword);
   const [location, setLocation] = useState(initialLocation);
   const [departemen, setDepartemen] = useState("Semua");
+
+  const [viewMode, setViewMode] = useState<ViewMode>("card");
 
   const [selectedJob, setSelectedJob] =
     useState<Lowongan | null>(null);
@@ -380,7 +384,7 @@ export default function LowonganPage() {
 
         {/* HEADER LIST */}
 
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
           <div>
 
@@ -394,19 +398,58 @@ export default function LowonganPage() {
 
           </div>
 
-          {(keyword ||
-            location ||
-            departemen !== "Semua") && (
 
-            <button
-              type="button"
-              onClick={resetFilter}
-              className="text-xs font-bold text-[#4da477] hover:text-[#315c4a]"
-            >
-              Reset Filter
-            </button>
+          <div className="flex items-center gap-3">
 
-          )}
+            {(keyword ||
+              location ||
+              departemen !== "Semua") && (
+
+              <button
+                type="button"
+                onClick={resetFilter}
+                className="text-xs font-bold text-[#4da477] hover:text-[#315c4a]"
+              >
+                Reset Filter
+              </button>
+
+            )}
+
+
+            {/* VIEW TOGGLE */}
+
+            <div className="flex items-center rounded-xl border border-[#dce9e2] bg-white p-1">
+
+              <button
+                type="button"
+                onClick={() => setViewMode("card")}
+                className={`flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-bold transition ${
+                  viewMode === "card"
+                    ? "bg-[#315c4a] text-white shadow-sm"
+                    : "text-[#71877b] hover:bg-[#f0f7f3]"
+                }`}
+              >
+                <GridIcon />
+                <span>Card</span>
+              </button>
+
+
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-bold transition ${
+                  viewMode === "list"
+                    ? "bg-[#315c4a] text-white shadow-sm"
+                    : "text-[#71877b] hover:bg-[#f0f7f3]"
+                }`}
+              >
+                <ListIcon />
+                <span>List</span>
+              </button>
+
+            </div>
+
+          </div>
 
         </div>
 
@@ -426,12 +469,15 @@ export default function LowonganPage() {
         )}
 
 
-        {/* JOB LIST */}
+        {/* =====================================================
+            CARD VIEW
+        ===================================================== */}
 
         {!loading &&
-          filteredJobs.length > 0 && (
+          filteredJobs.length > 0 &&
+          viewMode === "card" && (
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
               {filteredJobs.map((job) => (
 
@@ -445,9 +491,9 @@ export default function LowonganPage() {
 
                   {/* TOP */}
 
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex items-start justify-between gap-3">
 
-                    <div>
+                    <div className="min-w-0">
 
                       <div className="flex flex-wrap items-center gap-2">
 
@@ -464,7 +510,7 @@ export default function LowonganPage() {
 
                       </div>
 
-                      <h3 className="mt-3 text-lg font-black text-[#193d2e] transition group-hover:text-[#4da477]">
+                      <h3 className="mt-3 line-clamp-2 text-lg font-black text-[#193d2e] transition group-hover:text-[#4da477]">
                         {job.posisi}
                       </h3>
 
@@ -475,47 +521,47 @@ export default function LowonganPage() {
                     </div>
 
 
-                    {/* DETAIL BUTTON */}
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openDetail(job.id);
-                      }}
-                      className="w-fit rounded-lg border border-[#b9ddc9] px-4 py-2 text-xs font-bold text-[#4da477] transition hover:bg-[#eaf7ef]"
-                    >
-                      Lihat Detail →
-                    </button>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eef8f2]">
+                      <BuildingIcon />
+                    </div>
 
                   </div>
 
 
                   {/* INFO */}
 
-                  <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-[#edf3ef] pt-4 text-xs text-[#71877b]">
+                  <div className="mt-5 grid grid-cols-2 gap-2">
 
-                    <span className="inline-flex items-center gap-1.5">
-                      <PinIcon />
-                      {job.lokasi}
-                    </span>
+                    <MiniInfo
+                      icon={<PinIcon />}
+                      label="Lokasi"
+                      value={job.lokasi}
+                    />
 
-                    {job.pendidikan && (
-                      <span className="inline-flex items-center gap-1.5">
-                        <CapIcon />
-                        {job.pendidikan}
-                      </span>
-                    )}
+                    <MiniInfo
+                      icon={<CapIcon />}
+                      label="Pendidikan"
+                      value={job.pendidikan}
+                    />
 
-                    <span className="inline-flex items-center gap-1.5">
-                      <BriefcaseIcon />
-                      {job.tipe}
-                    </span>
+                    <MiniInfo
+                      icon={<BriefcaseIcon />}
+                      label="Tipe"
+                      value={job.tipe}
+                    />
 
-                    {job.pengalaman && (
-                      <span>
-                        Pengalaman: {job.pengalaman}
-                      </span>
+                    {job.pengalaman ? (
+                      <MiniInfo
+                        icon={<BriefcaseIcon />}
+                        label="Pengalaman"
+                        value={job.pengalaman}
+                      />
+                    ) : (
+                      <MiniInfo
+                        icon={<BriefcaseIcon />}
+                        label="Status"
+                        value="Aktif"
+                      />
                     )}
 
                   </div>
@@ -531,6 +577,32 @@ export default function LowonganPage() {
 
                   )}
 
+
+                  {/* FOOTER */}
+
+                  <div className="mt-5 flex items-center justify-between border-t border-[#edf3ef] pt-4">
+
+                    <span className="text-[10px] text-[#9aa9a1]">
+                      {job.batasLamaran
+                        ? `Batas: ${formatDate(
+                            job.batasLamaran
+                          )}`
+                        : "Informasi lowongan"}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDetail(job.id);
+                      }}
+                      className="rounded-lg border border-[#b9ddc9] px-4 py-2 text-xs font-bold text-[#4da477] transition hover:bg-[#eaf7ef]"
+                    >
+                      Lihat Detail →
+                    </button>
+
+                  </div>
+
                 </article>
 
               ))}
@@ -540,7 +612,154 @@ export default function LowonganPage() {
           )}
 
 
-        {/* EMPTY */}
+        {/* =====================================================
+            LIST VIEW
+        ===================================================== */}
+
+        {!loading &&
+          filteredJobs.length > 0 &&
+          viewMode === "list" && (
+
+            <div className="space-y-3">
+
+              {filteredJobs.map((job) => (
+
+                <article
+                  key={job.id}
+                  onClick={() =>
+                    openDetail(job.id)
+                  }
+                  className="group cursor-pointer rounded-2xl border border-[#e1eee7] bg-white p-4 transition duration-200 hover:border-[#b9ddc9] hover:shadow-[0_10px_28px_rgba(49,92,74,0.07)] sm:p-5"
+                >
+
+                  <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(360px,1fr)_auto] lg:items-center">
+
+                    {/* JOB */}
+
+                    <div className="flex min-w-0 items-start gap-4">
+
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#eaf7ef]">
+
+                        <BuildingIcon />
+
+                      </div>
+
+
+                      <div className="min-w-0">
+
+                        <div className="flex flex-wrap items-center gap-2">
+
+                          <span className="rounded-full bg-[#e8f6ee] px-3 py-1 text-[10px] font-bold text-[#35865d]">
+                            {job.kategori ||
+                              job.departemen}
+                          </span>
+
+                          {job.status === "AKTIF" && (
+                            <span className="rounded-full bg-[#f0f7f3] px-3 py-1 text-[10px] font-semibold text-[#6c8176]">
+                              Aktif
+                            </span>
+                          )}
+
+                        </div>
+
+                        <h3 className="mt-2 line-clamp-1 text-base font-black text-[#193d2e] transition group-hover:text-[#4da477]">
+                          {job.posisi}
+                        </h3>
+
+                        <p className="mt-1 text-xs font-medium text-[#60766b]">
+                          {job.departemen}
+                        </p>
+
+                      </div>
+
+                    </div>
+
+
+                    {/* INFORMATION */}
+
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4 lg:grid-cols-2">
+
+                      <ListInfo
+                        icon={<PinIcon />}
+                        label="Lokasi"
+                        value={job.lokasi}
+                      />
+
+                      <ListInfo
+                        icon={<CapIcon />}
+                        label="Pendidikan"
+                        value={job.pendidikan}
+                      />
+
+                      <ListInfo
+                        icon={<BriefcaseIcon />}
+                        label="Tipe"
+                        value={job.tipe}
+                      />
+
+                      <ListInfo
+                        icon={<BriefcaseIcon />}
+                        label="Pengalaman"
+                        value={
+                          job.pengalaman || "-"
+                        }
+                      />
+
+                    </div>
+
+
+                    {/* ACTION */}
+
+                    <div
+                      className="flex items-center justify-between gap-4 border-t border-[#edf3ef] pt-3 lg:flex-col lg:items-end lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0"
+                      onClick={(e) =>
+                        e.stopPropagation()
+                      }
+                    >
+
+                      <div className="text-right">
+
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#a0afa8]">
+                          Batas Lamaran
+                        </p>
+
+                        <p className="mt-1 text-xs font-bold text-[#60766b]">
+                          {job.batasLamaran
+                            ? formatDate(
+                                job.batasLamaran
+                              )
+                            : "-"}
+                        </p>
+
+                      </div>
+
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openDetail(job.id)
+                        }
+                        className="shrink-0 rounded-lg border border-[#b9ddc9] px-4 py-2 text-xs font-bold text-[#4da477] transition hover:bg-[#eaf7ef]"
+                      >
+                        Detail →
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                </article>
+
+              ))}
+
+            </div>
+
+          )}
+
+
+        {/* =====================================================
+            EMPTY
+        ===================================================== */}
 
         {!loading &&
           filteredJobs.length === 0 && (
@@ -581,7 +800,7 @@ export default function LowonganPage() {
 
       <footer className="border-t border-[#dceee5] bg-[#173c2d]">
 
-        <div className="mx-auto flex max-w-[1200px] flex-col gap-2 px-5 py-7 text-xs text-[#c8ddd4] sm:px-8 sm:flex-row sm:justify-between">
+        <div className="mx-auto flex max-w-[1200px] flex-col gap-2 px-5 py-7 text-xs text-[#c8ddd4] sm:flex-row sm:justify-between sm:px-8">
 
           <span>
             © 2026 JobPortal
@@ -894,6 +1113,76 @@ export default function LowonganPage() {
 
 
 // =====================================================
+// MINI INFO — CARD VIEW
+// =====================================================
+
+function MiniInfo({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value?: string | null;
+}) {
+  return (
+    <div className="min-w-0 rounded-xl bg-[#f7fbf8] px-3 py-2.5">
+
+      <div className="flex items-center gap-1.5">
+
+        {icon}
+
+        <span className="truncate text-[9px] font-bold uppercase tracking-wide text-[#9aa9a1]">
+          {label}
+        </span>
+
+      </div>
+
+      <p className="mt-1 truncate text-[11px] font-bold text-[#48665a]">
+        {value || "-"}
+      </p>
+
+    </div>
+  );
+}
+
+
+// =====================================================
+// LIST INFO — LIST VIEW
+// =====================================================
+
+function ListInfo({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value?: string | null;
+}) {
+  return (
+    <div className="min-w-0">
+
+      <div className="flex items-center gap-1.5">
+
+        {icon}
+
+        <span className="text-[9px] font-bold uppercase tracking-wide text-[#9aa9a1]">
+          {label}
+        </span>
+
+      </div>
+
+      <p className="mt-1 truncate pl-5 text-[11px] font-bold text-[#48665a]">
+        {value || "-"}
+      </p>
+
+    </div>
+  );
+}
+
+
+// =====================================================
 // INFO CARD
 // =====================================================
 
@@ -995,6 +1284,104 @@ function DetailItem({
       </p>
 
     </div>
+  );
+}
+
+
+// =====================================================
+// ICON GRID / CARD
+// =====================================================
+
+function GridIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className="h-4 w-4"
+    >
+      <rect
+        x="4"
+        y="4"
+        width="6"
+        height="6"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+
+      <rect
+        x="14"
+        y="4"
+        width="6"
+        height="6"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+
+      <rect
+        x="4"
+        y="14"
+        width="6"
+        height="6"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+
+      <rect
+        x="14"
+        y="14"
+        width="6"
+        height="6"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
+
+// =====================================================
+// ICON LIST
+// =====================================================
+
+function ListIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className="h-4 w-4"
+    >
+      <path
+        d="M5 7h14M5 12h14M5 17h14"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+
+      <circle
+        cx="3.5"
+        cy="7"
+        r=".8"
+        fill="currentColor"
+      />
+
+      <circle
+        cx="3.5"
+        cy="12"
+        r=".8"
+        fill="currentColor"
+      />
+
+      <circle
+        cx="3.5"
+        cy="17"
+        r=".8"
+        fill="currentColor"
+      />
+    </svg>
   );
 }
 

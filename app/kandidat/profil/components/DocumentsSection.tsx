@@ -43,10 +43,11 @@ export function DocumentsSection({
               className="group rounded-2xl border border-slate-200 bg-slate-50/60 p-4 transition hover:border-slate-300 hover:bg-white hover:shadow-sm"
             >
               <div className="flex items-start gap-3">
+                {/* DOCUMENT ICON */}
                 <div
                   className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
                     uploaded
-                      ? "bg-emerald-100 text-emerald-600"
+                      ? "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
                       : "bg-white text-slate-400 ring-1 ring-slate-200"
                   }`}
                 >
@@ -64,7 +65,7 @@ export function DocumentsSection({
                         <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
                           <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
 
-                          <p className="truncate text-xs font-medium text-emerald-700">
+                          <p className="truncate text-xs font-medium text-slate-600">
                             {uploaded.namaAsli}
                           </p>
                         </div>
@@ -75,12 +76,13 @@ export function DocumentsSection({
                       )}
                     </div>
 
+                    {/* ACTIONS */}
                     {uploaded && (
                       <div className="flex shrink-0 items-center gap-0.5">
                         <button
                           type="button"
                           onClick={() => onPreview(uploaded)}
-                          className="rounded-lg p-1.5 text-slate-300 transition hover:bg-emerald-50 hover:text-emerald-600"
+                          className="rounded-lg p-1.5 text-slate-300 transition hover:bg-blue-50 hover:text-blue-600"
                           title="Lihat dokumen"
                         >
                           <Eye className="h-4 w-4" />
@@ -98,6 +100,7 @@ export function DocumentsSection({
                     )}
                   </div>
 
+                  {/* UPLOADED DOCUMENT */}
                   {uploaded && (
                     <div className="mt-3 flex items-center justify-between">
                       <span className="text-[11px] text-slate-400">
@@ -110,7 +113,7 @@ export function DocumentsSection({
                         onClick={() =>
                           fileInputRefs.current[doc.key]?.click()
                         }
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isUploading ? (
                           <>
@@ -127,6 +130,7 @@ export function DocumentsSection({
                     </div>
                   )}
 
+                  {/* EMPTY DOCUMENT */}
                   {!uploaded && (
                     <div className="mt-3">
                       <button
@@ -135,7 +139,7 @@ export function DocumentsSection({
                         onClick={() =>
                           fileInputRefs.current[doc.key]?.click()
                         }
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isUploading ? (
                           <>
@@ -154,6 +158,7 @@ export function DocumentsSection({
                 </div>
               </div>
 
+              {/* FILE INPUT */}
               <input
                 ref={(el) => {
                   fileInputRefs.current[doc.key] = el;
