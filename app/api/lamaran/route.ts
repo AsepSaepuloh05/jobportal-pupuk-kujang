@@ -2,16 +2,59 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const cookieStore = await cookies();
         const userId = cookieStore.get("user_id")?.value;
+        const userRole = cookieStore.get("user_role")?.value;
 
         if (!userId) {
             return NextResponse.json(
                 { message: "Belum login" },
                 { status: 401 }
             );
+        }
+
+        if (userRole === "HR") {
+            const { searchParams } = new URL(request.url);
+            const lowonganIdParam = searchParams.get("lowonganId");
+
+            const semuaLamaran = await prisma.lamaran.findMany({
+                where: lowonganIdParam
+                    ? { lowonganId: Number(lowonganIdParam) }
+                    : undefined,
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            nama: true,
+                            email: true,
+                            nik: true,
+                            alamat: true,
+                            noTelepon: true,
+                        },
+                    },
+                    lowongan: {
+                        select: {
+                            id: true,
+                            posisi: true,
+                            departemen: true,
+                            lokasi: true,
+                            tipe: true,
+                            status: true,
+                            tahapanSeleksi: true,
+                        },
+                    },
+                    tahapanProgress: {
+                        orderBy: { urutan: "asc" },
+                    },
+                },
+                orderBy: {
+                    createdAt: "desc",
+                },
+            });
+
+            return NextResponse.json(semuaLamaran);
         }
 
         const lamaran = await prisma.lamaran.findMany({
@@ -131,20 +174,43 @@ export async function POST(request: Request) {
             );
         }
 
-        const [lamaran] = await prisma.$transaction([
-            prisma.lamaran.create({
-                data: {
-                    userId: Number(userId),
-                    lowonganId,
+        const TAHAPAN_URUTAN: Record<string, number> = {
+            SCREENING: 1,
+            ASSESSMENT: 2,
+            INTERVIEW: 3,
+            TECHNICAL_TEST: 4,
+            MCU: 5,
+            OFFERING: 6,
+        };
+
+        const tahapanTerurut = [...lowongan.tahapanSeleksi].sort(
+            (a, b) => TAHAPAN_URUTAN[a] - TAHAPAN_URUTAN[b]
+        );
+
+        const lamaran = await prisma.lamaran.create({
+            data: {
+                userId: Number(userId),
+                lowonganId,
+                tahapanProgress: {
+                    create: tahapanTerurut.map((tahapan, index) => ({
+                        tahapan,
+                        urutan: index + 1,
+                    })),
                 },
-            }),
-            prisma.lowongan.update({
-                where: { id: lowonganId },
-                data: {
-                    pelamar: { increment: 1 },
+            },
+            include: {
+                tahapanProgress: {
+                    orderBy: { urutan: "asc" },
                 },
-            }),
-        ]);
+            },
+        });
+
+        await prisma.lowongan.update({
+            where: { id: lowonganId },
+            data: {
+                pelamar: { increment: 1 },
+            },
+        });
 
         return NextResponse.json(lamaran, { status: 201 });
     } catch (error) {

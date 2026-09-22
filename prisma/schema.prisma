@@ -19,6 +19,7 @@ model User {
   nik             String   @unique
   password        String
   alamat          String?
+  noTelepon       String?
   role            Role     @default(KANDIDAT)
   dokumenProfil   DokumenProfil?
   dokumenKandidat DokumenKandidat[]
@@ -50,8 +51,23 @@ model Lamaran {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   lowongan Lowongan @relation(fields: [lowonganId], references: [id], onDelete: Cascade)
 
+  tahapanProgress LamaranTahapan[]
+
   @@unique([userId, lowonganId])
   @@map("lamaran")
+}
+
+model LamaranTahapan {
+  id          Int            @id @default(autoincrement())
+  lamaranId   Int
+  tahapan     TahapanSeleksi
+  urutan      Int
+  selesaiPada DateTime?
+
+  lamaran Lamaran @relation(fields: [lamaranId], references: [id], onDelete: Cascade)
+
+  @@unique([lamaranId, tahapan])
+  @@map("lamaran_tahapan")
 }
 
 // =====================================================

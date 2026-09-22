@@ -668,18 +668,16 @@ export default function KelolaLowonganPage() {
                       {/* PELAMAR */}
 
                       <td className="px-5 py-4">
-
-                        <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800">
-
-                          <Users
-                            className="h-4 w-4 text-slate-400"
-                            strokeWidth={2}
-                          />
-
+                        <button
+                          type="button"
+                          onClick={() =>
+                            router.push(`/hr/kelolalowongan/${item.id}/pelamar`)
+                          }
+                          className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 underline-offset-2 hover:underline"
+                        >
+                          <Users className="h-4 w-4 text-slate-400" strokeWidth={2} />
                           {item.pelamar}
-
-                        </span>
-
+                        </button>
                       </td>
 
                       {/* STATUS */}
