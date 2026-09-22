@@ -44,25 +44,8 @@ export async function POST(request: Request) {
     }
 
     // ==========================================
-    // CEK EMAIL SUDAH TERDAFTAR
-    // ==========================================
-
-    const existingEmail = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingEmail) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Email sudah terdaftar",
-        },
-        { status: 409 }
-      );
-    }
-
-    // ==========================================
     // CEK NIK SUDAH TERDAFTAR
+    // EMAIL SENGAJA TIDAK DICEK
     // ==========================================
 
     const existingNik = await prisma.user.findUnique({
@@ -85,7 +68,9 @@ export async function POST(request: Request) {
 
     const existingVerification =
       await prisma.emailVerification.findUnique({
-        where: { email },
+        where: {
+          email,
+        },
       });
 
     if (existingVerification?.lastSentAt) {
@@ -123,7 +108,7 @@ export async function POST(request: Request) {
 
     const otpHash = hashOtp(otp);
 
-    // OTP berlaku selama 5 menit
+    // OTP berlaku 5 menit
     const expiresAt = new Date(
       Date.now() + 5 * 60 * 1000
     );
@@ -197,86 +182,87 @@ export async function POST(request: Request) {
     // KIRIM EMAIL OTP
     // ==========================================
 
-    const { data, error } = await resend.emails.send({
-      from: emailFrom,
-      to: email,
-      subject: "Kode Verifikasi Email - SIO Karir",
+    const { data, error } =
+      await resend.emails.send({
+        from: emailFrom,
+        to: email,
+        subject: "Kode Verifikasi Email - SIO Karir",
 
-      html: `
-        <div
-          style="
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 30px;
-            color: #333;
-          "
-        >
-
-          <h2
-            style="
-              color: #3e9d70;
-              margin-bottom: 20px;
-            "
-          >
-            Verifikasi Email SIO Karir
-          </h2>
-
-          <p>
-            Halo <strong>${nama}</strong>,
-          </p>
-
-          <p>
-            Terima kasih telah melakukan registrasi
-            pada Sistem Informasi Outsourcing Karir.
-          </p>
-
-          <p>
-            Gunakan kode OTP berikut untuk
-            memverifikasi alamat email kamu:
-          </p>
-
+        html: `
           <div
             style="
-              font-size: 32px;
-              font-weight: bold;
-              letter-spacing: 8px;
-              text-align: center;
-              padding: 20px;
-              margin: 25px 0;
-              background-color: #f0fdf4;
-              border-radius: 10px;
-              color: #3e9d70;
+              font-family: Arial, sans-serif;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 30px;
+              color: #333;
             "
           >
-            ${otp}
-          </div>
 
-          <p>
-            Kode OTP ini berlaku selama
-            <strong>5 menit</strong>.
-          </p>
+            <h2
+              style="
+                color: #3e9d70;
+                margin-bottom: 20px;
+              "
+            >
+              Verifikasi Email SIO Karir
+            </h2>
 
-          <p>
-            Jangan berikan kode ini kepada orang lain.
-          </p>
+            <p>
+              Halo <strong>${nama}</strong>,
+            </p>
 
-          <p>
-            Jika kamu tidak merasa melakukan registrasi,
-            silakan abaikan email ini.
-          </p>
+            <p>
+              Terima kasih telah melakukan registrasi
+              pada Sistem Informasi Outsourcing Karir.
+            </p>
 
-          <br />
+            <p>
+              Gunakan kode OTP berikut untuk
+              memverifikasi alamat email kamu:
+            </p>
 
-          <p>
-            Terima kasih,
+            <div
+              style="
+                font-size: 32px;
+                font-weight: bold;
+                letter-spacing: 8px;
+                text-align: center;
+                padding: 20px;
+                margin: 25px 0;
+                background-color: #f0fdf4;
+                border-radius: 10px;
+                color: #3e9d70;
+              "
+            >
+              ${otp}
+            </div>
+
+            <p>
+              Kode OTP ini berlaku selama
+              <strong>5 menit</strong>.
+            </p>
+
+            <p>
+              Jangan berikan kode ini kepada orang lain.
+            </p>
+
+            <p>
+              Jika kamu tidak merasa melakukan registrasi,
+              silakan abaikan email ini.
+            </p>
+
             <br />
-            <strong>SIO Karir</strong>
-          </p>
 
-        </div>
-      `,
-    });
+            <p>
+              Terima kasih,
+              <br />
+              <strong>SIO Karir</strong>
+            </p>
+
+          </div>
+        `,
+      });
 
     // ==========================================
     // CEK HASIL RESEND

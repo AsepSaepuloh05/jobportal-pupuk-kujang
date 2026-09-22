@@ -2,7 +2,15 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MailCheck, ArrowLeft, Loader2 } from "lucide-react";
+import {
+  MailCheck,
+  ArrowLeft,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  ShieldCheck,
+} from "lucide-react";
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -51,10 +59,7 @@ export default function VerifyEmailPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email,
-          otp,
-        }),
+        body: JSON.stringify({ email, otp }),
       });
 
       const data = await response.json();
@@ -64,9 +69,7 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      setMessage(
-        "Email berhasil diverifikasi. Mengarahkan ke halaman login..."
-      );
+      setMessage("Email berhasil diverifikasi. Mengarahkan ke halaman login...");
 
       setTimeout(() => {
         router.replace("/login");
@@ -92,9 +95,7 @@ export default function VerifyEmailPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email,
-        }),
+        body: JSON.stringify({ email }),
       });
 
       const data = await response.json();
@@ -116,54 +117,81 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+    <main className="relative flex min-h-screen items-center justify-center bg-[#f5faf7] px-4 py-6">
+      <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#bde4cf]/40 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-[#d9efe3]/60 blur-3xl" />
+
+      <div className="relative w-full max-w-[420px]">
+        {/* Brand */}
+        <div className="mb-4 text-center">
+          <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-[#3e9d70]">
+            <ShieldCheck size={19} className="text-white" />
+          </div>
+
+          <p className="text-[10px] font-extrabold uppercase tracking-[2px] text-[#3e9d70]">
+            SIO Karir
+          </p>
+        </div>
+
+        {/* Card */}
+        <div className="overflow-hidden rounded-[22px] border border-[#e2eee7] bg-white shadow-[0_20px_50px_rgba(35,75,56,0.10)]">
           {/* Header */}
-          <div className="bg-[#3e9d70] px-6 py-8 text-center text-white">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/20">
-              <MailCheck size={34} />
+          <div className="bg-gradient-to-br from-[#3e9d70] to-[#348b62] px-6 py-6 text-center text-white">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[15px] bg-white/15">
+              <MailCheck size={27} strokeWidth={1.8} />
             </div>
 
-            <h1 className="text-2xl font-bold">
+            <h1 className="text-[21px] font-black">
               Verifikasi Email
             </h1>
 
-            <p className="mt-2 text-sm text-green-50">
-              Masukkan kode OTP yang telah dikirim ke email Anda
+            <p className="mx-auto mt-1.5 max-w-[290px] text-xs leading-5 text-green-50/90">
+              Masukkan kode verifikasi yang telah kami kirimkan ke email Anda.
             </p>
           </div>
 
           {/* Content */}
-          <div className="p-6 sm:p-8">
-            <div className="mb-6 text-center">
-              <p className="text-sm text-gray-500">
-                Kode verifikasi dikirim ke:
+          <div className="px-5 py-5 sm:px-7">
+            {/* Email */}
+            <div className="mb-5 rounded-xl border border-[#e2eee7] bg-[#f7fbf8] px-3 py-3 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-[1px] text-[#8a9b92]">
+                Kode dikirim ke
               </p>
 
-              <p className="mt-1 font-semibold text-gray-800 break-all">
+              <p className="mt-1 break-all text-xs font-bold text-[#234236]">
                 {email || "-"}
               </p>
             </div>
 
+            {/* Error */}
             {error && (
-              <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                {error}
+              <div className="mb-4 flex gap-2.5 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5">
+                <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-500" />
+                <p className="text-[11px] font-medium leading-4 text-red-600">
+                  {error}
+                </p>
               </div>
             )}
 
+            {/* Success */}
             {message && (
-              <div className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                {message}
+              <div className="mb-4 flex gap-2.5 rounded-xl border border-green-100 bg-green-50 px-3 py-2.5">
+                <CheckCircle2
+                  size={16}
+                  className="mt-0.5 shrink-0 text-[#3e9d70]"
+                />
+                <p className="text-[11px] font-medium leading-4 text-[#327a58]">
+                  {message}
+                </p>
               </div>
             )}
 
             <form onSubmit={handleVerify}>
               <label
                 htmlFor="otp"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-center text-xs font-bold text-[#29483a]"
               >
-                Kode OTP
+                Masukkan Kode OTP
               </label>
 
               <input
@@ -176,29 +204,37 @@ export default function VerifyEmailPage() {
                 onChange={(e) =>
                   setOtp(e.target.value.replace(/\D/g, ""))
                 }
-                placeholder="Masukkan 6 digit OTP"
-                className="w-full rounded-xl border border-gray-300 px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] outline-none transition focus:border-[#3e9d70] focus:ring-2 focus:ring-green-100"
+                placeholder="000000"
+                autoFocus
+                className="h-[58px] w-full rounded-xl border border-[#dce9e1] bg-[#fbfdfc] px-4 text-center text-[24px] font-black tracking-[0.4em] text-[#234236] outline-none transition placeholder:text-[#c8d5ce] focus:border-[#3e9d70] focus:bg-white focus:ring-4 focus:ring-[#3e9d70]/10"
               />
+
+              <p className="mt-2 text-center text-[10px] text-[#8a9b92]">
+                OTP terdiri dari 6 digit dan berlaku selama 5 menit.
+              </p>
 
               <button
                 type="submit"
                 disabled={loading || otp.length !== 6}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#3e9d70] px-4 py-3.5 font-semibold text-white transition hover:bg-[#348a61] disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3e9d70] text-xs font-bold text-white transition hover:bg-[#348b62] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="animate-spin" size={20} />
+                    <Loader2 size={17} className="animate-spin" />
                     Memverifikasi...
                   </>
                 ) : (
-                  "Verifikasi Email"
+                  <>
+                    <MailCheck size={17} />
+                    Verifikasi Email
+                  </>
                 )}
               </button>
             </form>
 
             {/* Resend */}
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-500">
+            <div className="mt-5 border-t border-[#edf2ef] pt-4 text-center">
+              <p className="text-[10px] text-[#8a9b92]">
                 Tidak menerima kode?
               </p>
 
@@ -206,13 +242,24 @@ export default function VerifyEmailPage() {
                 type="button"
                 onClick={handleResend}
                 disabled={resending || countdown > 0}
-                className="mt-2 text-sm font-semibold text-[#3e9d70] hover:underline disabled:cursor-not-allowed disabled:text-gray-400"
+                className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#3e9d70] hover:text-[#2e8059] disabled:cursor-not-allowed disabled:text-[#aab9b1]"
               >
-                {resending
-                  ? "Mengirim..."
-                  : countdown > 0
-                  ? `Kirim ulang dalam ${countdown} detik`
-                  : "Kirim Ulang OTP"}
+                {resending ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" />
+                    Mengirim OTP...
+                  </>
+                ) : countdown > 0 ? (
+                  <>
+                    <RefreshCw size={13} />
+                    Kirim ulang dalam {countdown}s
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={13} />
+                    Kirim Ulang OTP
+                  </>
+                )}
               </button>
             </div>
 
@@ -220,13 +267,17 @@ export default function VerifyEmailPage() {
             <button
               type="button"
               onClick={() => router.push("/register")}
-              className="mt-6 flex w-full items-center justify-center gap-2 text-sm text-gray-500 hover:text-[#3e9d70]"
+              className="mx-auto mt-4 flex items-center gap-1.5 text-[11px] font-semibold text-[#84948c] hover:text-[#3e9d70]"
             >
-              <ArrowLeft size={16} />
+              <ArrowLeft size={14} />
               Kembali ke Registrasi
             </button>
           </div>
         </div>
+
+        <p className="mt-4 text-center text-[9px] text-[#9aaaa1]">
+          © {new Date().getFullYear()} SIO Karir
+        </p>
       </div>
     </main>
   );

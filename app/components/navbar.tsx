@@ -72,7 +72,7 @@ export default function Navbar() {
             <div className="hidden sm:block">
 
               <p className="text-[10px] font-bold uppercase tracking-[2px] text-[#78a38f]">
-                Career Portal
+                SIO Karir
               </p>
 
               <p className="text-sm font-extrabold text-[#234236]">

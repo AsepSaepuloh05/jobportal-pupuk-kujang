@@ -13,6 +13,10 @@ export async function POST(request: Request) {
     const email = body.email?.trim().toLowerCase();
     const otp = body.otp?.trim();
 
+    // ==========================================
+    // VALIDASI INPUT
+    // ==========================================
+
     if (!email || !otp) {
       return NextResponse.json(
         {
@@ -39,7 +43,9 @@ export async function POST(request: Request) {
 
     const verification =
       await prisma.emailVerification.findUnique({
-        where: { email },
+        where: {
+          email,
+        },
       });
 
     if (!verification) {
@@ -53,7 +59,7 @@ export async function POST(request: Request) {
     }
 
     // ==========================================
-    // BATAS PERCOBAAN
+    // BATAS PERCOBAAN OTP
     // ==========================================
 
     if (verification.attempts >= 5) {
@@ -90,7 +96,9 @@ export async function POST(request: Request) {
 
     if (otpHash !== verification.otpHash) {
       await prisma.emailVerification.update({
-        where: { email },
+        where: {
+          email,
+        },
         data: {
           attempts: {
             increment: 1,
@@ -108,28 +116,10 @@ export async function POST(request: Request) {
     }
 
     // ==========================================
-    // CEK EMAIL & NIK LAGI
+    // CEK NIK
+    // EMAIL TIDAK DICEK KARENA SEMENTARA
+    // DIPERBOLEHKAN DUPLIKAT
     // ==========================================
-
-    const existingEmail = await prisma.user.findUnique({
-      where: {
-        email: verification.email,
-      },
-    });
-
-    if (existingEmail) {
-      await prisma.emailVerification.delete({
-        where: { email },
-      });
-
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Email sudah terdaftar",
-        },
-        { status: 409 }
-      );
-    }
 
     const existingNik = await prisma.user.findUnique({
       where: {
@@ -138,6 +128,12 @@ export async function POST(request: Request) {
     });
 
     if (existingNik) {
+      await prisma.emailVerification.delete({
+        where: {
+          email,
+        },
+      });
+
       return NextResponse.json(
         {
           success: false,
@@ -166,8 +162,14 @@ export async function POST(request: Request) {
     // ==========================================
 
     await prisma.emailVerification.delete({
-      where: { email },
+      where: {
+        email,
+      },
     });
+
+    // ==========================================
+    // BERHASIL
+    // ==========================================
 
     return NextResponse.json(
       {
