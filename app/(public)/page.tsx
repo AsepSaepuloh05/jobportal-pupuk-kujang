@@ -1,5 +1,4 @@
-
-"use client"
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -119,9 +118,7 @@ export default function HomePage() {
             <h1 className="text-5xl font-black leading-[1.02] tracking-[-2.5px] text-[#193d2e] sm:text-6xl lg:text-[70px]">
               Temukan Karir
               <br />
-              <span className="text-[#43a675]">
-                Impianmu di Sini.
-              </span>
+              <span className="text-[#43a675]">Impianmu di Sini.</span>
             </h1>
 
             <p className="mt-7 max-w-2xl text-sm leading-7 text-[#63776d] sm:text-base">
@@ -209,11 +206,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ========================================================
-              AKHLAK CARDS
-              Desktop = 6 kolom / satu baris
-          ======================================================== */}
-
+          {/* AKHLAK CARDS */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
             {budayaPerusahaan.map((budaya) => (
               <div
@@ -244,7 +237,6 @@ export default function HomePage() {
                   {budaya.items.map((item) => (
                     <li key={item} className="flex gap-2">
                       <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#5b9b76]" />
-
                       <span>{item}</span>
                     </li>
                   ))}
@@ -272,9 +264,7 @@ export default function HomePage() {
               <h2 className="text-4xl font-black leading-tight tracking-[-1.5px] text-[#193d2e] sm:text-5xl">
                 Tumbuh bersama
                 <br />
-                <span className="text-[#43a675]">
-                  PT Pupuk Kujang.
-                </span>
+                <span className="text-[#43a675]">PT Pupuk Kujang.</span>
               </h2>
 
               <p className="mt-6 text-sm leading-7 text-[#63776d] sm:text-base">
@@ -296,23 +286,13 @@ export default function HomePage() {
             </div>
 
             {/* Image */}
-            <div className="relative">
+            <div className="relative lg:pt-10">
               <div className="overflow-hidden rounded-[30px] shadow-xl">
                 <img
                   src="/gambar_pt.jpg"
                   alt="PT Pupuk Kujang"
                   className="h-[350px] w-full object-cover transition duration-700 hover:scale-[1.01] sm:h-[430px]"
                 />
-              </div>
-
-              <div className="absolute -bottom-6 -left-4 rounded-2xl border border-[#dcece3] bg-white px-6 py-4 shadow-xl sm:-left-6">
-                <p className="text-xs text-slate-500">
-                  Membangun masa depan
-                </p>
-
-                <p className="mt-1 font-bold text-[#18372b]">
-                  Bersama insan terbaik
-                </p>
               </div>
             </div>
           </div>

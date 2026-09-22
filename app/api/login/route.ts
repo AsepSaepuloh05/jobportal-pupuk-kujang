@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     }
 
     // Cari user berdasarkan email
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: {
         email: email,
       },
@@ -85,7 +85,6 @@ export async function POST(request: Request) {
     });
 
     return response;
-
   } catch (error) {
     console.error("LOGIN ERROR:", error);
 
@@ -98,4 +97,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
