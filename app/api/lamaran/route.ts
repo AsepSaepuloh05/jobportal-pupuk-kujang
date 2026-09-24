@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request: Request) {
     try {
         const cookieStore = await cookies();
+
         const userId = cookieStore.get("user_id")?.value;
         const userRole = cookieStore.get("user_role")?.value;
 
@@ -15,14 +16,23 @@ export async function GET(request: Request) {
             );
         }
 
+        /*
+         * =========================================================
+         * GET LAMARAN - HR
+         * =========================================================
+         */
+
         if (userRole === "HR") {
             const { searchParams } = new URL(request.url);
             const lowonganIdParam = searchParams.get("lowonganId");
 
             const semuaLamaran = await prisma.lamaran.findMany({
                 where: lowonganIdParam
-                    ? { lowonganId: Number(lowonganIdParam) }
+                    ? {
+                          lowonganId: Number(lowonganIdParam),
+                      }
                     : undefined,
+
                 include: {
                     user: {
                         select: {
@@ -34,6 +44,7 @@ export async function GET(request: Request) {
                             noTelepon: true,
                         },
                     },
+
                     lowongan: {
                         select: {
                             id: true,
@@ -45,10 +56,14 @@ export async function GET(request: Request) {
                             tahapanSeleksi: true,
                         },
                     },
+
                     tahapanProgress: {
-                        orderBy: { urutan: "asc" },
+                        orderBy: {
+                            urutan: "asc",
+                        },
                     },
                 },
+
                 orderBy: {
                     createdAt: "desc",
                 },
@@ -57,10 +72,17 @@ export async function GET(request: Request) {
             return NextResponse.json(semuaLamaran);
         }
 
+        /*
+         * =========================================================
+         * GET LAMARAN - KANDIDAT
+         * =========================================================
+         */
+
         const lamaran = await prisma.lamaran.findMany({
             where: {
                 userId: Number(userId),
             },
+
             include: {
                 lowongan: {
                     select: {
@@ -71,9 +93,20 @@ export async function GET(request: Request) {
                         tipe: true,
                         status: true,
                         deskripsi: true,
+
+                        // Tahapan yang dipilih HR pada lowongan
+                        tahapanSeleksi: true,
+                    },
+                },
+
+                // Progress setiap tahapan kandidat
+                tahapanProgress: {
+                    orderBy: {
+                        urutan: "asc",
                     },
                 },
             },
+
             orderBy: {
                 createdAt: "desc",
             },
@@ -84,8 +117,12 @@ export async function GET(request: Request) {
         console.error("GET LAMARAN ERROR:", error);
 
         return NextResponse.json(
-            { message: "Gagal mengambil data lamaran" },
-            { status: 500 }
+            {
+                message: "Gagal mengambil data lamaran",
+            },
+            {
+                status: 500,
+            }
         );
     }
 }
@@ -93,50 +130,86 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const cookieStore = await cookies();
+
         const userId = cookieStore.get("user_id")?.value;
         const userRole = cookieStore.get("user_role")?.value;
 
         if (!userId) {
             return NextResponse.json(
-                { message: "Belum login" },
-                { status: 401 }
+                {
+                    message: "Belum login",
+                },
+                {
+                    status: 401,
+                }
             );
         }
 
         if (userRole !== "KANDIDAT") {
             return NextResponse.json(
-                { message: "Hanya kandidat yang bisa melamar" },
-                { status: 403 }
+                {
+                    message: "Hanya kandidat yang bisa melamar",
+                },
+                {
+                    status: 403,
+                }
             );
         }
 
         const body = await request.json();
+
         const lowonganId = Number(body.lowonganId);
 
         if (!lowonganId) {
             return NextResponse.json(
-                { message: "lowonganId wajib diisi" },
-                { status: 400 }
+                {
+                    message: "lowonganId wajib diisi",
+                },
+                {
+                    status: 400,
+                }
             );
         }
 
+        /*
+         * =========================================================
+         * CEK LOWONGAN
+         * =========================================================
+         */
+
         const lowongan = await prisma.lowongan.findUnique({
-            where: { id: lowonganId },
+            where: {
+                id: lowonganId,
+            },
         });
 
         if (!lowongan) {
             return NextResponse.json(
-                { message: "Lowongan tidak ditemukan" },
-                { status: 404 }
+                {
+                    message: "Lowongan tidak ditemukan",
+                },
+                {
+                    status: 404,
+                }
             );
         }
 
         if (lowongan.status !== "AKTIF") {
             return NextResponse.json(
-                { message: "Lowongan ini sudah tidak menerima lamaran" },
-                { status: 400 }
+                {
+                    message: "Lowongan ini sudah tidak menerima lamaran",
+                },
+                {
+                    status: 400,
+                }
             );
         }
+
+        /*
+         * =========================================================
+         * CEK LAMARAN DUPLIKAT
+         * =========================================================
+         */
 
         const existing = await prisma.lamaran.findUnique({
             where: {
@@ -149,20 +222,38 @@ export async function POST(request: Request) {
 
         if (existing) {
             return NextResponse.json(
-                { message: "Kamu sudah pernah melamar ke lowongan ini" },
-                { status: 409 }
+                {
+                    message:
+                        "Kamu sudah pernah melamar ke lowongan ini",
+                },
+                {
+                    status: 409,
+                }
             );
         }
+
+        /*
+         * =========================================================
+         * CEK DOKUMEN
+         * =========================================================
+         */
 
         const dokumen = await prisma.dokumenKandidat.findMany({
             where: {
                 userId: Number(userId),
-                jenisDokumen: { in: ["CV", "KTP"] },
+                jenisDokumen: {
+                    in: ["CV", "KTP"],
+                },
             },
         });
 
-        const punyaCV = dokumen.some((d) => d.jenisDokumen === "CV");
-        const punyaKTP = dokumen.some((d) => d.jenisDokumen === "KTP");
+        const punyaCV = dokumen.some(
+            (d) => d.jenisDokumen === "CV"
+        );
+
+        const punyaKTP = dokumen.some(
+            (d) => d.jenisDokumen === "KTP"
+        );
 
         if (!punyaCV || !punyaKTP) {
             return NextResponse.json(
@@ -170,9 +261,17 @@ export async function POST(request: Request) {
                     message:
                         "Lengkapi CV dan KTP di halaman Profil sebelum melamar",
                 },
-                { status: 400 }
+                {
+                    status: 400,
+                }
             );
         }
+
+        /*
+         * =========================================================
+         * URUTAN TAHAPAN
+         * =========================================================
+         */
 
         const TAHAPAN_URUTAN: Record<string, number> = {
             SCREENING: 1,
@@ -183,42 +282,91 @@ export async function POST(request: Request) {
             OFFERING: 6,
         };
 
-        const tahapanTerurut = [...lowongan.tahapanSeleksi].sort(
-            (a, b) => TAHAPAN_URUTAN[a] - TAHAPAN_URUTAN[b]
+        const tahapanTerurut = [
+            ...lowongan.tahapanSeleksi,
+        ].sort(
+            (a, b) =>
+                (TAHAPAN_URUTAN[a] ?? 999) -
+                (TAHAPAN_URUTAN[b] ?? 999)
         );
+
+        /*
+         * =========================================================
+         * BUAT LAMARAN
+         * =========================================================
+         */
 
         const lamaran = await prisma.lamaran.create({
             data: {
                 userId: Number(userId),
                 lowonganId,
+
                 tahapanProgress: {
-                    create: tahapanTerurut.map((tahapan, index) => ({
-                        tahapan,
-                        urutan: index + 1,
-                    })),
+                    create: tahapanTerurut.map(
+                        (tahapan, index) => ({
+                            tahapan,
+                            urutan: index + 1,
+                        })
+                    ),
                 },
             },
+
             include: {
+                lowongan: {
+                    select: {
+                        id: true,
+                        posisi: true,
+                        departemen: true,
+                        lokasi: true,
+                        tipe: true,
+                        status: true,
+                        deskripsi: true,
+                        tahapanSeleksi: true,
+                    },
+                },
+
                 tahapanProgress: {
-                    orderBy: { urutan: "asc" },
+                    orderBy: {
+                        urutan: "asc",
+                    },
                 },
             },
         });
+
+        /*
+         * =========================================================
+         * UPDATE JUMLAH PELAMAR
+         * =========================================================
+         */
 
         await prisma.lowongan.update({
-            where: { id: lowonganId },
+            where: {
+                id: lowonganId,
+            },
+
             data: {
-                pelamar: { increment: 1 },
+                pelamar: {
+                    increment: 1,
+                },
             },
         });
 
-        return NextResponse.json(lamaran, { status: 201 });
+        return NextResponse.json(
+            lamaran,
+            {
+                status: 201,
+            }
+        );
     } catch (error) {
         console.error("POST LAMARAN ERROR:", error);
 
         return NextResponse.json(
-            { message: "Gagal mengirim lamaran" },
-            { status: 500 }
+            {
+                message: "Gagal mengirim lamaran",
+            },
+            {
+                status: 500,
+            }
         );
     }
 }

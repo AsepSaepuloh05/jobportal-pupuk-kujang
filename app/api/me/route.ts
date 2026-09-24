@@ -50,12 +50,52 @@ export async function GET() {
       },
 
       select: {
+        // =================================================
+        // DATA DASAR USER
+        // =================================================
+
         id: true,
         nama: true,
         email: true,
         nik: true,
-        alamat: true,
         role: true,
+
+        // =================================================
+        // NOMOR TELEPON
+        // =================================================
+
+        noTelepon: true,
+
+        // =================================================
+        // ALAMAT
+        // =================================================
+
+        alamat: true,
+
+        // =================================================
+        // RT / RW
+        // =================================================
+
+        rt: true,
+        rw: true,
+
+        // =================================================
+        // WILAYAH
+        // =================================================
+
+        provinsiId: true,
+        provinsi: true,
+
+        kabupatenId: true,
+        kabupaten: true,
+
+        kecamatanId: true,
+        kecamatan: true,
+
+        desaId: true,
+        desa: true,
+
+        kodePos: true,
 
         // =================================================
         // FOTO / DOKUMEN PROFIL
@@ -118,22 +158,37 @@ export async function GET() {
     // DEBUG
     // =====================================================
 
+    console.log("========================================");
     console.log("DATA USER:", user);
 
-    console.log(
-      "DATA DOKUMEN:",
-      user.dokumenProfil
-    );
+    console.log("NO TELEPON:", user.noTelepon);
 
-    console.log(
-      "FOTO PROFIL:",
-      fotoProfil
-    );
+    console.log("ALAMAT:", user.alamat);
 
-    console.log(
-      "PATH FOTO:",
-      fotoProfil?.pathFile
-    );
+    console.log("RT:", user.rt);
+    console.log("RW:", user.rw);
+
+    console.log("PROVINSI ID:", user.provinsiId);
+    console.log("PROVINSI:", user.provinsi);
+
+    console.log("KABUPATEN ID:", user.kabupatenId);
+    console.log("KABUPATEN:", user.kabupaten);
+
+    console.log("KECAMATAN ID:", user.kecamatanId);
+    console.log("KECAMATAN:", user.kecamatan);
+
+    console.log("DESA ID:", user.desaId);
+    console.log("DESA:", user.desa);
+
+    console.log("KODE POS:", user.kodePos);
+
+    console.log("DATA DOKUMEN:", user.dokumenProfil);
+
+    console.log("FOTO PROFIL:", fotoProfil);
+
+    console.log("PATH FOTO:", fotoProfil?.pathFile);
+
+    console.log("========================================");
 
     // =====================================================
     // RESPONSE
@@ -143,7 +198,58 @@ export async function GET() {
       success: true,
 
       user: {
-        ...user,
+        // =================================================
+        // DATA DASAR
+        // =================================================
+
+        id: user.id,
+        nama: user.nama,
+        email: user.email,
+        nik: user.nik,
+        role: user.role,
+
+        // =================================================
+        // NOMOR TELEPON
+        // =================================================
+
+        noTelepon: user.noTelepon,
+
+        // =================================================
+        // ALAMAT
+        // =================================================
+
+        alamat: user.alamat,
+
+        // =================================================
+        // RT / RW
+        // =================================================
+
+        rt: user.rt,
+        rw: user.rw,
+
+        // =================================================
+        // WILAYAH
+        // =================================================
+
+        provinsiId: user.provinsiId,
+        provinsi: user.provinsi,
+
+        kabupatenId: user.kabupatenId,
+        kabupaten: user.kabupaten,
+
+        kecamatanId: user.kecamatanId,
+        kecamatan: user.kecamatan,
+
+        desaId: user.desaId,
+        desa: user.desa,
+
+        kodePos: user.kodePos,
+
+        // =================================================
+        // FOTO / DOKUMEN PROFIL
+        // =================================================
+
+        dokumenProfil: fotoProfil,
 
         fotoProfil: fotoProfil
           ? {
@@ -154,6 +260,14 @@ export async function GET() {
               tipeFile: fotoProfil.tipeFile,
             }
           : null,
+
+        // =================================================
+        // DATA LAINNYA
+        // =================================================
+
+        pendidikan: user.pendidikan,
+        pengalaman: user.pengalaman,
+        sertifikasi: user.sertifikasi,
       },
     });
   } catch (error) {

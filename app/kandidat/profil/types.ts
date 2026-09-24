@@ -4,7 +4,27 @@ export interface UserData {
   email: string;
   nik: string;
   role: string;
+
+  // Alamat
   alamat?: string | null;
+  rt?: number | null;
+  rw?: number | null;
+
+  // Wilayah
+  provinsiId?: string | null;
+  provinsi?: string | null;
+  kabupatenId?: string | null;
+  kabupaten?: string | null;
+  kecamatanId?: string | null;
+  kecamatan?: string | null;
+  desaId?: string | null;
+  desa?: string | null;
+  kodePos?: string | null;
+
+  // Nomor Telepon
+  noTelepon?: string | null;
+
+  // Foto profil
   dokumenProfil?: {
     pathFile: string;
   } | null;
@@ -71,7 +91,6 @@ export const initialPendidikan: Pendidikan = {
   tahunMulai: "",
   tahunSelesai: "",
   nilai: null,
-
   ijazahNamaFile: null,
   ijazahNamaAsli: null,
   ijazahPathFile: null,

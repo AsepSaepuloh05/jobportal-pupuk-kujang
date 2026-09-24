@@ -12,15 +12,39 @@ datasource db {
 // =====================================================
 
 model User {
-  id              Int      @id @default(autoincrement())
-  email           String   
-  createdAt       DateTime @default(now())
-  nama            String
-  nik             String   @unique
-  password        String
-  alamat          String?
-  noTelepon       String?
-  role            Role     @default(KANDIDAT)
+  id             Int      @id @default(autoincrement())
+  email          String
+  createdAt      DateTime @default(now())
+  nama           String
+  nik            String   @unique
+  password       String
+
+  // =====================================================
+  // ALAMAT / DOMISILI
+  // =====================================================
+
+  alamat         String?
+
+  rt             Int?
+  rw             Int?
+
+  provinsiId     String?
+  provinsi       String?
+
+  kabupatenId    String?
+  kabupaten      String?
+
+  kecamatanId    String?
+  kecamatan      String?
+
+  desaId         String?
+  desa           String?
+
+  kodePos        String?
+  noTelepon      String?
+
+  role           Role     @default(KANDIDAT)
+
   dokumenProfil   DokumenProfil?
   dokumenKandidat DokumenKandidat[]
   pendidikan      Pendidikan[]

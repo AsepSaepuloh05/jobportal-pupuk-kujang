@@ -7,6 +7,7 @@ import {
   Mail,
   MapPin,
   Pencil,
+  Phone,
   User,
 } from "lucide-react";
 
@@ -29,6 +30,27 @@ export function ProfileHero({
 }) {
   const initial = user.nama?.charAt(0).toUpperCase() || "K";
 
+  // =====================================================
+  // ALAMAT LENGKAP
+  // =====================================================
+  const alamatLengkap = [
+    user.alamat,
+    user.rt != null && user.rw != null
+      ? `RT ${String(user.rt).padStart(3, "0")}/RW ${String(user.rw).padStart(3, "0")}`
+      : user.rt != null
+        ? `RT ${String(user.rt).padStart(3, "0")}`
+        : user.rw != null
+          ? `RW ${String(user.rw).padStart(3, "0")}`
+          : null,
+    user.desa,
+    user.kecamatan,
+    user.kabupaten,
+    user.provinsi,
+    user.kodePos,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <section className="overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.04)]">
       <div className="px-5 pb-7 pt-6 sm:px-8 sm:pt-7">
@@ -38,7 +60,6 @@ export function ProfileHero({
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2.5">
-              {/* ICON JUDUL */}
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                 <User className="h-4.5 w-4.5" />
               </div>
@@ -68,9 +89,7 @@ export function ProfileHero({
         ===================================================== */}
         <div className="mt-7 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            {/* =================================================
-                FOTO PROFIL
-            ================================================= */}
+            {/* FOTO PROFIL */}
             <div className="relative h-28 w-28 shrink-0">
               <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[22px] bg-gradient-to-br from-slate-100 to-slate-200 text-4xl font-bold text-slate-600 ring-1 ring-slate-200">
                 {displayFoto ? (
@@ -112,9 +131,7 @@ export function ProfileHero({
               />
             </div>
 
-            {/* =================================================
-                IDENTITY
-            ================================================= */}
+            {/* IDENTITY */}
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-[28px]">
@@ -133,12 +150,28 @@ export function ProfileHero({
                 {/* EMAIL */}
                 <span className="flex items-center gap-2">
                   <Mail className="h-4 w-4 shrink-0 text-slate-400" />
+
                   <span className="break-all">
                     {user.email}
                   </span>
                 </span>
 
                 <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:block" />
+
+                {/* NOMOR TELEPON */}
+                {user.noTelepon && (
+                  <>
+                    <span className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 shrink-0 text-slate-400" />
+
+                      <span>
+                        {user.noTelepon}
+                      </span>
+                    </span>
+
+                    <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:block" />
+                  </>
+                )}
 
                 {/* NIK */}
                 <span className="flex items-center gap-2">
@@ -148,20 +181,19 @@ export function ProfileHero({
 
                 <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:block" />
 
-                {/* ALAMAT */}
-                <span className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
-                  <span>
-                    {user.alamat || "Domisili belum diisi"}
+                {/* ALAMAT LENGKAP */}
+                <span className="flex items-start gap-2">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+
+                  <span className="leading-relaxed">
+                    {alamatLengkap || "Domisili belum diisi"}
                   </span>
                 </span>
               </div>
             </div>
           </div>
 
-          {/* =================================================
-              EDIT PROFILE
-          ================================================= */}
+          {/* EDIT PROFILE */}
           <button
             type="button"
             onClick={onEditProfile}

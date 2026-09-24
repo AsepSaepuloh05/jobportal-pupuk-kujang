@@ -61,7 +61,25 @@ export function useProfilKandidat() {
     nama: "",
     email: "",
     nik: "",
+    noTelepon: "",
     alamat: "",
+
+    rt: "",
+    rw: "",
+
+    provinsiId: "",
+    provinsi: "",
+
+    kabupatenId: "",
+    kabupaten: "",
+
+    kecamatanId: "",
+    kecamatan: "",
+
+    desaId: "",
+    desa: "",
+
+    kodePos: "",
   });
 
   const [savingProfile, setSavingProfile] = useState(false);
@@ -154,11 +172,40 @@ export function useProfilKandidat() {
 
       setUser(data.user);
 
+      // ========================================================
+      // LOAD PROFILE FORM
+      // ========================================================
+
       setProfileForm({
         nama: data.user.nama || "",
         email: data.user.email || "",
         nik: data.user.nik || "",
+        noTelepon: data.user.noTelepon || "",
         alamat: data.user.alamat || "",
+
+        rt:
+          data.user.rt !== null && data.user.rt !== undefined
+            ? String(data.user.rt).padStart(3, "0")
+            : "",
+
+        rw:
+          data.user.rw !== null && data.user.rw !== undefined
+            ? String(data.user.rw).padStart(3, "0")
+            : "",
+
+        provinsiId: data.user.provinsiId || "",
+        provinsi: data.user.provinsi || "",
+
+        kabupatenId: data.user.kabupatenId || "",
+        kabupaten: data.user.kabupaten || "",
+
+        kecamatanId: data.user.kecamatanId || "",
+        kecamatan: data.user.kecamatan || "",
+
+        desaId: data.user.desaId || "",
+        desa: data.user.desa || "",
+
+        kodePos: data.user.kodePos || "",
       });
 
       if (data.user.dokumenProfil?.pathFile) {
@@ -395,9 +442,9 @@ export function useProfilKandidat() {
 
   const saveProfile = async () => {
     if (
-      !profileForm.nama ||
-      !profileForm.email ||
-      !profileForm.nik
+      !profileForm.nama.trim() ||
+      !profileForm.email.trim() ||
+      !profileForm.nik.trim()
     ) {
       alert("Nama, email, dan NIK wajib diisi.");
       return;
@@ -411,10 +458,45 @@ export function useProfilKandidat() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(profileForm),
+        body: JSON.stringify({
+          nama: profileForm.nama.trim(),
+          email: profileForm.email.trim(),
+          nik: profileForm.nik.trim(),
+          noTelepon: profileForm.noTelepon.trim() || null,
+          alamat: profileForm.alamat.trim(),
+
+          rt: profileForm.rt
+            ? Number(profileForm.rt)
+            : null,
+
+          rw: profileForm.rw
+            ? Number(profileForm.rw)
+            : null,
+
+          provinsiId: profileForm.provinsiId || null,
+          provinsi: profileForm.provinsi || null,
+
+          kabupatenId: profileForm.kabupatenId || null,
+          kabupaten: profileForm.kabupaten || null,
+
+          kecamatanId: profileForm.kecamatanId || null,
+          kecamatan: profileForm.kecamatan || null,
+
+          desaId: profileForm.desaId || null,
+          desa: profileForm.desa || null,
+
+          kodePos: profileForm.kodePos.trim() || null,
+        }),
       });
 
-      const data = await res.json();
+      let data;
+
+      try {
+        data = await res.json();
+      } catch {
+        alert("Response dari server tidak valid.");
+        return;
+      }
 
       if (!res.ok || !data.success) {
         alert(
@@ -423,6 +505,10 @@ export function useProfilKandidat() {
 
         return;
       }
+
+      // ========================================================
+      // UPDATE USER
+      // ========================================================
 
       setUser((prev) =>
         prev
@@ -433,14 +519,95 @@ export function useProfilKandidat() {
           : data.user
       );
 
+      // ========================================================
+      // UPDATE FORM DARI RESPONSE SERVER
+      // ========================================================
+
       setProfileForm({
-        nama: data.user.nama,
-        email: data.user.email,
-        nik: data.user.nik,
+        nama: data.user.nama || "",
+        email: data.user.email || "",
+        nik: data.user.nik || "",
+        noTelepon: data.user.noTelepon || "",
         alamat: data.user.alamat || "",
+
+        rt:
+          data.user.rt !== null &&
+          data.user.rt !== undefined
+            ? String(data.user.rt).padStart(3, "0")
+            : "",
+
+        rw:
+          data.user.rw !== null &&
+          data.user.rw !== undefined
+            ? String(data.user.rw).padStart(3, "0")
+            : "",
+
+        provinsiId: data.user.provinsiId || "",
+        provinsi: data.user.provinsi || "",
+
+        kabupatenId: data.user.kabupatenId || "",
+        kabupaten: data.user.kabupaten || "",
+
+        kecamatanId: data.user.kecamatanId || "",
+        kecamatan: data.user.kecamatan || "",
+
+        desaId: data.user.desaId || "",
+        desa: data.user.desa || "",
+
+        kodePos: data.user.kodePos || "",
       });
 
       setEditingProfile(false);
+
+      // ========================================================
+      // REFRESH DATA PROFILE
+      // ========================================================
+
+      const profileRes = await fetch("/api/me", {
+        cache: "no-store",
+      });
+
+      if (profileRes.ok) {
+        const profileData = await profileRes.json();
+
+        if (profileData.success && profileData.user) {
+          setUser(profileData.user);
+
+          setProfileForm({
+            nama: profileData.user.nama || "",
+            email: profileData.user.email || "",
+            nik: profileData.user.nik || "",
+            noTelepon: profileData.user.noTelepon || "",
+            alamat: profileData.user.alamat || "",
+
+            rt:
+              profileData.user.rt !== null &&
+              profileData.user.rt !== undefined
+                ? String(profileData.user.rt).padStart(3, "0")
+                : "",
+
+            rw:
+              profileData.user.rw !== null &&
+              profileData.user.rw !== undefined
+                ? String(profileData.user.rw).padStart(3, "0")
+                : "",
+
+            provinsiId: profileData.user.provinsiId || "",
+            provinsi: profileData.user.provinsi || "",
+
+            kabupatenId: profileData.user.kabupatenId || "",
+            kabupaten: profileData.user.kabupaten || "",
+
+            kecamatanId: profileData.user.kecamatanId || "",
+            kecamatan: profileData.user.kecamatan || "",
+
+            desaId: profileData.user.desaId || "",
+            desa: profileData.user.desa || "",
+
+            kodePos: profileData.user.kodePos || "",
+          });
+        }
+      }
     } catch (error) {
       console.error("UPDATE PROFILE ERROR:", error);
 
@@ -1221,15 +1388,6 @@ export function useProfilKandidat() {
       const isEdit =
         editingSertifikasiId !== null;
 
-      /*
-       * API sertifikasi menggunakan:
-       *
-       * POST /api/sertifikasi
-       * PUT  /api/sertifikasi
-       *
-       * Untuk PUT, ID dikirim melalui body.
-       */
-
       const url = "/api/sertifikasi";
 
       const method = isEdit
@@ -1351,14 +1509,6 @@ export function useProfilKandidat() {
     }
 
     try {
-      /*
-       * API DELETE sertifikasi menggunakan:
-       *
-       * DELETE /api/sertifikasi
-       *
-       * ID dikirim melalui body.
-       */
-
       const res = await fetch(
         "/api/sertifikasi",
         {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { cookies } from "next/headers";
+
 import { prisma } from "@/lib/prisma";
 
 // ============================================================
@@ -7,89 +9,131 @@ import { prisma } from "@/lib/prisma";
 // ============================================================
 
 export async function GET(request: NextRequest) {
-  try {
-    const userIdValue = request.nextUrl.searchParams.get("userId");
+try {
+const userIdValue = request.nextUrl.searchParams.get("userId");
 
-    if (!userIdValue) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "userId wajib diisi",
-        },
-        { status: 400 }
-      );
-    }
+if (!userIdValue) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "userId wajib diisi",
+    },
+    { status: 400 }
+  );
+}
 
-    const userId = Number(userIdValue);
+const userId = Number(userIdValue);
 
-    if (!Number.isInteger(userId) || userId <= 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "userId tidak valid",
-        },
-        { status: 400 }
-      );
-    }
+if (!Number.isInteger(userId) || userId <= 0) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "userId tidak valid",
+    },
+    { status: 400 }
+  );
+}
 
-    const user = await prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
+const user = await prisma.user.findUnique({
+  where: {
+    id: userId,
+  },
 
+  select: {
+    id: true,
+    nama: true,
+    nik: true,
+    email: true,
+
+    // ============================
+    // NOMOR TELEPON
+    // ============================
+
+    noTelepon: true,
+
+    alamat: true,
+
+    // ============================
+    // RT / RW
+    // ============================
+
+    rt: true,
+    rw: true,
+
+    // ============================
+    // DATA WILAYAH
+    // ============================
+
+    provinsiId: true,
+    provinsi: true,
+
+    kabupatenId: true,
+    kabupaten: true,
+
+    kecamatanId: true,
+    kecamatan: true,
+
+    desaId: true,
+    desa: true,
+
+    kodePos: true,
+
+    role: true,
+
+    // ============================
+    // DOKUMEN PROFIL
+    // ============================
+
+    dokumenProfil: {
       select: {
         id: true,
-        nama: true,
-        nik: true,
-        email: true,
-        alamat: true,
-        role: true,
-
-        dokumenProfil: {
-          select: {
-            id: true,
-            userId: true,
-            namaFile: true,
-            namaAsli: true,
-            pathFile: true,
-            tipeFile: true,
-            ukuranFile: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
+        userId: true,
+        namaFile: true,
+        namaAsli: true,
+        pathFile: true,
+        tipeFile: true,
+        ukuranFile: true,
+        createdAt: true,
+        updatedAt: true,
       },
-    });
 
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "User tidak ditemukan",
-        },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      user,
-    });
-  } catch (error) {
-    console.error("GET PROFIL ERROR:", error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Gagal mengambil data profil",
+      orderBy: {
+        createdAt: "desc",
       },
-      { status: 500 }
-    );
-  }
+    },
+  },
+});
+
+if (!user) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "User tidak ditemukan",
+    },
+    { status: 404 }
+  );
+}
+
+return NextResponse.json({
+  success: true,
+  user,
+});
+
+
+} catch (error) {
+console.error("GET PROFIL ERROR:", error);
+
+
+return NextResponse.json(
+  {
+    success: false,
+    message: "Gagal mengambil data profil",
+  },
+  { status: 500 }
+);
+
+
+}
 }
 
 // ============================================================
@@ -97,27 +141,29 @@ export async function GET(request: NextRequest) {
 // ============================================================
 
 async function getUserId() {
-  const cookieStore = await cookies();
-  const userIdValue = cookieStore.get("user_id")?.value;
+const cookieStore = await cookies();
 
-  if (!userIdValue) {
-    return null;
-  }
+const userIdValue = cookieStore.get("user_id")?.value;
 
-  const userId = Number(userIdValue);
+if (!userIdValue) {
+return null;
+}
 
-  if (!Number.isInteger(userId) || userId <= 0) {
-    return null;
-  }
+const userId = Number(userIdValue);
 
-  return userId;
+if (!Number.isInteger(userId) || userId <= 0) {
+return null;
+}
+
+return userId;
 }
 
 // ============================================================
 // VALIDASI
 // ============================================================
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+.[^\s@]+$/;
+
 const NIK_REGEX = /^\d{16}$/;
 
 // ============================================================
@@ -125,221 +171,393 @@ const NIK_REGEX = /^\d{16}$/;
 // ============================================================
 
 export async function PUT(request: NextRequest) {
-  try {
-    // ----------------------------------------------------------
-    // Ambil user ID dari cookie
-    // ----------------------------------------------------------
+try {
+// ----------------------------------------------------------
+// Ambil user ID dari cookie
+// ----------------------------------------------------------
 
-    const userId = await getUserId();
 
-    if (!userId) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Belum login",
-        },
-        { status: 401 }
-      );
-    }
+const userId = await getUserId();
 
-    // ----------------------------------------------------------
-    // Ambil body
-    // ----------------------------------------------------------
+if (!userId) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Belum login",
+    },
+    { status: 401 }
+  );
+}
 
-    const body = await request.json();
+// ----------------------------------------------------------
+// Ambil body
+// ----------------------------------------------------------
 
-    const nama =
-      typeof body.nama === "string"
-        ? body.nama.trim()
-        : "";
+const body = await request.json();
 
-    const email =
-      typeof body.email === "string"
-        ? body.email.trim()
-        : "";
+const nama =
+  typeof body.nama === "string"
+    ? body.nama.trim()
+    : "";
 
-    const nik =
-      typeof body.nik === "string"
-        ? body.nik.trim()
-        : "";
+const email =
+  typeof body.email === "string"
+    ? body.email.trim()
+    : "";
 
-    const alamat =
-      typeof body.alamat === "string"
-        ? body.alamat.trim()
-        : "";
+const noTelepon =
+  typeof body.noTelepon === "string"
+    ? body.noTelepon.trim()
+    : "";
 
-    // ----------------------------------------------------------
-    // Validasi wajib
-    // ----------------------------------------------------------
+const nik =
+  typeof body.nik === "string"
+    ? body.nik.trim()
+    : "";
 
-    if (!nama || !email || !nik) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Nama, email, dan NIK wajib diisi",
-        },
-        { status: 400 }
-      );
-    }
+const alamat =
+  typeof body.alamat === "string"
+    ? body.alamat.trim()
+    : "";
 
-    // ----------------------------------------------------------
-    // Validasi nama
-    // ----------------------------------------------------------
+// ==========================================================
+// RT / RW
+// ==========================================================
 
-    if (nama.length < 3) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Nama minimal 3 karakter",
-        },
-        { status: 400 }
-      );
-    }
+let rt: number | null = null;
+let rw: number | null = null;
 
-    // ----------------------------------------------------------
-    // Validasi email
-    // ----------------------------------------------------------
+if (
+  body.rt !== null &&
+  body.rt !== undefined &&
+  body.rt !== ""
+) {
+  rt = Number(body.rt);
+}
 
-    if (!EMAIL_REGEX.test(email)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Format email tidak valid",
-        },
-        { status: 400 }
-      );
-    }
+if (
+  body.rw !== null &&
+  body.rw !== undefined &&
+  body.rw !== ""
+) {
+  rw = Number(body.rw);
+}
 
-    // ----------------------------------------------------------
-    // Validasi NIK
-    // ----------------------------------------------------------
+// ==========================================================
+// DATA WILAYAH
+// ==========================================================
 
-    if (!NIK_REGEX.test(nik)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "NIK harus terdiri dari 16 digit angka",
-        },
-        { status: 400 }
-      );
-    }
+const provinsiId =
+  typeof body.provinsiId === "string"
+    ? body.provinsiId.trim()
+    : "";
 
-    // ----------------------------------------------------------
-    // Pastikan user masih ada
-    // ----------------------------------------------------------
+const provinsi =
+  typeof body.provinsi === "string"
+    ? body.provinsi.trim()
+    : "";
 
-    const existingUser = await prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
+const kabupatenId =
+  typeof body.kabupatenId === "string"
+    ? body.kabupatenId.trim()
+    : "";
 
-    if (!existingUser) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "User tidak ditemukan",
-        },
-        { status: 404 }
-      );
-    }
+const kabupaten =
+  typeof body.kabupaten === "string"
+    ? body.kabupaten.trim()
+    : "";
 
-    // ----------------------------------------------------------
-    // Update data user
-    // ----------------------------------------------------------
+const kecamatanId =
+  typeof body.kecamatanId === "string"
+    ? body.kecamatanId.trim()
+    : "";
 
-    const updated = await prisma.user.update({
-      where: {
-        id: userId,
-      },
+const kecamatan =
+  typeof body.kecamatan === "string"
+    ? body.kecamatan.trim()
+    : "";
 
-      data: {
-        nama,
-        email,
-        nik,
+const desaId =
+  typeof body.desaId === "string"
+    ? body.desaId.trim()
+    : "";
 
-        // Jika alamat kosong, simpan sebagai null
-        alamat: alamat || null,
-      },
+const desa =
+  typeof body.desa === "string"
+    ? body.desa.trim()
+    : "";
 
+const kodePos =
+  typeof body.kodePos === "string"
+    ? body.kodePos.trim()
+    : "";
+
+// ----------------------------------------------------------
+// Validasi wajib
+// ----------------------------------------------------------
+
+if (!nama || !email || !nik) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Nama, email, dan NIK wajib diisi",
+    },
+    { status: 400 }
+  );
+}
+
+// ----------------------------------------------------------
+// Validasi nama
+// ----------------------------------------------------------
+
+if (nama.length < 3) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Nama minimal 3 karakter",
+    },
+    { status: 400 }
+  );
+}
+
+// ----------------------------------------------------------
+// Validasi email
+// ----------------------------------------------------------
+
+if (!EMAIL_REGEX.test(email)) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Format email tidak valid",
+    },
+    { status: 400 }
+  );
+}
+
+// ----------------------------------------------------------
+// Validasi NIK
+// ----------------------------------------------------------
+
+if (!NIK_REGEX.test(nik)) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "NIK harus terdiri dari 16 digit angka",
+    },
+    { status: 400 }
+  );
+}
+
+// ==========================================================
+// Validasi RT
+// ==========================================================
+
+if (
+  rt !== null &&
+  (!Number.isInteger(rt) || rt < 0 || rt > 999)
+) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "RT harus berupa angka maksimal 3 digit",
+    },
+    { status: 400 }
+  );
+}
+
+// ==========================================================
+// Validasi RW
+// ==========================================================
+
+if (
+  rw !== null &&
+  (!Number.isInteger(rw) || rw < 0 || rw > 999)
+) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "RW harus berupa angka maksimal 3 digit",
+    },
+    { status: 400 }
+  );
+}
+
+// ----------------------------------------------------------
+// Pastikan user masih ada
+// ----------------------------------------------------------
+
+const existingUser = await prisma.user.findUnique({
+  where: {
+    id: userId,
+  },
+});
+
+if (!existingUser) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "User tidak ditemukan",
+    },
+    { status: 404 }
+  );
+}
+
+// ==========================================================
+// UPDATE DATA USER
+// ==========================================================
+
+const updated = await prisma.user.update({
+  where: {
+    id: userId,
+  },
+
+  data: {
+    nama,
+    email,
+    nik,
+
+    // ============================
+    // NOMOR TELEPON
+    // ============================
+
+    noTelepon: noTelepon || null,
+
+    // ============================
+    // ALAMAT
+    // ============================
+
+    alamat: alamat || null,
+
+    // ============================
+    // RT / RW
+    // ============================
+
+    rt,
+    rw,
+
+    // ============================
+    // DATA WILAYAH
+    // ============================
+
+    provinsiId: provinsiId || null,
+    provinsi: provinsi || null,
+
+    kabupatenId: kabupatenId || null,
+    kabupaten: kabupaten || null,
+
+    kecamatanId: kecamatanId || null,
+    kecamatan: kecamatan || null,
+
+    desaId: desaId || null,
+    desa: desa || null,
+
+    kodePos: kodePos || null,
+  },
+
+  select: {
+    id: true,
+    nama: true,
+    email: true,
+    nik: true,
+
+    // ============================
+    // NOMOR TELEPON
+    // ============================
+
+    noTelepon: true,
+
+    alamat: true,
+
+    // ============================
+    // RT / RW
+    // ============================
+
+    rt: true,
+    rw: true,
+
+    // ============================
+    // DATA WILAYAH
+    // ============================
+
+    provinsiId: true,
+    provinsi: true,
+
+    kabupatenId: true,
+    kabupaten: true,
+
+    kecamatanId: true,
+    kecamatan: true,
+
+    desaId: true,
+    desa: true,
+
+    kodePos: true,
+
+    role: true,
+
+    // ============================
+    // DOKUMEN
+    // ============================
+
+    dokumenProfil: {
       select: {
         id: true,
-        nama: true,
-        email: true,
-        nik: true,
-        alamat: true,
-        role: true,
-
-        dokumenProfil: {
-          select: {
-            id: true,
-            namaFile: true,
-            namaAsli: true,
-            pathFile: true,
-            tipeFile: true,
-            ukuranFile: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
+        namaFile: true,
+        namaAsli: true,
+        pathFile: true,
+        tipeFile: true,
+        ukuranFile: true,
+        createdAt: true,
+        updatedAt: true,
       },
-    });
+    },
+  },
+});
 
-    // ----------------------------------------------------------
-    // Response berhasil
-    // ----------------------------------------------------------
+// ----------------------------------------------------------
+// Response berhasil
+// ----------------------------------------------------------
 
-    return NextResponse.json({
-      success: true,
-      message: "Profil berhasil diperbarui",
-      user: updated,
-    });
-  } catch (error: unknown) {
-    // ----------------------------------------------------------
-    // Unique constraint
-    // ----------------------------------------------------------
+return NextResponse.json({
+  success: true,
+  message: "Profil berhasil diperbarui",
+  user: updated,
+});
 
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      (error as { code?: string }).code === "P2002"
-    ) {
-      const target = (
-        error as {
-          meta?: {
-            target?: string[];
-          };
-        }
-      ).meta?.target;
 
-      const field = target?.includes("email")
-        ? "Email"
-        : target?.includes("nik")
-        ? "NIK"
-        : "Data";
+} catch (error: unknown) {
+// ----------------------------------------------------------
+// Unique constraint
+// ----------------------------------------------------------
 
-      return NextResponse.json(
-        {
-          success: false,
-          message: `${field} sudah digunakan oleh akun lain`,
-        },
-        { status: 409 }
-      );
+
+if (
+  typeof error === "object" &&
+  error !== null &&
+  "code" in error &&
+  (error as { code?: string }).code === "P2002"
+) {
+  const target = (
+    error as {
+      meta?: {
+        target?: string[];
+      };
     }
+  ).meta?.target;
 
-    // ----------------------------------------------------------
-    // Error lainnya
-    // ----------------------------------------------------------
+  const field = target?.includes("email")
+    ? "Email"
+    : target?.includes("nik")
+    ? "NIK"
+    : "Data";
 
-    console.error("UPDATE PROFIL ERROR:", error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Terjadi kesalahan pada server",
-      },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    {
+      success: false,
+      message: `${field} sudah digunakan oleh akun lain`,
+    },
+    { status: 409 }
+  );
+}
+}
 }
