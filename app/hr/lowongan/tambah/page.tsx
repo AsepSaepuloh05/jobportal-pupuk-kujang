@@ -30,6 +30,21 @@ const TAHAPAN_OPTIONS = [
     { value: "OFFERING", label: "Offering", icon: Handshake },
 ];
 
+const getTodayString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+};
+
+const PENGALAMAN_OPTIONS = [
+    "Fresh Graduate / Tidak Diperlukan",
+    "1-2 Tahun",
+    "3-5 Tahun",
+    "Lebih dari 5 Tahun",
+];
+
 export default function TambahLowonganPage() {
     const router = useRouter();
 
@@ -317,15 +332,20 @@ export default function TambahLowonganPage() {
                             <label htmlFor="pengalaman" className={labelClass}>
                                 Pengalaman
                             </label>
-                            <input
+                            <select
                                 id="pengalaman"
-                                type="text"
-                                placeholder="Contoh: 1-2 Tahun"
                                 value={pengalaman}
                                 onChange={(e) => setPengalaman(e.target.value)}
                                 disabled={saving}
                                 className={inputClass}
-                            />
+                            >
+                                <option value="">Pilih pengalaman</option>
+                                {PENGALAMAN_OPTIONS.map((opt) => (
+                                    <option key={opt} value={opt}>
+                                        {opt}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                     </div>

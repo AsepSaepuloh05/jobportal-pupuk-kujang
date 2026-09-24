@@ -45,6 +45,8 @@ model User {
 
   role           Role     @default(KANDIDAT)
 
+  isActive  Boolean  @default(true)
+
   dokumenProfil   DokumenProfil?
   dokumenKandidat DokumenKandidat[]
   pendidikan      Pendidikan[]

@@ -12,7 +12,10 @@ export async function GET() {
         nama: true,
         email: true,
         nik: true,
+        noTelepon: true,
+        alamat: true,
         role: true,
+        isActive: true,
         createdAt: true,
       },
       orderBy: {

@@ -137,11 +137,6 @@ export default function HRLayout({
       icon: Users,
     },
     {
-      label: "Lamaran Masuk",
-      path: "/hr/lamaran",
-      icon: FileText,
-    },
-    {
       label: "Proses Seleksi",
       path: "/hr/seleksi",
       icon: ClipboardCheck,
@@ -218,11 +213,10 @@ export default function HRLayout({
                   key={item.path}
                   type="button"
                   onClick={() => router.push(item.path)}
-                  className={`group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-all duration-200 ${
-                    active
+                  className={`group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-all duration-200 ${active
                       ? "bg-emerald-50 text-emerald-600"
                       : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                  }`}
+                    }`}
                 >
 
                   <div className="flex items-center gap-3">
@@ -270,11 +264,10 @@ export default function HRLayout({
           <button
             type="button"
             onClick={() => router.push("/hr/profile")}
-            className={`group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-all duration-200 ${
-              isActive("/hr/profile")
+            className={`group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-all duration-200 ${isActive("/hr/profile")
                 ? "bg-emerald-50 text-emerald-600"
                 : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-            }`}
+              }`}
           >
 
             <div className="flex items-center gap-3">

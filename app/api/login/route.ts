@@ -54,6 +54,17 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!user.isActive) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Akun kamu telah dinonaktifkan. Hubungi HR untuk informasi lebih lanjut.",
+        },
+        { status: 403 }
+      );
+    }
+
     // Response
     const response = NextResponse.json({
       success: true,

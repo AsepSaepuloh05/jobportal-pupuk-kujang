@@ -91,6 +91,35 @@ export async function POST(request: Request) {
             ? new Date(body.tanggalBerakhir)
             : null;
 
+        if (tanggalBerakhir) {
+            const hariIni = new Date();
+            hariIni.setHours(0, 0, 0, 0);
+
+            if (tanggalBerakhir < hariIni) {
+                return NextResponse.json(
+                    {
+                        message:
+                            "Batas lowongan ditutup tidak boleh sebelum hari ini",
+                    },
+                    { status: 400 }
+                );
+            }
+        }
+
+        const PENGALAMAN_VALID = [
+            "Fresh Graduate / Tidak Diperlukan",
+            "1-2 Tahun",
+            "3-5 Tahun",
+            "Lebih dari 5 Tahun",
+        ];
+
+        if (pengalaman && !PENGALAMAN_VALID.includes(pengalaman)) {
+            return NextResponse.json(
+                { message: "Pilihan pengalaman tidak valid" },
+                { status: 400 }
+            );
+        }
+
         if (!posisi || !departemen || !lokasi || !tipe) {
             return NextResponse.json(
                 {

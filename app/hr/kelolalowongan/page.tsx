@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import ConfirmDialog from "@/app/components/ConfirmDialog";
 import {
   BriefcaseBusiness,
   CheckCircle2,
@@ -89,6 +90,13 @@ export default function KelolaLowonganPage() {
 
   const [selectedLowongan, setSelectedLowongan] =
     useState<Lowongan | null>(null);
+
+  const [konfirmasiHapus, setKonfirmasiHapus] = useState<{
+    id: number;
+    posisi: string;
+    pelamar: number;
+  } | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -200,16 +208,18 @@ export default function KelolaLowonganPage() {
   // HAPUS LOWONGAN
   // =====================================================
 
-  const handleDelete = async (id: number, posisi: string) => {
-    const confirmDelete = window.confirm(
-      `Yakin ingin menghapus lowongan "${posisi}"?`
-    );
+  const handleDelete = (id: number, posisi: string, pelamar: number) => {
+    setKonfirmasiHapus({ id, posisi, pelamar });
+  };
 
-    if (!confirmDelete) {
-      return;
-    }
+  const eksekusiHapus = async () => {
+    if (!konfirmasiHapus) return;
+
+    const { id } = konfirmasiHapus;
 
     try {
+      setDeletingId(id);
+
       const response = await fetch(`/api/lowongan/${id}`, {
         method: "DELETE",
       });
@@ -233,6 +243,9 @@ export default function KelolaLowonganPage() {
       } else {
         alert("Gagal menghapus lowongan");
       }
+    } finally {
+      setDeletingId(null);
+      setKonfirmasiHapus(null);
     }
   };
 
@@ -774,7 +787,8 @@ export default function KelolaLowonganPage() {
                             onClick={() =>
                               handleDelete(
                                 item.id,
-                                item.posisi
+                                item.posisi,
+                                item.pelamar
                               )
                             }
                             className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
@@ -1234,8 +1248,27 @@ export default function KelolaLowonganPage() {
 
           </div>
 
+
+
         )
       }
+
+      {/* KONFIRMASI HAPUS LOWONGAN */}
+
+      <ConfirmDialog
+        open={konfirmasiHapus !== null}
+        title={`Hapus Lowongan "${konfirmasiHapus?.posisi}"?`}
+        description={
+          konfirmasiHapus && konfirmasiHapus.pelamar > 0
+            ? `Lowongan ini punya ${konfirmasiHapus.pelamar} pelamar. Menghapus lowongan akan ikut menghapus SELURUH data lamaran mereka (termasuk progress tahapan seleksi) secara permanen. Tindakan ini tidak bisa dibatalkan.`
+            : "Lowongan ini belum ada pelamarnya. Tindakan ini tidak bisa dibatalkan."
+        }
+        confirmText="Ya, Hapus Permanen"
+        variant="danger"
+        loading={deletingId === konfirmasiHapus?.id}
+        onConfirm={eksekusiHapus}
+        onCancel={() => setKonfirmasiHapus(null)}
+      />
 
     </div >
   );
