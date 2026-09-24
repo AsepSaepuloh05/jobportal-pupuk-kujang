@@ -141,6 +141,13 @@ function SertifikasiModal({
       onClose={() => {
         if (!saving) onClose();
       }}
+      footer={
+        <ModalFooter
+          onCancel={onClose}
+          onSave={onSave}
+          loading={saving}
+        />
+      }
     >
       <div className="space-y-4">
         <ModalInput
@@ -205,12 +212,6 @@ function SertifikasiModal({
           />
         </div>
       </div>
-
-      <ModalFooter
-        onCancel={onClose}
-        onSave={onSave}
-        loading={saving}
-      />
     </Modal>
   );
 }

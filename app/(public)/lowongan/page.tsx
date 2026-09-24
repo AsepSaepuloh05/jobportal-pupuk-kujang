@@ -15,19 +15,17 @@ interface Lowongan {
   tipe: string;
   status: StatusLowongan;
 
-  gaji: string | null;
   deskripsi: string | null;
   persyaratan: string | null;
 
   kategori?: string | null;
   pendidikan?: string | null;
-  berlakuHingga?: string | null;
+  pengalaman?: string | null;
+
+  tanggalBerakhir?: string | null;
 
   pelamar?: number;
   createdAt?: string;
-
-  pengalaman?: string | null;
-  batasLamaran?: string | null;
 }
 
 export default function LowonganPage() {
@@ -43,13 +41,17 @@ export default function LowonganPage() {
   const [location, setLocation] = useState(initialLocation);
   const [departemen, setDepartemen] = useState("Semua");
 
-  const [viewMode, setViewMode] = useState<ViewMode>("card");
+  const [viewMode, setViewMode] =
+    useState<ViewMode>("card");
 
   const [selectedJob, setSelectedJob] =
     useState<Lowongan | null>(null);
 
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState("");
+  const [detailLoading, setDetailLoading] =
+    useState(false);
+
+  const [detailError, setDetailError] =
+    useState("");
 
   // =====================================================
   // GET LOWONGAN
@@ -68,14 +70,19 @@ export default function LowonganPage() {
         );
 
         if (!response.ok) {
-          throw new Error("Gagal mengambil data lowongan");
+          throw new Error(
+            "Gagal mengambil data lowongan"
+          );
         }
 
         const data = await response.json();
 
         setJobs(data);
       } catch (error) {
-        console.error("GET LOWONGAN ERROR:", error);
+        console.error(
+          "GET LOWONGAN ERROR:",
+          error
+        );
       } finally {
         setLoading(false);
       }
@@ -147,7 +154,9 @@ export default function LowonganPage() {
   // =====================================================
 
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
+    const handleEscape = (
+      event: KeyboardEvent
+    ) => {
       if (event.key === "Escape") {
         closeDetail();
       }
@@ -253,18 +262,22 @@ export default function LowonganPage() {
   ) => {
     if (!date) return "-";
 
-    try {
-      return new Date(date).toLocaleDateString(
-        "id-ID",
-        {
-          day: "2-digit",
-          month: "long",
-          year: "numeric",
-        }
-      );
-    } catch {
-      return date;
+    const parsedDate = new Date(date);
+
+    if (
+      Number.isNaN(parsedDate.getTime())
+    ) {
+      return "-";
     }
+
+    return parsedDate.toLocaleDateString(
+      "id-ID",
+      {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      }
+    );
   };
 
   return (
@@ -287,8 +300,8 @@ export default function LowonganPage() {
           </h1>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#71877b]">
-            Temukan peluang karier yang sesuai dengan
-            kemampuan dan pengalaman Anda.
+            Temukan peluang karier yang sesuai
+            dengan kemampuan dan pengalaman Anda.
           </p>
 
         </div>
@@ -422,7 +435,9 @@ export default function LowonganPage() {
 
               <button
                 type="button"
-                onClick={() => setViewMode("card")}
+                onClick={() =>
+                  setViewMode("card")
+                }
                 className={`flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-bold transition ${
                   viewMode === "card"
                     ? "bg-[#315c4a] text-white shadow-sm"
@@ -436,7 +451,9 @@ export default function LowonganPage() {
 
               <button
                 type="button"
-                onClick={() => setViewMode("list")}
+                onClick={() =>
+                  setViewMode("list")
+                }
                 className={`flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-bold transition ${
                   viewMode === "list"
                     ? "bg-[#315c4a] text-white shadow-sm"
@@ -502,11 +519,11 @@ export default function LowonganPage() {
                             job.departemen}
                         </span>
 
-                        {job.status === "AKTIF" && (
+                        {/* {job.status === "AKTIF" && (
                           <span className="rounded-full bg-[#f0f7f3] px-3 py-1 text-[10px] font-semibold text-[#6c8176]">
                             Aktif
                           </span>
-                        )}
+                        )} */}
 
                       </div>
 
@@ -583,9 +600,9 @@ export default function LowonganPage() {
                   <div className="mt-5 flex items-center justify-between border-t border-[#edf3ef] pt-4">
 
                     <span className="text-[10px] text-[#9aa9a1]">
-                      {job.batasLamaran
-                        ? `Batas: ${formatDate(
-                            job.batasLamaran
+                      {job.tanggalBerakhir
+                        ? `Batas Lamaran: ${formatDate(
+                            job.tanggalBerakhir
                           )}`
                         : "Informasi lowongan"}
                     </span>
@@ -639,9 +656,7 @@ export default function LowonganPage() {
                     <div className="flex min-w-0 items-start gap-4">
 
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#eaf7ef]">
-
                         <BuildingIcon />
-
                       </div>
 
 
@@ -724,9 +739,9 @@ export default function LowonganPage() {
                         </p>
 
                         <p className="mt-1 text-xs font-bold text-[#60766b]">
-                          {job.batasLamaran
+                          {job.tanggalBerakhir
                             ? formatDate(
-                                job.batasLamaran
+                                job.tanggalBerakhir
                               )
                             : "-"}
                         </p>
@@ -1004,7 +1019,8 @@ export default function LowonganPage() {
                     <button
                       type="button"
                       disabled={
-                        selectedJob.status !== "AKTIF"
+                        selectedJob.status !==
+                        "AKTIF"
                       }
                       onClick={() => {
                         alert(
@@ -1012,7 +1028,8 @@ export default function LowonganPage() {
                         );
                       }}
                       className={`mt-5 w-full rounded-xl px-4 py-3 text-xs font-black ${
-                        selectedJob.status === "AKTIF"
+                        selectedJob.status ===
+                        "AKTIF"
                           ? "bg-[#315c4a] text-white hover:bg-[#234236]"
                           : "cursor-not-allowed bg-[#c9d6cf] text-white"
                       }`}
@@ -1035,17 +1052,12 @@ export default function LowonganPage() {
 
                     <div className="mt-4 space-y-4">
 
-                      {selectedJob.gaji && (
-                        <DetailItem
-                          label="Kisaran Gaji"
-                          value={selectedJob.gaji}
-                        />
-                      )}
-
                       {selectedJob.pengalaman && (
                         <DetailItem
                           label="Pengalaman"
-                          value={selectedJob.pengalaman}
+                          value={
+                            selectedJob.pengalaman
+                          }
                         />
                       )}
 
@@ -1058,19 +1070,19 @@ export default function LowonganPage() {
                         />
                       )}
 
-                      {selectedJob.batasLamaran && (
-                        <DetailItem
-                          label="Batas Lamaran"
-                          value={selectedJob.batasLamaran}
-                        />
-                      )}
+                      <DetailItem
+                        label="Batas Lamaran"
+                        value={formatDate(
+                          selectedJob.tanggalBerakhir
+                        )}
+                      />
 
-                      {selectedJob.berlakuHingga && (
-                        <DetailItem
-                          label="Berlaku Hingga"
-                          value={selectedJob.berlakuHingga}
-                        />
-                      )}
+                      <DetailItem
+                        label="Berlaku Hingga"
+                        value={formatDate(
+                          selectedJob.tanggalBerakhir
+                        )}
+                      />
 
                     </div>
 

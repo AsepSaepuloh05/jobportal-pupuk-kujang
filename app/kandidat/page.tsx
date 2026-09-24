@@ -60,7 +60,6 @@ interface Pendidikan {
   tahunMulai: string;
   tahunSelesai: string;
   nilai?: string | null;
-
   ijazahNamaFile?: string | null;
   ijazahNamaAsli?: string | null;
   ijazahPathFile?: string | null;
@@ -107,7 +106,7 @@ export default function KandidatDashboardPage() {
           cache: "no-store",
         }),
 
-        fetch("/api/lowongan", {
+        fetch("/api/lowongan?status=AKTIF", {
           cache: "no-store",
         }),
       ]);
@@ -149,9 +148,7 @@ export default function KandidatDashboardPage() {
       if (dokumenRes.ok) {
         const dokumenData = await dokumenRes.json();
 
-        const dokumenList = Array.isArray(
-          dokumenData?.dokumen
-        )
+        const dokumenList = Array.isArray(dokumenData?.dokumen)
           ? dokumenData.dokumen
           : [];
 
@@ -204,9 +201,7 @@ export default function KandidatDashboardPage() {
   // NORMALISASI DOKUMEN
   // ============================================================
 
-  const normalizeDocumentType = (
-    value?: string | null
-  ) => {
+  const normalizeDocumentType = (value?: string | null) => {
     return String(value || "")
       .trim()
       .toUpperCase()
@@ -229,8 +224,7 @@ export default function KandidatDashboardPage() {
   const hasIjazah = useMemo(() => {
     const dariDokumen = dokumen.some(
       (item) =>
-        normalizeDocumentType(item.jenisDokumen) ===
-        "IJAZAH"
+        normalizeDocumentType(item.jenisDokumen) === "IJAZAH"
     );
 
     const dariPendidikan = pendidikan.some(
@@ -255,17 +249,16 @@ export default function KandidatDashboardPage() {
   const jurusanKandidat = useMemo(() => {
     if (!pendidikan.length) return "";
 
-    const pendidikanTerakhir =
-      [...pendidikan].sort((a, b) => {
+    const pendidikanTerakhir = [...pendidikan].sort(
+      (a, b) => {
         return (
           Number(b.tahunSelesai || 0) -
           Number(a.tahunSelesai || 0)
         );
-      })[0];
+      }
+    )[0];
 
-    return (
-      pendidikanTerakhir?.jurusan?.trim() || ""
-    );
+    return pendidikanTerakhir?.jurusan?.trim() || "";
   }, [pendidikan]);
 
   // ============================================================
@@ -303,22 +296,19 @@ export default function KandidatDashboardPage() {
 
         let score = 0;
 
-        // Jurusan lengkap ditemukan
         if (searchableText.includes(keyword)) {
           score += 10;
         }
 
-        // Kata-kata jurusan ditemukan
         keywordWords.forEach((word) => {
           if (searchableText.includes(word)) {
             score += 2;
           }
         });
 
-        // Posisi / departemen lebih diprioritaskan
-        const posisiText =
-          `${job.posisi} ${job.departemen} ${job.kategori || ""}`
-            .toLowerCase();
+        const posisiText = `${job.posisi} ${
+          job.departemen
+        } ${job.kategori || ""}`.toLowerCase();
 
         if (posisiText.includes(keyword)) {
           score += 5;
@@ -338,28 +328,16 @@ export default function KandidatDashboardPage() {
   }, [lowongan, jurusanKandidat]);
 
   // ============================================================
-  // STATISTIK LAMARAN
+  // TOTAL LOWONGAN AKTIF
   // ============================================================
 
-  const totalLamaran = lamaran.length;
+  const totalLowonganAktif = lowongan.length;
 
-  const sedangDiproses = lamaran.filter(
-    (item) =>
-      String(item.status).toUpperCase() ===
-      "DIPROSES"
-  ).length;
+  // ============================================================
+  // TOTAL REKOMENDASI LAMARAN
+  // ============================================================
 
-  const interview = lamaran.filter(
-    (item) =>
-      String(item.status).toUpperCase() ===
-      "INTERVIEW"
-  ).length;
-
-  const lolos = lamaran.filter(
-    (item) =>
-      String(item.status).toUpperCase() ===
-      "LOLOS"
-  ).length;
+  const totalRekomendasiLowongan = recommendedLowongan.length;
 
   // ============================================================
   // LAMARAN TERBARU
@@ -374,6 +352,74 @@ export default function KandidatDashboardPage() {
       )
       .slice(0, 3);
   }, [lamaran]);
+
+  // ============================================================
+  // STATUS LAMARAN
+  // ============================================================
+
+  const currentLamaran = useMemo(() => {
+    return [...lamaran].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime()
+    )[0] || null;
+  }, [lamaran]);
+
+  const statusLamaran = useMemo(() => {
+    if (!currentLamaran) {
+      return {
+        label: "Belum Melamar",
+        description: "Belum ada lamaran yang dikirim",
+        className:
+          "bg-slate-50 text-slate-600 ring-1 ring-slate-200",
+        icon: <FileText size={15} />,
+      };
+    }
+
+    const status = String(
+      currentLamaran.status || ""
+    ).toUpperCase();
+
+    if (status === "LOLOS") {
+      return {
+        label: "Lolos",
+        description: "Anda dinyatakan lolos seleksi",
+        className:
+          "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100",
+        icon: <CheckCircle2 size={15} />,
+      };
+    }
+
+    if (status === "DITOLAK") {
+      return {
+        label: "Ditolak",
+        description: "Lamaran tidak dilanjutkan",
+        className:
+          "bg-red-50 text-red-700 ring-1 ring-red-100",
+        icon: <XCircle size={15} />,
+      };
+    }
+
+    if (status === "INTERVIEW") {
+      return {
+        label: "Interview",
+        description:
+          "Menunggu atau mengikuti tahap interview",
+        className:
+          "bg-amber-50 text-amber-700 ring-1 ring-amber-100",
+        icon: <CalendarDays size={15} />,
+      };
+    }
+
+    return {
+      label: "Sedang Diproses",
+      description:
+        "Lamaran sedang dalam proses seleksi",
+      className:
+        "bg-blue-50 text-blue-700 ring-1 ring-blue-100",
+      icon: <Clock3 size={15} />,
+    };
+  }, [currentLamaran]);
 
   // ============================================================
   // PROFILE COMPLETENESS
@@ -417,9 +463,7 @@ export default function KandidatDashboardPage() {
   ).length;
 
   const profilePercentage = Math.round(
-    (completedProfile /
-      profileChecks.length) *
-      100
+    (completedProfile / profileChecks.length) * 100
   );
 
   // ============================================================
@@ -572,99 +616,101 @@ export default function KandidatDashboardPage() {
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
 
-          {/* TOTAL */}
+          {/* TOTAL LOWONGAN AKTIF */}
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-500">
-                  Total Lamaran
+                  Lowongan Aktif
                 </p>
 
                 <p className="mt-2 text-3xl font-bold text-slate-900">
-                  {totalLamaran}
+                  {totalLowonganAktif}
                 </p>
               </div>
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                 <BriefcaseBusiness size={20} />
               </div>
             </div>
 
             <p className="mt-3 text-xs text-slate-400">
-              Semua lamaran yang dikirim
+              Lowongan yang tersedia
             </p>
           </div>
 
-          {/* DIPROSES */}
+          {/* STATUS LAMARAN */}
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-slate-500">
+                  Status Lamaran
+                </p>
+
+                <p className="mt-2 truncate text-xl font-bold text-slate-900">
+                  {statusLamaran.label}
+                </p>
+              </div>
+
+              <div
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${statusLamaran.className}`}
+              >
+                {statusLamaran.icon}
+              </div>
+            </div>
+
+            <p className="mt-3 line-clamp-1 text-xs text-slate-400">
+              {statusLamaran.description}
+            </p>
+          </div>
+
+          {/* TOTAL REKOMENDASI LAMARAN */}
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-slate-500">
+                  Rekomendasi Lowongan
+                </p>
+
+                <p className="mt-2 text-3xl font-bold text-slate-900">
+                  {totalRekomendasiLowongan}
+                </p>
+              </div>
+
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                <BriefcaseBusiness size={20} />
+              </div>
+            </div>
+
+            <p className="mt-3 text-xs text-slate-400">
+              Lowongan sesuai jurusan Anda
+            </p>
+          </div>
+
+          {/* KELENGKAPAN PROFIL */}
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-500">
-                  Sedang Diproses
+                  Kelengkapan Profil
                 </p>
 
                 <p className="mt-2 text-3xl font-bold text-slate-900">
-                  {sedangDiproses}
+                  {profilePercentage}%
                 </p>
               </div>
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                <Clock3 size={20} />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <UserCircle size={20} />
               </div>
             </div>
 
             <p className="mt-3 text-xs text-slate-400">
-              Lamaran dalam proses seleksi
-            </p>
-          </div>
-
-          {/* INTERVIEW */}
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Interview
-                </p>
-
-                <p className="mt-2 text-3xl font-bold text-slate-900">
-                  {interview}
-                </p>
-              </div>
-
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-                <CalendarDays size={20} />
-              </div>
-            </div>
-
-            <p className="mt-3 text-xs text-slate-400">
-              Lamaran dengan jadwal interview
-            </p>
-          </div>
-
-          {/* LOLOS */}
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Lolos
-                </p>
-
-                <p className="mt-2 text-3xl font-bold text-slate-900">
-                  {lolos}
-                </p>
-              </div>
-
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                <CheckCircle2 size={20} />
-              </div>
-            </div>
-
-            <p className="mt-3 text-xs text-slate-400">
-              Lamaran yang berhasil
+              {completedProfile}/{profileChecks.length} data lengkap
             </p>
           </div>
         </div>
@@ -685,7 +731,8 @@ export default function KandidatDashboardPage() {
                 Rekomendasi berdasarkan jurusan{" "}
                 {jurusanKandidat
                   ? `"${jurusanKandidat}"`
-                  : "pendidikan Anda"}.
+                  : "pendidikan Anda"}
+                .
               </p>
             </div>
 
