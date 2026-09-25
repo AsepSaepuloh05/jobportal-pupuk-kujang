@@ -9,8 +9,6 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
-
 import { Pengalaman } from "../types";
 import { calculateDuration } from "../utils";
 
@@ -165,101 +163,98 @@ function PengalamanModal({
       onClose={() => {
         if (!saving) onClose();
       }}
+      footer={
+        <ModalFooter
+          onCancel={onClose}
+          onSave={onSave}
+          loading={saving}
+        />
+      }
     >
-      <ScrollArea className="h-[55vh] w-full">
-        <div className="space-y-4 pr-4">
+      <div className="space-y-4">
+        <ModalInput
+          label="Posisi / Jabatan"
+          value={form.posisi}
+          placeholder="Contoh: Web Developer"
+          onChange={(value) =>
+            setForm((prev) => ({
+              ...prev,
+              posisi: value,
+            }))
+          }
+        />
+
+        <ModalInput
+          label="Perusahaan"
+          value={form.perusahaan}
+          placeholder="Nama perusahaan"
+          onChange={(value) =>
+            setForm((prev) => ({
+              ...prev,
+              perusahaan: value,
+            }))
+          }
+        />
+
+        <ModalInput
+          label="Lokasi"
+          value={form.lokasi || ""}
+          placeholder="Contoh: Cikampek"
+          onChange={(value) =>
+            setForm((prev) => ({
+              ...prev,
+              lokasi: value,
+            }))
+          }
+        />
+
+        <div className="grid grid-cols-2 gap-4">
           <ModalInput
-            label="Posisi / Jabatan"
-            value={form.posisi}
-            placeholder="Contoh: Web Developer"
+            label="Tahun Mulai"
+            value={form.tahunMulai}
+            placeholder="2024"
+            maxLength={4}
             onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
-                posisi: value,
+                tahunMulai: value,
               }))
             }
           />
 
           <ModalInput
-            label="Perusahaan"
-            value={form.perusahaan}
-            placeholder="Nama perusahaan"
+            label="Tahun Selesai"
+            value={form.tahunSelesai || ""}
+            placeholder="2025"
+            maxLength={4}
             onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
-                perusahaan: value,
+                tahunSelesai: value,
               }))
             }
           />
-
-          <ModalInput
-            label="Lokasi"
-            value={form.lokasi || ""}
-            placeholder="Contoh: Cikampek"
-            onChange={(value) =>
-              setForm((prev) => ({
-                ...prev,
-                lokasi: value,
-              }))
-            }
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <ModalInput
-              label="Tahun Mulai"
-              value={form.tahunMulai}
-              placeholder="2024"
-              maxLength={4}
-              onChange={(value) =>
-                setForm((prev) => ({
-                  ...prev,
-                  tahunMulai: value,
-                }))
-              }
-            />
-
-            <ModalInput
-              label="Tahun Selesai"
-              value={form.tahunSelesai || ""}
-              placeholder="2025"
-              maxLength={4}
-              onChange={(value) =>
-                setForm((prev) => ({
-                  ...prev,
-                  tahunSelesai: value,
-                }))
-              }
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-              Deskripsi Pekerjaan
-            </label>
-
-            <textarea
-              value={form.deskripsi || ""}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  deskripsi: e.target.value,
-                }))
-              }
-              rows={6}
-              placeholder="Jelaskan tanggung jawab atau pencapaian selama bekerja..."
-              className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100"
-            />
-          </div>
-
-          <div className="h-4" />
         </div>
-      </ScrollArea>
 
-      <ModalFooter
-        onCancel={onClose}
-        onSave={onSave}
-        loading={saving}
-      />
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+            Deskripsi Pekerjaan
+          </label>
+
+          <textarea
+            value={form.deskripsi || ""}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                deskripsi: e.target.value,
+              }))
+            }
+            rows={6}
+            placeholder="Jelaskan tanggung jawab atau pencapaian selama bekerja..."
+            className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100"
+          />
+        </div>
+      </div>
     </Modal>
   );
 }

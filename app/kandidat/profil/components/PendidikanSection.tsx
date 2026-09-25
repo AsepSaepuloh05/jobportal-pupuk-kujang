@@ -21,14 +21,14 @@ import {
 } from "./ModalPrimitives";
 
 const JENJANG_OPTIONS = [
-  "SMA / SMK",
-  "D1",
-  "D2",
-  "D3",
-  "D4",
-  "S1",
-  "S2",
-  "S3",
+  { value: "SMA / SMK", label: "SMA / SMK" },
+  { value: "D1", label: "D1" },
+  { value: "D2", label: "D2" },
+  { value: "D3", label: "D3" },
+  { value: "D4", label: "D4" },
+  { value: "S1", label: "S1" },
+  { value: "S2", label: "S2" },
+  { value: "S3", label: "S3" },
 ];
 
 function formatUkuran(bytes?: number | null) {
@@ -221,6 +221,13 @@ function PendidikanModal({
           onClose();
         }
       }}
+      footer={
+        <ModalFooter
+          onCancel={onClose}
+          onSave={onSave}
+          loading={saving}
+        />
+      }
     >
       <div className="space-y-5">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -411,12 +418,6 @@ function PendidikanModal({
           )}
         </div>
       </div>
-
-      <ModalFooter
-        onCancel={onClose}
-        onSave={onSave}
-        loading={saving}
-      />
     </Modal>
   );
 }

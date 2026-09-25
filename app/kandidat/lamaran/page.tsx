@@ -9,6 +9,7 @@ import {
   Clock3,
   FileCheck2,
   Hourglass,
+  ListChecks,
   MapPin,
   XCircle,
 } from "lucide-react";
@@ -180,26 +181,16 @@ export default function LamaranPage() {
         });
 
         if (!response.ok) {
-          throw new Error(
-            "Gagal mengambil data lamaran"
-          );
+          throw new Error("Gagal mengambil data lamaran");
         }
 
         const data = await response.json();
-
-        console.log(
-          "DATA LAMARAN:",
-          data
-        );
 
         setLamaran(
           Array.isArray(data) ? data : []
         );
       } catch (err) {
-        console.error(
-          "GET LAMARAN ERROR:",
-          err
-        );
+        console.error("GET LAMARAN ERROR:", err);
 
         setError(
           err instanceof Error
@@ -219,14 +210,11 @@ export default function LamaranPage() {
   ========================================================== */
 
   const formatTanggal = (date: string) => {
-    return new Date(date).toLocaleDateString(
-      "id-ID",
-      {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      }
-    );
+    return new Date(date).toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
   };
 
   /* ==========================================================
@@ -244,7 +232,7 @@ export default function LamaranPage() {
 
   if (!user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f7faf8]">
+      <div className="flex min-h-screen items-center justify-center bg-[#f6faf8]">
         <div className="flex flex-col items-center gap-3">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#dceee5] border-t-[#4da477]" />
 
@@ -261,26 +249,41 @@ export default function LamaranPage() {
   ========================================================== */
 
   return (
-    <div className="min-h-screen bg-[#f7faf8]">
-      <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
+    <div className="min-h-screen bg-[#f6faf8] text-slate-900">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
 
         {/* ====================================================
             HEADER
         ==================================================== */}
 
-        <div className="mb-7">
-          <p className="text-xs font-extrabold uppercase tracking-[1.5px] text-[#4da477]">
-            Riwayat Lamaran
-          </p>
+        <div className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[1.5px] text-[#4da477]">
+              Riwayat Lamaran
+            </p>
 
-          <h1 className="mt-1.5 text-2xl font-black tracking-tight text-[#193d2e]">
-            Lamaran Saya
-          </h1>
+            <h1 className="mt-1.5 text-2xl font-black tracking-tight text-[#193d2e] sm:text-3xl">
+              Lamaran Saya
+            </h1>
 
-          <p className="mt-1.5 text-sm text-[#71877b]">
-            Pantau seluruh proses lamaran pekerjaan
-            kamu di PT Pupuk Kujang.
-          </p>
+            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[#71877b]">
+              Pantau seluruh proses lamaran pekerjaan kamu
+              di PT Pupuk Kujang.
+            </p>
+          </div>
+
+          {!loadingLamaran && lamaran.length > 0 && (
+            <button
+              type="button"
+              onClick={() =>
+                router.push("/kandidat/lowongan")
+              }
+              className="inline-flex w-fit shrink-0 items-center gap-2 rounded-xl bg-[#315c4a] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#234236]"
+            >
+              <BriefcaseBusiness size={14} />
+              Cari Lowongan Lain
+            </button>
+          )}
         </div>
 
         {/* ====================================================
@@ -299,34 +302,42 @@ export default function LamaranPage() {
 
         {!loadingLamaran &&
           lamaran.length > 0 && (
-            <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
 
               <SummaryCard
+                icon={<ListChecks size={17} />}
                 title="Total Lamaran"
                 value={lamaran.length}
-                className="border-[#e1eee7] bg-white"
-                textClass="text-[#193d2e]"
+                accent="bg-[#eef2f0] text-[#315c4a]"
               />
 
               <SummaryCard
+                icon={<Clock3 size={17} />}
                 title="Diproses"
                 value={jumlah("DIPROSES")}
-                className="border-[#f3e2ba] bg-[#fffaf0]"
-                textClass="text-[#a16207]"
+                accent="bg-[#fff4de] text-[#a16207]"
               />
 
               <SummaryCard
+                icon={<CalendarDays size={17} />}
                 title="Interview"
                 value={jumlah("INTERVIEW")}
-                className="border-[#c7dcf5] bg-[#f2f7fe]"
-                textClass="text-[#2c5aa0]"
+                accent="bg-[#e6f0ff] text-[#2c5aa0]"
               />
 
               <SummaryCard
+                icon={<CheckCircle2 size={17} />}
                 title="Diterima"
                 value={jumlah("LOLOS")}
-                className="border-[#bfe3cd] bg-[#f0faf4]"
-                textClass="text-[#35865d]"
+                accent="bg-[#e8f6ee] text-[#35865d]"
+              />
+
+              <SummaryCard
+                icon={<XCircle size={17} />}
+                title="Ditolak"
+                value={jumlah("DITOLAK")}
+                accent="bg-[#fdecec] text-[#c0392b]"
+                className="col-span-2 lg:col-span-1"
               />
 
             </div>
@@ -338,7 +349,7 @@ export default function LamaranPage() {
 
         {loadingLamaran ? (
 
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#e1eee7] bg-white px-6 py-16">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#e1eee7] bg-white px-6 py-16 shadow-sm">
 
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#dceee5] border-t-[#4da477]" />
 
@@ -354,17 +365,20 @@ export default function LamaranPage() {
              EMPTY
           ================================================== */
 
-          <div className="rounded-2xl border border-[#e1eee7] bg-white px-5 py-16 text-center">
+          <div className="rounded-2xl border border-dashed border-[#cfe2d8] bg-white px-5 py-16 text-center shadow-sm">
 
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#eef6f1] text-[#4da477]">
-              <FileTextIcon />
+              <FileCheck2
+                size={28}
+                strokeWidth={1.7}
+              />
             </div>
 
             <h3 className="mt-5 text-lg font-black text-[#315c4a]">
               Belum ada lamaran
             </h3>
 
-            <p className="mt-2 text-sm text-[#81938a]">
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#81938a]">
               Yuk jelajahi lowongan yang tersedia
               dan mulai melamar posisi yang sesuai
               denganmu.
@@ -373,13 +387,12 @@ export default function LamaranPage() {
             <button
               type="button"
               onClick={() =>
-                router.push(
-                  "/kandidat/lowongan"
-                )
+                router.push("/kandidat/lowongan")
               }
-              className="mt-5 rounded-xl bg-[#315c4a] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#234236]"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#315c4a] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#234236]"
             >
-              Lihat Lowongan →
+              Lihat Lowongan
+              <span aria-hidden>→</span>
             </button>
 
           </div>
@@ -399,7 +412,7 @@ export default function LamaranPage() {
               return (
                 <article
                   key={item.id}
-                  className="rounded-2xl border border-[#e1eee7] bg-white p-5 transition hover:border-[#b9ddc9] hover:shadow-[0_10px_25px_rgba(49,92,74,0.06)] sm:p-6"
+                  className="rounded-2xl border border-[#e1eee7] bg-white p-5 shadow-sm transition hover:border-[#b9ddc9] hover:shadow-[0_10px_25px_rgba(49,92,74,0.06)] sm:p-6"
                 >
 
                   {/* ========================================
@@ -419,43 +432,30 @@ export default function LamaranPage() {
                       <div className="min-w-0">
 
                         <h3 className="text-base font-black text-[#193d2e]">
-                          {
-                            item.lowongan
-                              .posisi
-                          }
+                          {item.lowongan.posisi}
                         </h3>
 
                         <p className="mt-0.5 text-xs font-semibold text-[#4da477]">
-                          {
-                            item.lowongan
-                              .departemen
-                          }
+                          {item.lowongan.departemen}
                         </p>
 
                         <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#81938a]">
 
                           <span className="inline-flex items-center gap-1">
                             <MapPin size={13} />
-                            {
-                              item.lowongan
-                                .lokasi
-                            }
+
+                            {item.lowongan.lokasi}
                           </span>
 
                           <span className="inline-flex items-center gap-1">
-                            <BriefcaseBusiness
-                              size={13}
-                            />
-                            {
-                              item.lowongan
-                                .tipe
-                            }
+                            <BriefcaseBusiness size={13} />
+
+                            {item.lowongan.tipe}
                           </span>
 
                           <span className="inline-flex items-center gap-1">
-                            <CalendarDays
-                              size={13}
-                            />
+                            <CalendarDays size={13} />
+
                             Dilamar{" "}
                             {formatTanggal(
                               item.createdAt
@@ -485,12 +485,9 @@ export default function LamaranPage() {
                      DESKRIPSI
                   ======================================== */}
 
-                  {item.lowongan
-                    .deskripsi && (
+                  {item.lowongan.deskripsi && (
                     <p className="mt-4 max-w-3xl text-xs leading-6 text-[#71877b]">
-                      {item.lowongan
-                        .deskripsi.length >
-                      140
+                      {item.lowongan.deskripsi.length > 140
                         ? item.lowongan.deskripsi.slice(
                             0,
                             140
@@ -522,7 +519,8 @@ export default function LamaranPage() {
 
           </div>
         )}
-      </div>
+
+      </main>
     </div>
   );
 }
@@ -532,28 +530,34 @@ export default function LamaranPage() {
 =============================================================== */
 
 function SummaryCard({
+  icon,
   title,
   value,
-  className,
-  textClass,
+  accent,
+  className = "",
 }: {
+  icon: React.ReactNode;
   title: string;
   value: number;
-  className: string;
-  textClass: string;
+  accent: string;
+  className?: string;
 }) {
   return (
     <div
-      className={`rounded-2xl border px-4 py-4 ${className}`}
+      className={`rounded-2xl border border-[#e1eee7] bg-white p-5 shadow-sm transition hover:border-[#cfe2d8] hover:shadow-[0_6px_18px_rgba(49,92,74,0.05)] ${className}`}
     >
-      <p className="text-[11px] font-bold uppercase tracking-wide text-[#9aa9a1]">
-        {title}
+      <div
+        className={`flex h-10 w-10 items-center justify-center rounded-xl ${accent}`}
+      >
+        {icon}
+      </div>
+
+      <p className="mt-3 text-2xl font-black text-[#193d2e]">
+        {value}
       </p>
 
-      <p
-        className={`mt-1.5 text-2xl font-black ${textClass}`}
-      >
-        {value}
+      <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#9aa9a1]">
+        {title}
       </p>
     </div>
   );
@@ -594,6 +598,7 @@ function ApplicationProgress({
    * Jika tahapanSeleksi kosong,
    * gunakan tahapanProgress sebagai fallback.
    */
+
   if (daftarTahapan.length === 0) {
     daftarTahapan =
       safeTahapanProgress.map(
@@ -604,6 +609,7 @@ function ApplicationProgress({
   /*
    * Hilangkan duplikat dan urutkan.
    */
+
   daftarTahapan = Array.from(
     new Set(daftarTahapan)
   ).sort(
@@ -784,6 +790,7 @@ function ApplicationProgress({
                * - sedang berjalan
                * - menjadi tahap penolakan
                */
+
               const active =
                 selesai ||
                 isCurrent ||
@@ -911,9 +918,7 @@ function ProgressStep({
 
       {date && (
         <span className="mt-1 whitespace-nowrap text-[8px] text-[#a0ada6]">
-          {new Date(
-            date
-          ).toLocaleDateString(
+          {new Date(date).toLocaleDateString(
             "id-ID",
             {
               day: "2-digit",
@@ -943,19 +948,6 @@ function ProgressLine({
           ? "bg-[#4da477]"
           : "bg-[#dce5e0]"
       }`}
-    />
-  );
-}
-
-/* ===============================================================
-   EMPTY ICON
-=============================================================== */
-
-function FileTextIcon() {
-  return (
-    <FileCheck2
-      size={28}
-      strokeWidth={1.7}
     />
   );
 }
