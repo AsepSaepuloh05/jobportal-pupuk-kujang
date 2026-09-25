@@ -290,6 +290,8 @@ model Lowongan {
   pengalaman      String?
   tanggungJawab   String?         @db.Text
   tahapanSeleksi  TahapanSeleksi[] @default([SCREENING, ASSESSMENT, INTERVIEW, TECHNICAL_TEST, MCU, OFFERING])
+  filterDomisiliAktif Boolean  @default(false)
+  desaDiizinkan       String[] @default([])
   gajiMin         Int?
   gajiMax         Int?
   tanggalBerakhir DateTime?

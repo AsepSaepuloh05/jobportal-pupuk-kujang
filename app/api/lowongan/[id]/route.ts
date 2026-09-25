@@ -132,6 +132,53 @@ export async function PUT(
             );
         }
 
+        const PENDIDIKAN_VALID = [
+            "SMA / SMK",
+            "D1",
+            "D2",
+            "D3",
+            "S1",
+            "S2",
+            "S3",
+        ];
+
+        if (pendidikan && !PENDIDIKAN_VALID.includes(pendidikan)) {
+            return NextResponse.json(
+                { message: "Pilihan pendidikan tidak valid" },
+                { status: 400 }
+            );
+        }
+
+        const DESA_VALID = ["Kalihurip", "Dawuan Tengah", "Dawuan Barat"];
+
+        const filterDomisiliAktif = Boolean(body.filterDomisiliAktif);
+        const desaDiizinkanInput = Array.isArray(body.desaDiizinkan)
+            ? body.desaDiizinkan
+            : [];
+
+        if (filterDomisiliAktif && pendidikan !== "SMA / SMK") {
+            return NextResponse.json(
+                {
+                    message:
+                        "Filter domisili hanya berlaku untuk pendidikan SMA / SMK",
+                },
+                { status: 400 }
+            );
+        }
+
+        const desaTidakValid = desaDiizinkanInput.filter(
+            (d: string) => !DESA_VALID.includes(d)
+        );
+
+        if (desaTidakValid.length > 0) {
+            return NextResponse.json(
+                { message: `Desa tidak valid: ${desaTidakValid.join(", ")}` },
+                { status: 400 }
+            );
+        }
+
+        const desaDiizinkan = filterDomisiliAktif ? desaDiizinkanInput : [];
+
         if (!posisi || !departemen || !lokasi || !tipe || !status) {
             return NextResponse.json(
                 {
@@ -188,6 +235,8 @@ export async function PUT(
                 gajiMin,
                 gajiMax,
                 tahapanSeleksi,
+                filterDomisiliAktif,
+                desaDiizinkan,
                 tanggalBerakhir,
             },
         });

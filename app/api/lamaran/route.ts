@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic"
+
 export async function GET(request: Request) {
     try {
         const cookieStore = await cookies();
@@ -29,8 +31,8 @@ export async function GET(request: Request) {
             const semuaLamaran = await prisma.lamaran.findMany({
                 where: lowonganIdParam
                     ? {
-                          lowonganId: Number(lowonganIdParam),
-                      }
+                        lowonganId: Number(lowonganIdParam),
+                    }
                     : undefined,
 
                 include: {
@@ -196,13 +198,29 @@ export async function POST(request: Request) {
 
         if (lowongan.status !== "AKTIF") {
             return NextResponse.json(
-                {
-                    message: "Lowongan ini sudah tidak menerima lamaran",
-                },
-                {
-                    status: 400,
-                }
+                { message: "Lowongan ini sudah tidak menerima lamaran" },
+                { status: 400 }
             );
+        }
+
+        if (lowongan.filterDomisiliAktif) {
+            const kandidat = await prisma.user.findUnique({
+                where: { id: Number(userId) },
+                select: { desa: true },
+            });
+
+            const desaSesuai =
+                kandidat?.desa && lowongan.desaDiizinkan.includes(kandidat.desa);
+
+            if (!desaSesuai) {
+                return NextResponse.json(
+                    {
+                        message:
+                            "Lowongan ini khusus untuk kandidat dengan domisili tertentu",
+                    },
+                    { status: 403 }
+                );
+            }
         }
 
         /*

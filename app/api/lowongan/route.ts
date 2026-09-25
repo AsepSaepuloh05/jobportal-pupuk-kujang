@@ -1,17 +1,48 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const status = searchParams.get("status");
 
-        const lowongan = await prisma.lowongan.findMany({
-            where: status
+        const cookieStore = await cookies();
+        const userId = cookieStore.get("user_id")?.value;
+        const userRole = cookieStore.get("user_role")?.value;
+
+        let kandidatDesa: string | null = null;
+
+        if (userId && userRole === "KANDIDAT") {
+            const kandidat = await prisma.user.findUnique({
+                where: { id: Number(userId) },
+                select: { desa: true },
+            });
+            kandidatDesa = kandidat?.desa || null;
+        }
+
+        const whereClause = {
+            ...(status
+                ? { status: status as "AKTIF" | "DRAFT" | "DITUTUP" }
+                : {}),
+            ...(userRole === "KANDIDAT"
                 ? {
-                    status: status as "AKTIF" | "DRAFT" | "DITUTUP",
+                    OR: [
+                        { filterDomisiliAktif: false },
+                        {
+                            desaDiizinkan: {
+                                has: kandidatDesa || "___TIDAK_ADA_DESA___",
+                            },
+                        },
+                    ],
                 }
-                : undefined,
+                : {}),
+        };
+
+        const lowongan = await prisma.lowongan.findMany({
+            where: whereClause,
             orderBy: {
                 createdAt: "desc",
             },
@@ -47,78 +78,6 @@ export async function POST(request: Request) {
         const tanggungJawab = body.tanggungJawab?.trim() || null;
         const gajiMin = body.gajiMin ? Number(body.gajiMin) : null;
         const gajiMax = body.gajiMax ? Number(body.gajiMax) : null;
-        const TAHAPAN_VALID = [
-            "SCREENING",
-            "ASSESSMENT",
-            "INTERVIEW",
-            "TECHNICAL_TEST",
-            "MCU",
-            "OFFERING",
-        ];
-
-        const tahapanSeleksi = Array.isArray(body.tahapanSeleksi)
-            ? body.tahapanSeleksi
-            : undefined;
-
-        if (tahapanSeleksi) {
-            const invalid = tahapanSeleksi.filter(
-                (item: string) => !TAHAPAN_VALID.includes(item)
-            );
-
-            if (invalid.length > 0) {
-                return NextResponse.json(
-                    {
-                        message: `Tahapan tidak valid: ${invalid.join(", ")}`,
-                    },
-                    { status: 400 }
-                );
-            }
-        }
-
-        if (
-            gajiMin !== null &&
-            gajiMax !== null &&
-            gajiMin > gajiMax
-        ) {
-            return NextResponse.json(
-                {
-                    message: "Gaji minimum tidak boleh lebih besar dari maksimum",
-                },
-                { status: 400 }
-            );
-        }
-        const tanggalBerakhir = body.tanggalBerakhir
-            ? new Date(body.tanggalBerakhir)
-            : null;
-
-        if (tanggalBerakhir) {
-            const hariIni = new Date();
-            hariIni.setHours(0, 0, 0, 0);
-
-            if (tanggalBerakhir < hariIni) {
-                return NextResponse.json(
-                    {
-                        message:
-                            "Batas lowongan ditutup tidak boleh sebelum hari ini",
-                    },
-                    { status: 400 }
-                );
-            }
-        }
-
-        const PENGALAMAN_VALID = [
-            "Fresh Graduate / Tidak Diperlukan",
-            "1-2 Tahun",
-            "3-5 Tahun",
-            "Lebih dari 5 Tahun",
-        ];
-
-        if (pengalaman && !PENGALAMAN_VALID.includes(pengalaman)) {
-            return NextResponse.json(
-                { message: "Pilihan pengalaman tidak valid" },
-                { status: 400 }
-            );
-        }
 
         if (!posisi || !departemen || !lokasi || !tipe) {
             return NextResponse.json(
@@ -142,6 +101,90 @@ export async function POST(request: Request) {
             );
         }
 
+        const PENGALAMAN_VALID = [
+            "Fresh Graduate / Tidak Diperlukan",
+            "1-2 Tahun",
+            "3-5 Tahun",
+            "Lebih dari 5 Tahun",
+        ];
+
+        if (pengalaman && !PENGALAMAN_VALID.includes(pengalaman)) {
+            return NextResponse.json(
+                { message: "Pilihan pengalaman tidak valid" },
+                { status: 400 }
+            );
+        }
+
+        const PENDIDIKAN_VALID = [
+            "SMA / SMK",
+            "D1",
+            "D2",
+            "D3",
+            "S1",
+            "S2",
+            "S3",
+        ];
+
+        if (pendidikan && !PENDIDIKAN_VALID.includes(pendidikan)) {
+            return NextResponse.json(
+                { message: "Pilihan pendidikan tidak valid" },
+                { status: 400 }
+            );
+        }
+
+        const DESA_VALID = ["Kalihurip", "Dawuan Tengah", "Dawuan Barat"];
+
+        const filterDomisiliAktif = Boolean(body.filterDomisiliAktif);
+        const desaDiizinkanInput = Array.isArray(body.desaDiizinkan)
+            ? body.desaDiizinkan
+            : [];
+
+        if (filterDomisiliAktif && pendidikan !== "SMA / SMK") {
+            return NextResponse.json(
+                {
+                    message:
+                        "Filter domisili hanya berlaku untuk pendidikan SMA / SMK",
+                },
+                { status: 400 }
+            );
+        }
+
+        const desaTidakValid = desaDiizinkanInput.filter(
+            (d: string) => !DESA_VALID.includes(d)
+        );
+
+        if (desaTidakValid.length > 0) {
+            return NextResponse.json(
+                { message: `Desa tidak valid: ${desaTidakValid.join(", ")}` },
+                { status: 400 }
+            );
+        }
+
+        const desaDiizinkan = filterDomisiliAktif ? desaDiizinkanInput : [];
+
+        const tanggalBerakhir = body.tanggalBerakhir
+            ? new Date(body.tanggalBerakhir)
+            : null;
+
+        if (tanggalBerakhir) {
+            const hariIni = new Date();
+            hariIni.setHours(0, 0, 0, 0);
+
+            if (tanggalBerakhir < hariIni) {
+                return NextResponse.json(
+                    {
+                        message:
+                            "Batas lowongan ditutup tidak boleh sebelum hari ini",
+                    },
+                    { status: 400 }
+                );
+            }
+        }
+
+        const tahapanSeleksi = Array.isArray(body.tahapanSeleksi)
+            ? body.tahapanSeleksi
+            : undefined;
+
         const lowongan = await prisma.lowongan.create({
             data: {
                 posisi,
@@ -158,6 +201,8 @@ export async function POST(request: Request) {
                 gajiMin,
                 gajiMax,
                 tahapanSeleksi,
+                filterDomisiliAktif,
+                desaDiizinkan,
                 tanggalBerakhir,
             },
         });

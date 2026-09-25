@@ -21,6 +21,20 @@ import {
     Handshake,
 } from "lucide-react";
 
+const PENDIDIKAN_OPTIONS = [
+    "SMA / SMK",
+    "D1",
+    "D2",
+    "D3",
+    "S1",
+    "S2",
+    "S3",
+];
+
+const PENDIDIKAN_SLTA = "SMA / SMK";
+
+const DESA_OPTIONS = ["Kalihurip", "Dawuan Tengah", "Dawuan Barat"];
+
 const TAHAPAN_OPTIONS = [
     { value: "SCREENING", label: "Screening", icon: Search },
     { value: "ASSESSMENT", label: "Assessment", icon: ClipboardCheck },
@@ -65,11 +79,30 @@ export default function EditLowonganPage() {
     const [gajiMax, setGajiMax] = useState("");
     const [tahapanSeleksi, setTahapanSeleksi] = useState<string[]>([]);
     const [tanggalBerakhir, setTanggalBerakhir] = useState("");
+    const [filterDomisiliAktif, setFilterDomisiliAktif] = useState(false);
+    const [desaDiizinkan, setDesaDiizinkan] = useState<string[]>([]);
 
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
+
+    const toggleDesa = (desa: string) => {
+        setDesaDiizinkan((prev) =>
+            prev.includes(desa)
+                ? prev.filter((item) => item !== desa)
+                : [...prev, desa]
+        );
+    };
+
+    const handlePendidikanChange = (value: string) => {
+        setPendidikan(value);
+
+        if (value !== PENDIDIKAN_SLTA) {
+            setFilterDomisiliAktif(false);
+            setDesaDiizinkan([]);
+        }
+    };
 
     const toggleTahapan = (value: string) => {
         setTahapanSeleksi((prev) =>
@@ -117,6 +150,8 @@ export default function EditLowonganPage() {
                         : ""
                 );
                 setTahapanSeleksi(data.tahapanSeleksi || []);
+                setFilterDomisiliAktif(data.filterDomisiliAktif || false);
+                setDesaDiizinkan(data.desaDiizinkan || []);
                 setTanggalBerakhir(
                     data.tanggalBerakhir
                         ? data.tanggalBerakhir.substring(0, 10)
@@ -167,6 +202,8 @@ export default function EditLowonganPage() {
                     gajiMin: gajiMin || undefined,
                     gajiMax: gajiMax || undefined,
                     tahapanSeleksi,
+                    filterDomisiliAktif,
+                    desaDiizinkan,
                     tanggalBerakhir: tanggalBerakhir || undefined,
                 }),
             });
@@ -405,15 +442,20 @@ export default function EditLowonganPage() {
                             <label htmlFor="pendidikan" className={labelClass}>
                                 Pendidikan Minimal
                             </label>
-                            <input
+                            <select
                                 id="pendidikan"
-                                type="text"
-                                placeholder="Contoh: Minimal S1 Teknik Informatika"
                                 value={pendidikan}
-                                onChange={(e) => setPendidikan(e.target.value)}
+                                onChange={(e) => handlePendidikanChange(e.target.value)}
                                 disabled={saving}
                                 className={inputClass}
-                            />
+                            >
+                                <option value="">Pilih pendidikan</option>
+                                {PENDIDIKAN_OPTIONS.map((opt) => (
+                                    <option key={opt} value={opt}>
+                                        {opt}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>
@@ -439,6 +481,75 @@ export default function EditLowonganPage() {
                     </div>
 
                 </div>
+
+                {/* SECTION: FILTER DOMISILI */}
+
+                {pendidikan === PENDIDIKAN_SLTA && (
+
+                    <div className="overflow-hidden rounded-2xl border border-amber-200 bg-white">
+
+                        <div className="flex items-center gap-2.5 border-b border-amber-100 bg-amber-50/60 px-6 py-4">
+                            <span className="text-sm font-bold text-slate-800">
+                                🎯 Filter Domisili Khusus
+                            </span>
+                            <span className="ml-auto text-xs font-medium text-amber-600">
+                                Khusus Pendidikan SLTA
+                            </span>
+                        </div>
+
+                        <div className="p-6 sm:p-8">
+
+                            <label className="flex cursor-pointer items-center gap-3">
+                                <input
+                                    type="checkbox"
+                                    checked={filterDomisiliAktif}
+                                    onChange={(e) => {
+                                        setFilterDomisiliAktif(e.target.checked);
+                                        if (!e.target.checked) setDesaDiizinkan([]);
+                                    }}
+                                    disabled={saving}
+                                    className="h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                />
+                                <span className="text-sm font-semibold text-slate-700">
+                                    Batasi lowongan ini hanya untuk kandidat domisili tertentu
+                                </span>
+                            </label>
+
+                            {filterDomisiliAktif && (
+                                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                    {DESA_OPTIONS.map((desa) => (
+                                        <label
+                                            key={desa}
+                                            className={`flex cursor-pointer items-center gap-2.5 rounded-xl border-2 px-4 py-3 transition ${desaDiizinkan.includes(desa)
+                                                ? "border-emerald-500 bg-emerald-50"
+                                                : "border-slate-200 bg-white hover:border-slate-300"
+                                                }`}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={desaDiizinkan.includes(desa)}
+                                                onChange={() => toggleDesa(desa)}
+                                                disabled={saving}
+                                                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                            />
+                                            <span className="text-sm font-medium text-slate-700">
+                                                {desa}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+
+                            <p className="mt-4 text-xs text-slate-500">
+                                Kandidat di luar desa yang dipilih tidak akan melihat
+                                lowongan ini dan tidak bisa melamar.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                )}
 
                 {/* SECTION: KOMPENSASI & JADWAL */}
 
