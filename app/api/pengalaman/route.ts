@@ -3,6 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
 // =====================================================
+// HELPER VALIDASI TAHUN
+// Kolom database bertipe Int, harus tepat 4 digit angka
+// =====================================================
+
+function parseYear(value: unknown): number | null {
+  const str = String(value ?? "").trim();
+
+  if (!/^\d{4}$/.test(str)) return null;
+
+  const year = Number(str);
+  const maxYear = new Date().getFullYear() + 1;
+
+  if (year < 1900 || year > maxYear) return null;
+
+  return year;
+}
+
+// =====================================================
 // GET - Ambil semua pengalaman milik user yang login
 // =====================================================
 
@@ -69,10 +87,8 @@ export async function POST(request: NextRequest) {
     const posisi = String(body.posisi ?? "").trim();
     const perusahaan = String(body.perusahaan ?? "").trim();
     const lokasi = body.lokasi ? String(body.lokasi).trim() : null;
-    const tahunMulai = String(body.tahunMulai ?? "").trim();
-    const tahunSelesai = body.tahunSelesai
-      ? String(body.tahunSelesai).trim()
-      : null;
+    const tahunMulai = parseYear(body.tahunMulai);
+    const tahunSelesai = parseYear(body.tahunSelesai);
     const deskripsi = body.deskripsi
       ? String(body.deskripsi).trim()
       : null;
@@ -81,12 +97,42 @@ export async function POST(request: NextRequest) {
     // VALIDASI
     // =================================================
 
-    if (!posisi || !perusahaan || !tahunMulai) {
+    if (!posisi || !perusahaan) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Posisi dan perusahaan wajib diisi",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (tahunMulai === null) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Tahun mulai harus 4 digit angka yang valid",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (tahunSelesai === null) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Tahun selesai harus 4 digit angka yang valid",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (tahunSelesai < tahunMulai) {
       return NextResponse.json(
         {
           success: false,
           message:
-            "Posisi, perusahaan, dan tahun mulai wajib diisi",
+            "Tahun selesai tidak boleh lebih kecil dari tahun mulai",
         },
         { status: 400 }
       );
@@ -174,10 +220,8 @@ export async function PUT(request: NextRequest) {
     const posisi = String(body.posisi ?? "").trim();
     const perusahaan = String(body.perusahaan ?? "").trim();
     const lokasi = body.lokasi ? String(body.lokasi).trim() : null;
-    const tahunMulai = String(body.tahunMulai ?? "").trim();
-    const tahunSelesai = body.tahunSelesai
-      ? String(body.tahunSelesai).trim()
-      : null;
+    const tahunMulai = parseYear(body.tahunMulai);
+    const tahunSelesai = parseYear(body.tahunSelesai);
     const deskripsi = body.deskripsi
       ? String(body.deskripsi).trim()
       : null;
@@ -196,12 +240,42 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (!posisi || !perusahaan || !tahunMulai) {
+    if (!posisi || !perusahaan) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Posisi dan perusahaan wajib diisi",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (tahunMulai === null) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Tahun mulai harus 4 digit angka yang valid",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (tahunSelesai === null) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Tahun selesai harus 4 digit angka yang valid",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (tahunSelesai < tahunMulai) {
       return NextResponse.json(
         {
           success: false,
           message:
-            "Posisi, perusahaan, dan tahun mulai wajib diisi",
+            "Tahun selesai tidak boleh lebih kecil dari tahun mulai",
         },
         { status: 400 }
       );

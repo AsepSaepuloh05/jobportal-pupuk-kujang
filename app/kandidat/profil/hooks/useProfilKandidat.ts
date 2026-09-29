@@ -12,6 +12,7 @@ import {
   initialPengalaman,
   initialSertifikasi,
 } from "../types";
+import { isYear4, isNilaiByJenjang } from "../utils";
 import { PreviewTarget } from "../components/Documentpreviewmodal";
 
 export function useProfilKandidat() {
@@ -279,6 +280,7 @@ export function useProfilKandidat() {
 
   // ============================================================
   // FETCH PENGALAMAN
+  // Database menyimpan tahun sebagai Int, form memakai string
   // ============================================================
 
   const fetchPengalaman = async () => {
@@ -292,7 +294,19 @@ export function useProfilKandidat() {
       const data = await res.json();
 
       if (data.success) {
-        setPengalaman(data.pengalaman || data.data || []);
+        const list = data.pengalaman || data.data || [];
+
+        setPengalaman(
+          list.map((item: any) => ({
+            ...item,
+            tahunMulai: String(item.tahunMulai ?? ""),
+            tahunSelesai:
+              item.tahunSelesai !== null &&
+              item.tahunSelesai !== undefined
+                ? String(item.tahunSelesai)
+                : "",
+          }))
+        );
       }
     } catch (error) {
       console.error("FETCH PENGALAMAN ERROR:", error);
@@ -791,20 +805,42 @@ export function useProfilKandidat() {
 
   // ============================================================
   // SAVE PENDIDIKAN
+  // Validasi tahun 4 digit angka
   // ============================================================
 
   const savePendidikan = async () => {
+
+    const nilai = String(pendidikanForm.nilai ?? "").trim();
+    // Nilai opsional, tapi kalau diisi harus sesuai jenjang
     if (
-      !pendidikanForm.jenjang ||
-      !pendidikanForm.institusi ||
-      !pendidikanForm.jurusan ||
-      !pendidikanForm.tahunMulai ||
-      !pendidikanForm.tahunSelesai
+      nilai !== "" &&
+      !isNilaiByJenjang(nilai, pendidikanForm.jenjang)
     ) {
       alert(
-        "Lengkapi seluruh data pendidikan terlebih dahulu."
+        pendidikanForm.jenjang === "SMA / SMK"
+          ? "Nilai rata-rata harus berupa angka antara 0.01 dan 100 (contoh: 85.50)."
+          : "IPK harus berupa angka antara 0.01 dan 4.00 (contoh: 3.75)."
       );
+      return;
+    }
 
+    const mulai = String(pendidikanForm.tahunMulai ?? "");
+    const selesai = String(pendidikanForm.tahunSelesai ?? "");
+
+    if (!isYear4(mulai)) {
+      alert("Tahun mulai harus 4 digit angka.");
+      return;
+    }
+
+    if (!isYear4(selesai)) {
+      alert("Tahun selesai harus 4 digit angka.");
+      return;
+    }
+
+    if (Number(selesai) < Number(mulai)) {
+      alert(
+        "Tahun selesai tidak boleh lebih kecil dari tahun mulai."
+      );
       return;
     }
 
@@ -827,16 +863,14 @@ export function useProfilKandidat() {
           pendidikanForm.jenjang,
 
         institusi:
-          pendidikanForm.institusi,
+          pendidikanForm.institusi.trim(),
 
         jurusan:
-          pendidikanForm.jurusan,
+          pendidikanForm.jurusan.trim(),
 
-        tahunMulai:
-          pendidikanForm.tahunMulai,
-
-        tahunSelesai:
-          pendidikanForm.tahunSelesai,
+        // kolom database tetap String
+        tahunMulai: mulai,
+        tahunSelesai: selesai,
 
         nilai:
           pendidikanForm.nilai || null,
@@ -1158,18 +1192,35 @@ export function useProfilKandidat() {
 
   // ============================================================
   // SAVE PENGALAMAN
+  // Validasi 4 digit angka, dikirim sebagai Int
   // ============================================================
 
   const savePengalaman = async () => {
     if (
-      !pengalamanForm.posisi ||
-      !pengalamanForm.perusahaan ||
-      !pengalamanForm.tahunMulai
+      !pengalamanForm.posisi.trim() ||
+      !pengalamanForm.perusahaan.trim()
     ) {
-      alert(
-        "Posisi, perusahaan, dan tahun mulai wajib diisi."
-      );
+      alert("Posisi dan perusahaan wajib diisi.");
+      return;
+    }
 
+    const mulai = String(pengalamanForm.tahunMulai ?? "");
+    const selesai = String(pengalamanForm.tahunSelesai ?? "");
+
+    if (!isYear4(mulai)) {
+      alert("Tahun mulai harus 4 digit angka.");
+      return;
+    }
+
+    if (!isYear4(selesai)) {
+      alert("Tahun selesai harus 4 digit angka.");
+      return;
+    }
+
+    if (Number(selesai) < Number(mulai)) {
+      alert(
+        "Tahun selesai tidak boleh lebih kecil dari tahun mulai."
+      );
       return;
     }
 
@@ -1191,19 +1242,17 @@ export function useProfilKandidat() {
         }),
 
         posisi:
-          pengalamanForm.posisi,
+          pengalamanForm.posisi.trim(),
 
         perusahaan:
-          pengalamanForm.perusahaan,
+          pengalamanForm.perusahaan.trim(),
 
         lokasi:
           pengalamanForm.lokasi || null,
 
-        tahunMulai:
-          pengalamanForm.tahunMulai,
-
-        tahunSelesai:
-          pengalamanForm.tahunSelesai || null,
+        // kolom database bertipe Int
+        tahunMulai: Number(mulai),
+        tahunSelesai: Number(selesai),
 
         deskripsi:
           pengalamanForm.deskripsi || null,

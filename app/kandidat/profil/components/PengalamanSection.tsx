@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import { Pengalaman } from "../types";
-import { calculateDuration } from "../utils";
+import { calculateDuration, onlyYear } from "../utils";
 
 import {
   AddButton,
@@ -217,7 +217,7 @@ function PengalamanModal({
             onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
-                tahunMulai: value,
+                tahunMulai: onlyYear(value),
               }))
             }
           />
@@ -230,7 +230,7 @@ function PengalamanModal({
             onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
-                tahunSelesai: value,
+                tahunSelesai: onlyYear(value),
               }))
             }
           />
@@ -291,9 +291,7 @@ export function PengalamanSection({
   return (
     <>
       <ModernSection
-        icon={
-          <BriefcaseBusiness className="h-5 w-5" />
-        }
+        icon={<BriefcaseBusiness className="h-5 w-5" />}
         iconStyle="emerald"
         title="Pengalaman Kerja"
         description="Riwayat pengalaman kerja dan profesional."
@@ -306,9 +304,7 @@ export function PengalamanSection({
       >
         {items.length === 0 ? (
           <EmptyState
-            icon={
-              <BriefcaseBusiness className="h-6 w-6" />
-            }
+            icon={<BriefcaseBusiness className="h-6 w-6" />}
             title="Belum ada pengalaman kerja"
             description="Tambahkan pengalaman kerja untuk memperkuat profil kandidat Anda."
             button="Tambah Pengalaman"

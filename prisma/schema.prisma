@@ -151,15 +151,13 @@ model DokumenKandidat {
 
 model Pendidikan {
   id Int @id @default(autoincrement())
-
   userId Int
-
   jenjang      String
   institusi    String
   jurusan      String
   tahunMulai   String
   tahunSelesai String
-  nilai        String?
+  ipk          Float?
 
   // Data ijazah
   ijazahNamaFile   String?
@@ -188,8 +186,8 @@ model Pengalaman {
   posisi       String
   perusahaan   String
   lokasi       String?
-  tahunMulai   String
-  tahunSelesai String?
+  tahunMulai   Int
+  tahunSelesai Int
   deskripsi    String? @db.Text
 
   createdAt DateTime @default(now())

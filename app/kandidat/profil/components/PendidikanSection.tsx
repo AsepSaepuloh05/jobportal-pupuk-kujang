@@ -12,6 +12,11 @@ import {
 } from "lucide-react";
 
 import { Pendidikan } from "../types";
+import {
+  onlyYear,
+  onlyNilaiByJenjang,
+  isSmaSmk,
+} from "../utils";
 import { AddButton, EmptyState, ModernSection } from "./Shared";
 import {
   Modal,
@@ -117,7 +122,10 @@ function EducationItem({
 
           {item.nilai && (
             <span className="rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-700">
-              IPK / Nilai: {item.nilai}
+              {isSmaSmk(item.jenjang)
+                ? "Nilai Rata-rata"
+                : "IPK"}
+              : {item.nilai}
             </span>
           )}
         </div>
@@ -211,6 +219,7 @@ function PendidikanModal({
   onSave: () => void;
 }) {
   const hasExistingIjazah = Boolean(form.ijazahPathFile);
+  const sekolah = isSmaSmk(form.jenjang);
 
   return (
     <Modal
@@ -239,6 +248,12 @@ function PendidikanModal({
               setForm((prev) => ({
                 ...prev,
                 jenjang: value,
+                // kosongkan nilai jika pindah antara SMA/SMK
+                // dan jenjang lain, karena skalanya berbeda
+                nilai:
+                  isSmaSmk(prev.jenjang) !== isSmaSmk(value)
+                    ? ""
+                    : prev.nilai,
               }))
             }
           />
@@ -268,13 +283,20 @@ function PendidikanModal({
           />
 
           <ModalInput
-            label="IPK / Nilai"
+            label={
+              sekolah
+                ? "Nilai Rata-rata (0 - 100)"
+                : "IPK (0 - 4.00)"
+            }
             value={form.nilai || ""}
-            placeholder="Contoh: 3.75"
+            placeholder={
+              sekolah ? "Contoh: 85.50" : "Contoh: 3.75"
+            }
+            maxLength={sekolah ? 6 : 4}
             onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
-                nilai: value,
+                nilai: onlyNilaiByJenjang(value, prev.jenjang),
               }))
             }
           />
@@ -287,7 +309,7 @@ function PendidikanModal({
             onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
-                tahunMulai: value,
+                tahunMulai: onlyYear(value),
               }))
             }
           />
@@ -300,7 +322,7 @@ function PendidikanModal({
             onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
-                tahunSelesai: value,
+                tahunSelesai: onlyYear(value),
               }))
             }
           />
