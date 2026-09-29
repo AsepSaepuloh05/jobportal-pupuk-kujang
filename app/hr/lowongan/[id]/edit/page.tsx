@@ -67,7 +67,7 @@ export default function EditLowonganPage() {
     const [posisi, setPosisi] = useState("");
     const [departemen, setDepartemen] = useState("");
     const [lokasi, setLokasi] = useState("");
-    const [tipe, setTipe] = useState("Full Time");
+    const [tipe, setTipe] = useState("TKNO");
     const [status, setStatus] = useState("DRAFT");
     const [deskripsi, setDeskripsi] = useState("");
     const [persyaratan, setPersyaratan] = useState("");
@@ -379,10 +379,7 @@ export default function EditLowonganPage() {
                                 disabled={saving}
                                 className={inputClass}
                             >
-                                <option value="Full Time">Full Time</option>
-                                <option value="Kontrak">Kontrak</option>
-                                <option value="Magang">Magang</option>
-                                <option value="Part Time">Part Time</option>
+                                <option value="TKNO">TKNO</option>
                             </select>
                         </div>
 

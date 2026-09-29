@@ -84,7 +84,6 @@ export async function GET(request: Request) {
             where: {
                 userId: Number(userId),
             },
-
             include: {
                 lowongan: {
                     select: {
@@ -95,20 +94,13 @@ export async function GET(request: Request) {
                         tipe: true,
                         status: true,
                         deskripsi: true,
-
-                        // Tahapan yang dipilih HR pada lowongan
                         tahapanSeleksi: true,
                     },
                 },
-
-                // Progress setiap tahapan kandidat
                 tahapanProgress: {
-                    orderBy: {
-                        urutan: "asc",
-                    },
+                    orderBy: { urutan: "asc" },
                 },
             },
-
             orderBy: {
                 createdAt: "desc",
             },

@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  BriefcaseBusiness,
-  CalendarDays,
-  CheckCircle2,
-  Clock3,
-  FileCheck2,
-  Hourglass,
-  ListChecks,
+  Briefcase,
   MapPin,
+  Calendar,
+  ChevronRight,
+  Inbox,
+  CheckCircle2,
   XCircle,
+  Circle,
 } from "lucide-react";
 
 interface User {
@@ -22,11 +21,7 @@ interface User {
   role: string;
 }
 
-type StatusLamaran =
-  | "DIPROSES"
-  | "INTERVIEW"
-  | "LOLOS"
-  | "DITOLAK";
+type StatusLamaran = "DIPROSES" | "INTERVIEW" | "LOLOS" | "DITOLAK";
 
 interface TahapanProgress {
   id: number;
@@ -39,7 +34,6 @@ interface Lamaran {
   id: number;
   status: StatusLamaran;
   createdAt: string;
-
   lowongan: {
     id: number;
     posisi: string;
@@ -48,15 +42,10 @@ interface Lamaran {
     tipe: string;
     status: string;
     deskripsi: string | null;
-    tahapanSeleksi?: string[] | null;
+    tahapanSeleksi: string[];
   };
-
-  tahapanProgress?: TahapanProgress[] | null;
+  tahapanProgress: TahapanProgress[];
 }
-
-/* ============================================================
-   TAHAPAN
-============================================================ */
 
 const TAHAPAN_URUTAN: Record<string, number> = {
   SCREENING: 1,
@@ -76,46 +65,57 @@ const TAHAPAN_LABEL: Record<string, string> = {
   OFFERING: "Offering",
 };
 
-/* ============================================================
-   STATUS CONFIG
-============================================================ */
+const TAHAPAN_BADGE: Record<string, string> = {
+  SCREENING: "bg-slate-100 text-slate-700",
+  ASSESSMENT: "bg-purple-100 text-purple-700",
+  INTERVIEW: "bg-blue-100 text-blue-700",
+  TECHNICAL_TEST: "bg-cyan-100 text-cyan-700",
+  MCU: "bg-orange-100 text-orange-700",
+  OFFERING: "bg-pink-100 text-pink-700",
+};
+
+const TAHAPAN_DOT: Record<string, string> = {
+  SCREENING: "bg-slate-500",
+  ASSESSMENT: "bg-purple-500",
+  INTERVIEW: "bg-blue-500",
+  TECHNICAL_TEST: "bg-cyan-500",
+  MCU: "bg-orange-500",
+  OFFERING: "bg-pink-500",
+};
 
 const statusConfig: Record<
   StatusLamaran,
-  {
-    label: string;
-    badge: string;
-    dot: string;
-  }
+  { label: string; badge: string; dot: string }
 > = {
   DIPROSES: {
     label: "Diproses",
-    badge: "bg-[#fff4de] text-[#a16207]",
-    dot: "bg-[#d99619]",
+    badge: "bg-amber-50 text-amber-700",
+    dot: "bg-amber-500",
   },
-
   INTERVIEW: {
     label: "Interview",
-    badge: "bg-[#e6f0ff] text-[#2c5aa0]",
-    dot: "bg-[#3d78c9]",
+    badge: "bg-blue-50 text-blue-700",
+    dot: "bg-blue-500",
   },
-
   LOLOS: {
-    label: "Diterima",
-    badge: "bg-[#e8f6ee] text-[#35865d]",
-    dot: "bg-[#4da477]",
+    label: "Lolos",
+    badge: "bg-emerald-50 text-emerald-700",
+    dot: "bg-emerald-500",
   },
-
   DITOLAK: {
     label: "Ditolak",
-    badge: "bg-[#fdecec] text-[#c0392b]",
-    dot: "bg-[#e05252]",
+    badge: "bg-red-50 text-red-700",
+    dot: "bg-red-500",
   },
 };
 
-/* ============================================================
-   PAGE
-============================================================ */
+const TAB_OPTIONS: { key: string; label: string }[] = [
+  { key: "SEMUA", label: "Semua" },
+  { key: "DIPROSES", label: "Diproses" },
+  { key: "INTERVIEW", label: "Interview" },
+  { key: "LOLOS", label: "Lolos" },
+  { key: "DITOLAK", label: "Ditolak" },
+];
 
 export default function LamaranPage() {
   const router = useRouter();
@@ -124,18 +124,12 @@ export default function LamaranPage() {
   const [lamaran, setLamaran] = useState<Lamaran[]>([]);
   const [loadingLamaran, setLoadingLamaran] = useState(true);
   const [error, setError] = useState("");
-
-  /* ==========================================================
-     CHECK USER
-  ========================================================== */
+  const [activeTab, setActiveTab] = useState("SEMUA");
 
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const response = await fetch("/api/me", {
-          cache: "no-store",
-          credentials: "include",
-        });
+        const response = await fetch("/api/me", { cache: "no-store" });
 
         if (!response.ok) {
           router.replace("/login");
@@ -144,18 +138,14 @@ export default function LamaranPage() {
 
         const data = await response.json();
 
-        if (
-          !data.success ||
-          !data.user ||
-          data.user.role !== "KANDIDAT"
-        ) {
+        if (!data.success || !data.user || data.user.role !== "KANDIDAT") {
           router.replace("/login");
           return;
         }
 
         setUser(data.user);
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error(err);
         router.replace("/login");
       }
     };
@@ -163,39 +153,25 @@ export default function LamaranPage() {
     checkUser();
   }, [router]);
 
-  /* ==========================================================
-     GET LAMARAN
-  ========================================================== */
-
   useEffect(() => {
     if (!user) return;
 
     const getLamaran = async () => {
       try {
         setLoadingLamaran(true);
-        setError("");
 
-        const response = await fetch("/api/lamaran", {
-          cache: "no-store",
-          credentials: "include",
-        });
+        const response = await fetch("/api/lamaran", { cache: "no-store" });
 
         if (!response.ok) {
           throw new Error("Gagal mengambil data lamaran");
         }
 
         const data = await response.json();
-
-        setLamaran(
-          Array.isArray(data) ? data : []
-        );
+        setLamaran(data);
       } catch (err) {
         console.error("GET LAMARAN ERROR:", err);
-
         setError(
-          err instanceof Error
-            ? err.message
-            : "Gagal mengambil data lamaran"
+          err instanceof Error ? err.message : "Gagal mengambil data lamaran"
         );
       } finally {
         setLoadingLamaran(false);
@@ -205,10 +181,6 @@ export default function LamaranPage() {
     getLamaran();
   }, [user]);
 
-  /* ==========================================================
-     FORMAT TANGGAL
-  ========================================================== */
-
   const formatTanggal = (date: string) => {
     return new Date(date).toLocaleDateString("id-ID", {
       day: "2-digit",
@@ -217,78 +189,42 @@ export default function LamaranPage() {
     });
   };
 
-  /* ==========================================================
-     JUMLAH STATUS
-  ========================================================== */
-
   const jumlah = (status: StatusLamaran) =>
-    lamaran.filter(
-      (item) => item.status === status
-    ).length;
+    lamaran.filter((item) => item.status === status).length;
 
-  /* ==========================================================
-     LOADING USER
-  ========================================================== */
+  const filteredLamaran = useMemo(() => {
+    if (activeTab === "SEMUA") return lamaran;
+    return lamaran.filter((item) => item.status === activeTab);
+  }, [lamaran, activeTab]);
 
   if (!user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f6faf8]">
+      <div className="flex min-h-screen items-center justify-center bg-[#f7faf8]">
         <div className="flex flex-col items-center gap-3">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#dceee5] border-t-[#4da477]" />
-
-          <p className="text-sm text-[#81938a]">
-            Memuat halaman...
-          </p>
+          <p className="text-sm text-[#81938a]">Memuat halaman...</p>
         </div>
       </div>
     );
   }
 
-  /* ==========================================================
-     RENDER
-  ========================================================== */
-
   return (
-    <div className="min-h-screen bg-[#f6faf8] text-slate-900">
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    <div className="min-h-screen bg-[#f7faf8]">
+      <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
 
-        {/* ====================================================
-            HEADER
-        ==================================================== */}
+        {/* HEADER */}
 
-        <div className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-extrabold uppercase tracking-[1.5px] text-[#4da477]">
-              Riwayat Lamaran
-            </p>
-
-            <h1 className="mt-1.5 text-2xl font-black tracking-tight text-[#193d2e] sm:text-3xl">
-              Lamaran Saya
-            </h1>
-
-            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[#71877b]">
-              Pantau seluruh proses lamaran pekerjaan kamu
-              di PT Pupuk Kujang.
-            </p>
-          </div>
-
-          {!loadingLamaran && lamaran.length > 0 && (
-            <button
-              type="button"
-              onClick={() =>
-                router.push("/kandidat/lowongan")
-              }
-              className="inline-flex w-fit shrink-0 items-center gap-2 rounded-xl bg-[#315c4a] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#234236]"
-            >
-              <BriefcaseBusiness size={14} />
-              Cari Lowongan Lain
-            </button>
-          )}
+        <div className="mb-7">
+          <p className="text-xs font-extrabold uppercase tracking-[1.5px] text-[#4da477]">
+            Riwayat Lamaran
+          </p>
+          <h1 className="mt-1.5 text-2xl font-black tracking-tight text-[#193d2e]">
+            Lamaran Saya
+          </h1>
+          <p className="mt-1.5 text-sm text-[#71877b]">
+            Pantau seluruh proses lamaran pekerjaan kamu di PT Pupuk Kujang.
+          </p>
         </div>
-
-        {/* ====================================================
-            ERROR
-        ==================================================== */}
 
         {error && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
@@ -296,141 +232,167 @@ export default function LamaranPage() {
           </div>
         )}
 
-        {/* ====================================================
-            RINGKASAN
-        ==================================================== */}
+        {/* RINGKASAN */}
 
-        {!loadingLamaran &&
-          lamaran.length > 0 && (
-            <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
+        {!loadingLamaran && lamaran.length > 0 && (
+          <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
 
-              <SummaryCard
-                icon={<ListChecks size={17} />}
-                title="Total Lamaran"
-                value={lamaran.length}
-                accent="bg-[#eef2f0] text-[#315c4a]"
-              />
-
-              <SummaryCard
-                icon={<Clock3 size={17} />}
-                title="Diproses"
-                value={jumlah("DIPROSES")}
-                accent="bg-[#fff4de] text-[#a16207]"
-              />
-
-              <SummaryCard
-                icon={<CalendarDays size={17} />}
-                title="Interview"
-                value={jumlah("INTERVIEW")}
-                accent="bg-[#e6f0ff] text-[#2c5aa0]"
-              />
-
-              <SummaryCard
-                icon={<CheckCircle2 size={17} />}
-                title="Diterima"
-                value={jumlah("LOLOS")}
-                accent="bg-[#e8f6ee] text-[#35865d]"
-              />
-
-              <SummaryCard
-                icon={<XCircle size={17} />}
-                title="Ditolak"
-                value={jumlah("DITOLAK")}
-                accent="bg-[#fdecec] text-[#c0392b]"
-                className="col-span-2 lg:col-span-1"
-              />
-
+            <div className="rounded-2xl border border-[#e1eee7] bg-white px-4 py-4">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-[#9aa9a1]">
+                Total Lamaran
+              </p>
+              <p className="mt-1.5 text-2xl font-black text-[#193d2e]">
+                {lamaran.length}
+              </p>
             </div>
-          )}
 
-        {/* ====================================================
-            CONTENT
-        ==================================================== */}
+            <div className="rounded-2xl border border-[#f3e2ba] bg-[#fffaf0] px-4 py-4">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-[#a16207]">
+                Diproses
+              </p>
+              <p className="mt-1.5 text-2xl font-black text-[#a16207]">
+                {jumlah("DIPROSES")}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-[#c7dcf5] bg-[#f2f7fe] px-4 py-4">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-[#2c5aa0]">
+                Interview
+              </p>
+              <p className="mt-1.5 text-2xl font-black text-[#2c5aa0]">
+                {jumlah("INTERVIEW")}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-[#bfe3cd] bg-[#f0faf4] px-4 py-4">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-[#35865d]">
+                Lolos
+              </p>
+              <p className="mt-1.5 text-2xl font-black text-[#35865d]">
+                {jumlah("LOLOS")}
+              </p>
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB FILTER */}
+
+        {!loadingLamaran && lamaran.length > 0 && (
+          <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
+            {TAB_OPTIONS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition ${activeTab === tab.key
+                  ? "bg-[#315c4a] text-white"
+                  : "border border-[#e1eee7] bg-white text-[#71877b] hover:border-[#b9ddc9]"
+                  }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* LIST LAMARAN */}
 
         {loadingLamaran ? (
 
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#e1eee7] bg-white px-6 py-16 shadow-sm">
-
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#e1eee7] bg-white px-6 py-16">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#dceee5] border-t-[#4da477]" />
-
-            <p className="text-sm text-[#81938a]">
-              Memuat lamaran...
-            </p>
-
+            <p className="text-sm text-[#81938a]">Memuat lamaran...</p>
           </div>
 
         ) : lamaran.length === 0 ? (
 
-          /* ==================================================
-             EMPTY
-          ================================================== */
-
-          <div className="rounded-2xl border border-dashed border-[#cfe2d8] bg-white px-5 py-16 text-center shadow-sm">
-
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#eef6f1] text-[#4da477]">
-              <FileCheck2
-                size={28}
-                strokeWidth={1.7}
-              />
+          <div className="rounded-2xl border border-[#e1eee7] bg-white px-5 py-16 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#eef6f1] text-3xl">
+              <Inbox className="h-7 w-7 text-[#71877b]" />
             </div>
-
             <h3 className="mt-5 text-lg font-black text-[#315c4a]">
               Belum ada lamaran
             </h3>
-
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#81938a]">
-              Yuk jelajahi lowongan yang tersedia
-              dan mulai melamar posisi yang sesuai
-              denganmu.
+            <p className="mt-2 text-sm text-[#81938a]">
+              Yuk jelajahi lowongan yang tersedia dan mulai melamar posisi
+              yang sesuai denganmu.
             </p>
-
             <button
               type="button"
-              onClick={() =>
-                router.push("/kandidat/lowongan")
-              }
-              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#315c4a] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#234236]"
+              onClick={() => router.push("/kandidat/lowongan")}
+              className="mt-5 rounded-xl bg-[#315c4a] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#234236]"
             >
-              Lihat Lowongan
-              <span aria-hidden>→</span>
+              Lihat Lowongan →
             </button>
+          </div>
 
+        ) : filteredLamaran.length === 0 ? (
+
+          <div className="rounded-2xl border border-[#e1eee7] bg-white px-5 py-12 text-center text-sm text-[#81938a]">
+            Tidak ada lamaran dengan status ini.
           </div>
 
         ) : (
 
-          /* ==================================================
-             LIST
-          ================================================== */
+          <div className="space-y-3">
 
-          <div className="space-y-4">
+            {filteredLamaran.map((item) => {
+              const config = statusConfig[item.status];
 
-            {lamaran.map((item) => {
-              const config =
-                statusConfig[item.status];
+              const ditolak = item.status === "DITOLAK";
+
+              const kolomTahapan =
+                item.lowongan.tahapanSeleksi &&
+                  item.lowongan.tahapanSeleksi.length > 0
+                  ? [...item.lowongan.tahapanSeleksi].sort(
+                    (a, b) => TAHAPAN_URUTAN[a] - TAHAPAN_URUTAN[b]
+                  )
+                  : [];
+
+              const belumSelesai = [...item.tahapanProgress]
+                .sort((a, b) => a.urutan - b.urutan)
+                .find((t) => t.selesaiPada === null);
+
+              const displayLabel = ditolak
+                ? "Ditolak"
+                : item.status === "LOLOS"
+                  ? "Lolos"
+                  : belumSelesai
+                    ? TAHAPAN_LABEL[belumSelesai.tahapan]
+                    : config.label;
+
+              const displayBadge = ditolak
+                ? statusConfig.DITOLAK.badge
+                : item.status === "LOLOS"
+                  ? statusConfig.LOLOS.badge
+                  : belumSelesai
+                    ? TAHAPAN_BADGE[belumSelesai.tahapan]
+                    : statusConfig[item.status].badge;
+
+              const displayDot = ditolak
+                ? statusConfig.DITOLAK.dot
+                : item.status === "LOLOS"
+                  ? statusConfig.LOLOS.dot
+                  : belumSelesai
+                    ? TAHAPAN_DOT[belumSelesai.tahapan]
+                    : statusConfig[item.status].dot;
 
               return (
                 <article
                   key={item.id}
-                  className="rounded-2xl border border-[#e1eee7] bg-white p-5 shadow-sm transition hover:border-[#b9ddc9] hover:shadow-[0_10px_25px_rgba(49,92,74,0.06)] sm:p-6"
+                  className="rounded-2xl border border-[#e1eee7] bg-white p-5 transition hover:border-[#b9ddc9] hover:shadow-[0_10px_25px_rgba(49,92,74,0.06)]"
                 >
-
-                  {/* ========================================
-                     HEADER CARD
-                  ======================================== */}
 
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 
-                    <div className="flex min-w-0 gap-4">
+                    <div className="flex gap-4">
 
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e8f6ee] text-sm font-black text-[#4da477]">
-                        {item.lowongan.posisi
-                          .substring(0, 2)
-                          .toUpperCase()}
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e8f6ee] text-lg font-black text-[#4da477]">
+                        {item.lowongan.posisi.substring(0, 2).toUpperCase()}
                       </div>
 
-                      <div className="min-w-0">
-
+                      <div>
                         <h3 className="text-base font-black text-[#193d2e]">
                           {item.lowongan.posisi}
                         </h3>
@@ -440,514 +402,111 @@ export default function LamaranPage() {
                         </p>
 
                         <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#81938a]">
-
                           <span className="inline-flex items-center gap-1">
-                            <MapPin size={13} />
-
+                            <MapPin className="h-3 w-3" />
                             {item.lowongan.lokasi}
                           </span>
-
                           <span className="inline-flex items-center gap-1">
-                            <BriefcaseBusiness size={13} />
-
+                            <Briefcase className="h-3 w-3" />
                             {item.lowongan.tipe}
                           </span>
-
                           <span className="inline-flex items-center gap-1">
-                            <CalendarDays size={13} />
-
-                            Dilamar{" "}
-                            {formatTanggal(
-                              item.createdAt
-                            )}
+                            <Calendar className="h-3 w-3" />
+                            Dilamar {formatTanggal(item.createdAt)}
                           </span>
-
                         </div>
 
+                        {item.lowongan.deskripsi && (
+                          <p className="mt-3 max-w-xl text-xs leading-6 text-[#71877b]">
+                            {item.lowongan.deskripsi.length > 140
+                              ? item.lowongan.deskripsi.slice(0, 140) + "..."
+                              : item.lowongan.deskripsi}
+                          </p>
+                        )}
+
                       </div>
+
                     </div>
 
-                    {/* BADGE */}
-
                     <span
-                      className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${config.badge}`}
+                      className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${displayBadge}`}
                     >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${config.dot}`}
-                      />
-
-                      {config.label}
+                      <span className={`h-1.5 w-1.5 rounded-full ${displayDot}`} />
+                      {displayLabel}
                     </span>
 
                   </div>
 
-                  {/* ========================================
-                     DESKRIPSI
-                  ======================================== */}
+                  {/* STEPPER TAHAPAN SELEKSI */}
 
-                  {item.lowongan.deskripsi && (
-                    <p className="mt-4 max-w-3xl text-xs leading-6 text-[#71877b]">
-                      {item.lowongan.deskripsi.length > 140
-                        ? item.lowongan.deskripsi.slice(
-                            0,
-                            140
-                          ) + "..."
-                        : item.lowongan.deskripsi}
-                    </p>
+                  {kolomTahapan.length > 0 && (
+                    <div className="mt-5 overflow-x-auto border-t border-[#eef5f1] pt-4">
+                      <div className="flex min-w-[420px] items-start">
+                        {kolomTahapan.map((tahapan, index) => {
+                          const progress = item.tahapanProgress.find(
+                            (t) => t.tahapan === tahapan
+                          );
+                          const selesai = progress?.selesaiPada;
+                          const isSekarang =
+                            !ditolak && belumSelesai?.tahapan === tahapan;
+                          const isTitikTolak =
+                            ditolak && belumSelesai?.tahapan === tahapan;
+                          const isLast = index === kolomTahapan.length - 1;
+
+                          return (
+                            <div key={tahapan} className="flex flex-1 items-start">
+                              <div className="flex flex-col items-center gap-1.5">
+                                <div
+                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${selesai
+                                    ? "bg-[#4da477] text-white"
+                                    : isTitikTolak
+                                      ? "bg-red-500 text-white"
+                                      : isSekarang
+                                        ? "border-2 border-[#4da477] text-[#4da477]"
+                                        : "bg-[#eef5f1] text-[#a0afa7]"
+                                    }`}
+                                >
+                                  {selesai ? (
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                  ) : isTitikTolak ? (
+                                    <XCircle className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <Circle className="h-2.5 w-2.5 fill-current" />
+                                  )}
+                                </div>
+
+                                <span
+                                  className={`text-center text-[10px] font-medium leading-tight ${selesai || isSekarang
+                                    ? "text-[#315c4a]"
+                                    : "text-[#a0afa7]"
+                                    }`}
+                                >
+                                  {TAHAPAN_LABEL[tahapan]}
+                                </span>
+                              </div>
+
+                              {!isLast && (
+                                <div
+                                  className={`mt-3.5 h-0.5 flex-1 ${selesai ? "bg-[#4da477]" : "bg-[#eef5f1]"
+                                    }`}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   )}
-
-                  {/* DIVIDER */}
-
-                  <div className="my-5 border-t border-[#edf2ef]" />
-
-                  {/* PROGRESS */}
-
-                  <ApplicationProgress
-                    status={item.status}
-                    tahapanSeleksi={
-                      item.lowongan
-                        .tahapanSeleksi
-                    }
-                    tahapanProgress={
-                      item.tahapanProgress
-                    }
-                  />
 
                 </article>
               );
             })}
 
           </div>
+
         )}
 
-      </main>
-    </div>
-  );
-}
-
-/* ===============================================================
-   SUMMARY CARD
-=============================================================== */
-
-function SummaryCard({
-  icon,
-  title,
-  value,
-  accent,
-  className = "",
-}: {
-  icon: React.ReactNode;
-  title: string;
-  value: number;
-  accent: string;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`rounded-2xl border border-[#e1eee7] bg-white p-5 shadow-sm transition hover:border-[#cfe2d8] hover:shadow-[0_6px_18px_rgba(49,92,74,0.05)] ${className}`}
-    >
-      <div
-        className={`flex h-10 w-10 items-center justify-center rounded-xl ${accent}`}
-      >
-        {icon}
-      </div>
-
-      <p className="mt-3 text-2xl font-black text-[#193d2e]">
-        {value}
-      </p>
-
-      <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#9aa9a1]">
-        {title}
-      </p>
-    </div>
-  );
-}
-
-/* ===============================================================
-   APPLICATION PROGRESS
-=============================================================== */
-
-function ApplicationProgress({
-  status,
-  tahapanSeleksi,
-  tahapanProgress,
-}: {
-  status: StatusLamaran;
-  tahapanSeleksi?: string[] | null;
-  tahapanProgress?: TahapanProgress[] | null;
-}) {
-  /* -------------------------------------------------------------
-     AMBIL TAHAPAN
-  ------------------------------------------------------------- */
-
-  const safeTahapanSeleksi =
-    Array.isArray(tahapanSeleksi)
-      ? tahapanSeleksi
-      : [];
-
-  const safeTahapanProgress =
-    Array.isArray(tahapanProgress)
-      ? tahapanProgress
-      : [];
-
-  let daftarTahapan = [
-    ...safeTahapanSeleksi,
-  ];
-
-  /*
-   * Jika tahapanSeleksi kosong,
-   * gunakan tahapanProgress sebagai fallback.
-   */
-
-  if (daftarTahapan.length === 0) {
-    daftarTahapan =
-      safeTahapanProgress.map(
-        (item) => item.tahapan
-      );
-  }
-
-  /*
-   * Hilangkan duplikat dan urutkan.
-   */
-
-  daftarTahapan = Array.from(
-    new Set(daftarTahapan)
-  ).sort(
-    (a, b) =>
-      (TAHAPAN_URUTAN[a] ?? 999) -
-      (TAHAPAN_URUTAN[b] ?? 999)
-  );
-
-  /* -------------------------------------------------------------
-     JIKA TIDAK ADA TAHAPAN
-  ------------------------------------------------------------- */
-
-  if (daftarTahapan.length === 0) {
-    return (
-      <div>
-        <div className="mb-4 flex items-center justify-between">
-          <p className="text-xs font-bold text-[#60786c]">
-            Status proses
-          </p>
-        </div>
-
-        <div className="rounded-xl bg-[#f7faf8] px-4 py-3">
-          <p className="text-xs text-[#81938a]">
-            Tahapan seleksi belum tersedia.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  /* -------------------------------------------------------------
-     MAP PROGRESS
-  ------------------------------------------------------------- */
-
-  const progressMap = new Map<
-    string,
-    TahapanProgress
-  >();
-
-  safeTahapanProgress.forEach(
-    (item) => {
-      progressMap.set(
-        item.tahapan,
-        item
-      );
-    }
-  );
-
-  /* -------------------------------------------------------------
-     TAHAPAN AKTIF
-  ------------------------------------------------------------- */
-
-  const firstUnfinishedIndex =
-    daftarTahapan.findIndex(
-      (tahapan) => {
-        const progress =
-          progressMap.get(tahapan);
-
-        return !progress?.selesaiPada;
-      }
-    );
-
-  const allCompleted =
-    daftarTahapan.every(
-      (tahapan) =>
-        !!progressMap.get(tahapan)
-          ?.selesaiPada
-    );
-
-  /* -------------------------------------------------------------
-     STATUS TEXT
-  ------------------------------------------------------------- */
-
-  let statusText =
-    "Lamaran sedang dalam proses seleksi oleh tim rekrutmen.";
-
-  let statusIcon = (
-    <Clock3
-      size={14}
-      className="shrink-0 text-[#d99619]"
-    />
-  );
-
-  if (status === "INTERVIEW") {
-    statusText =
-      "Lamaran kamu telah masuk ke tahap interview.";
-
-    statusIcon = (
-      <CalendarDays
-        size={14}
-        className="shrink-0 text-[#3d78c9]"
-      />
-    );
-  }
-
-  if (status === "LOLOS") {
-    statusText =
-      "Selamat! Kamu berhasil lolos proses rekrutmen.";
-
-    statusIcon = (
-      <CheckCircle2
-        size={14}
-        className="shrink-0 text-[#4da477]"
-      />
-    );
-  }
-
-  if (status === "DITOLAK") {
-    statusText =
-      "Lamaran belum dapat dilanjutkan ke tahap berikutnya.";
-
-    statusIcon = (
-      <XCircle
-        size={14}
-        className="shrink-0 text-[#e05252]"
-      />
-    );
-  }
-
-  return (
-    <div>
-
-      {/* =======================================================
-          HEADER PROGRESS
-      ======================================================= */}
-
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs font-bold text-[#60786c]">
-          Tahapan Seleksi
-        </p>
-
-        {status === "DITOLAK" && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fdecec] px-2.5 py-1 text-[10px] font-bold text-[#c0392b]">
-            <XCircle size={12} />
-
-            Lamaran ditolak
-          </span>
-        )}
-
-        {allCompleted &&
-          status !== "DITOLAK" && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e8f6ee] px-2.5 py-1 text-[10px] font-bold text-[#35865d]">
-              <CheckCircle2 size={12} />
-
-              Selesai
-            </span>
-          )}
-      </div>
-
-      {/* =======================================================
-          PROGRESS
-      ======================================================= */}
-
-      <div className="overflow-x-auto pb-1">
-        <div className="flex min-w-max items-start">
-
-          {daftarTahapan.map(
-            (tahapan, index) => {
-              const progress =
-                progressMap.get(tahapan);
-
-              const selesai =
-                !!progress?.selesaiPada;
-
-              const isCurrent =
-                index ===
-                  firstUnfinishedIndex &&
-                status !== "DITOLAK";
-
-              const isRejected =
-                status === "DITOLAK" &&
-                index ===
-                  firstUnfinishedIndex;
-
-              /*
-               * Tahap dianggap aktif jika:
-               * - sudah selesai
-               * - sedang berjalan
-               * - menjadi tahap penolakan
-               */
-
-              const active =
-                selesai ||
-                isCurrent ||
-                isRejected;
-
-              return (
-                <div
-                  key={`${tahapan}-${index}`}
-                  className="flex items-start"
-                >
-
-                  {/* STEP */}
-
-                  <ProgressStep
-                    label={
-                      TAHAPAN_LABEL[
-                        tahapan
-                      ] ?? tahapan
-                    }
-                    active={active}
-                    completed={selesai}
-                    rejected={isRejected}
-                    current={isCurrent}
-                    date={
-                      progress?.selesaiPada
-                    }
-                  />
-
-                  {/* LINE */}
-
-                  {index <
-                    daftarTahapan.length -
-                      1 && (
-                    <ProgressLine
-                      active={selesai}
-                    />
-                  )}
-
-                </div>
-              );
-            }
-          )}
-
-        </div>
-      </div>
-
-      {/* =======================================================
-          STATUS TEXT
-      ======================================================= */}
-
-      <div className="mt-4 rounded-xl bg-[#f7faf8] px-4 py-3">
-        <div className="flex items-center gap-2 text-xs text-[#71877b]">
-          {statusIcon}
-
-          <span>{statusText}</span>
-        </div>
       </div>
     </div>
-  );
-}
-
-/* ===============================================================
-   PROGRESS STEP
-=============================================================== */
-
-function ProgressStep({
-  label,
-  active,
-  completed,
-  rejected = false,
-  current = false,
-  date,
-}: {
-  label: string;
-  active: boolean;
-  completed: boolean;
-  rejected?: boolean;
-  current?: boolean;
-  date?: string | null;
-}) {
-  return (
-    <div className="flex min-w-[70px] flex-col items-center">
-
-      {/* CIRCLE */}
-
-      <div
-        className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition ${
-          rejected
-            ? "border-[#e05252] bg-[#e05252] text-white"
-            : completed
-              ? "border-[#4da477] bg-[#4da477] text-white"
-              : current
-                ? "border-[#4da477] bg-white text-[#4da477]"
-                : active
-                  ? "border-[#4da477] bg-[#4da477] text-white"
-                  : "border-[#dce5e0] bg-white text-[#a6b3ad]"
-        }`}
-      >
-        {rejected ? (
-          <XCircle size={15} />
-        ) : completed ? (
-          <CheckCircle2 size={15} />
-        ) : current ? (
-          <Clock3 size={14} />
-        ) : (
-          <Hourglass size={13} />
-        )}
-      </div>
-
-      {/* LABEL */}
-
-      <span
-        className={`mt-2 max-w-[75px] text-center text-[9px] font-semibold leading-tight sm:text-[10px] ${
-          rejected
-            ? "text-[#c0392b]"
-            : completed || current
-              ? "text-[#526e61]"
-              : "text-[#a0ada6]"
-        }`}
-      >
-        {label}
-      </span>
-
-      {/* DATE */}
-
-      {date && (
-        <span className="mt-1 whitespace-nowrap text-[8px] text-[#a0ada6]">
-          {new Date(date).toLocaleDateString(
-            "id-ID",
-            {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            }
-          )}
-        </span>
-      )}
-    </div>
-  );
-}
-
-/* ===============================================================
-   PROGRESS LINE
-=============================================================== */
-
-function ProgressLine({
-  active,
-}: {
-  active: boolean;
-}) {
-  return (
-    <div
-      className={`mx-1 mt-[15px] h-0.5 w-8 shrink-0 transition sm:w-10 ${
-        active
-          ? "bg-[#4da477]"
-          : "bg-[#dce5e0]"
-      }`}
-    />
   );
 }

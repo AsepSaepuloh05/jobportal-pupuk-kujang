@@ -119,6 +119,15 @@ const TAHAPAN_LABEL: Record<string, string> = {
     OFFERING: "Offering",
 };
 
+const TAHAPAN_BADGE: Record<string, string> = {
+    SCREENING: "bg-slate-100 text-slate-700",
+    ASSESSMENT: "bg-purple-100 text-purple-700",
+    INTERVIEW: "bg-blue-100 text-blue-700",
+    TECHNICAL_TEST: "bg-cyan-100 text-cyan-700",
+    MCU: "bg-orange-100 text-orange-700",
+    OFFERING: "bg-pink-100 text-pink-700",
+};
+
 const statusLabel: Record<StatusLamaran, string> = {
     DIPROSES: "Diproses",
     INTERVIEW: "Interview",
@@ -633,9 +642,22 @@ export default function PelamarLowonganPage() {
 
                                                 <div className="flex flex-col items-end gap-0.5">
                                                     <span
-                                                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusBadge[item.status]}`}
+                                                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${ditolak
+                                                            ? statusBadge.DITOLAK
+                                                            : item.status === "LOLOS"
+                                                                ? statusBadge.LOLOS
+                                                                : tahapanBelumSelesai
+                                                                    ? TAHAPAN_BADGE[tahapanBelumSelesai.tahapan]
+                                                                    : statusBadge[item.status]
+                                                            }`}
                                                     >
-                                                        {statusLabel[item.status]}
+                                                        {ditolak
+                                                            ? "Ditolak"
+                                                            : item.status === "LOLOS"
+                                                                ? "Lolos"
+                                                                : tahapanBelumSelesai
+                                                                    ? TAHAPAN_LABEL[tahapanBelumSelesai.tahapan]
+                                                                    : statusLabel[item.status]}
                                                     </span>
 
                                                     {item.status === "DITOLAK" && (
@@ -775,7 +797,16 @@ export default function PelamarLowonganPage() {
 
                                                     <button
                                                         type="button"
-                                                        disabled={ditolak || processingId === item.id}
+                                                        disabled={
+                                                            ditolak ||
+                                                            item.status === "LOLOS" ||
+                                                            processingId === item.id
+                                                        }
+                                                        title={
+                                                            item.status === "LOLOS"
+                                                                ? "Kandidat sudah lolos seluruh tahapan"
+                                                                : undefined
+                                                        }
                                                         onClick={() =>
                                                             handleTolak(item.id, item.user.nama)
                                                         }
