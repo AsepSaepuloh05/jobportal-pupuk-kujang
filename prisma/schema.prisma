@@ -78,17 +78,54 @@ model Lamaran {
   lowongan Lowongan @relation(fields: [lowonganId], references: [id], onDelete: Cascade)
 
   tahapanProgress LamaranTahapan[]
+  emailLog        EmailLog[]
 
   @@unique([userId, lowonganId])
   @@map("lamaran")
 }
 
+enum TipeEmail {
+  UNDANGAN
+  HASIL_LOLOS
+  HASIL_DITOLAK
+  BEBAS
+
+  @@map("tipe_email")
+}
+
+enum StatusEmail {
+  TERKIRIM
+  GAGAL
+
+  @@map("status_email")
+}
+
+model EmailLog {
+  id           Int         @id @default(autoincrement())
+  lamaranId    Int
+  tipe         TipeEmail
+  tahapan      String?
+  penerima     String
+  subjek       String
+  isi          String      @db.Text
+  status       StatusEmail
+  errorMessage String?     @db.Text
+  createdAt    DateTime    @default(now())
+
+  lamaran Lamaran @relation(fields: [lamaranId], references: [id], onDelete: Cascade)
+
+  @@map("email_log")
+}
+
 model LamaranTahapan {
-  id          Int            @id @default(autoincrement())
-  lamaranId   Int
-  tahapan     TahapanSeleksi
-  urutan      Int
-  selesaiPada DateTime?
+  id             Int            @id @default(autoincrement())
+  lamaranId      Int
+  tahapan        TahapanSeleksi
+  urutan         Int
+  selesaiPada    DateTime?
+  jadwalTanggal  DateTime?
+  jadwalLokasi   String?
+  jadwalCatatan  String?        @db.Text
 
   lamaran Lamaran @relation(fields: [lamaranId], references: [id], onDelete: Cascade)
 

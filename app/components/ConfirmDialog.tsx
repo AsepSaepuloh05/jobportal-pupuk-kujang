@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Mail } from "lucide-react";
 
 interface ConfirmDialogProps {
     open: boolean;
@@ -10,6 +10,10 @@ interface ConfirmDialogProps {
     cancelText?: string;
     variant?: "danger" | "default";
     loading?: boolean;
+    showEmailOption?: boolean;
+    emailChecked?: boolean;
+    onEmailCheckedChange?: (checked: boolean) => void;
+    emailLabel?: string;
     onConfirm: () => void;
     onCancel: () => void;
 }
@@ -22,6 +26,10 @@ export default function ConfirmDialog({
     cancelText = "Batal",
     variant = "default",
     loading = false,
+    showEmailOption = false,
+    emailChecked = false,
+    onEmailCheckedChange,
+    emailLabel = "Kirim email pemberitahuan ke kandidat",
     onConfirm,
     onCancel,
 }: ConfirmDialogProps) {
@@ -49,6 +57,22 @@ export default function ConfirmDialog({
                     {title}
                 </h3>
                 <p className="mt-1.5 text-sm text-slate-500">{description}</p>
+
+                {showEmailOption && (
+                    <label className="mt-4 flex cursor-pointer items-center gap-2.5 rounded-lg bg-slate-50 px-3.5 py-3">
+                        <input
+                            type="checkbox"
+                            checked={emailChecked}
+                            onChange={(e) => onEmailCheckedChange?.(e.target.checked)}
+                            disabled={loading}
+                            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <span className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                            <Mail className="h-3.5 w-3.5" />
+                            {emailLabel}
+                        </span>
+                    </label>
+                )}
 
                 <div className="mt-6 flex gap-3">
                     <button

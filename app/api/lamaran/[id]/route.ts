@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { kirimEmailHasil } from "@/lib/email";
 
 export const dynamic = "force-dynamic"
 
@@ -22,6 +23,7 @@ export async function PUT(
         const { id } = await params;
         const body = await request.json();
         const status = body.status?.trim();
+        const kirimEmail = Boolean(body.kirimEmail);
 
         const statusValid = ["DIPROSES", "INTERVIEW", "LOLOS", "DITOLAK"];
 
@@ -46,9 +48,33 @@ export async function PUT(
         const lamaran = await prisma.lamaran.update({
             where: { id: Number(id) },
             data: { status },
+            include: {
+                user: { select: { nama: true, email: true } },
+                lowongan: { select: { posisi: true } },
+                tahapanProgress: { orderBy: { urutan: "asc" } },
+            },
         });
 
-        return NextResponse.json(lamaran);
+        let emailResult = null;
+
+        if (kirimEmail && status === "DITOLAK") {
+            const tahapanBelumSelesai = lamaran.tahapanProgress.find(
+                (item) => item.selesaiPada === null
+            );
+
+            if (tahapanBelumSelesai) {
+                emailResult = await kirimEmailHasil({
+                    lamaranId: Number(id),
+                    penerima: lamaran.user.email,
+                    nama: lamaran.user.nama,
+                    posisi: lamaran.lowongan.posisi,
+                    tahapan: tahapanBelumSelesai.tahapan,
+                    lolos: false,
+                });
+            }
+        }
+
+        return NextResponse.json({ lamaran, emailResult });
     } catch (error) {
         console.error("PUT LAMARAN ERROR:", error);
 

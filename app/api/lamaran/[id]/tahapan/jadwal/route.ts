@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { kirimEmailHasil } from "@/lib/email";
-
-export const dynamic = "force-dynamic"
+import { kirimEmailUndangan } from "@/lib/email";
 
 export async function PUT(
     request: Request,
@@ -15,19 +13,24 @@ export async function PUT(
 
         if (userRole !== "HR") {
             return NextResponse.json(
-                { message: "Hanya HR yang bisa mengubah tahapan" },
+                { message: "Hanya HR yang bisa mengatur jadwal" },
                 { status: 403 }
             );
         }
 
         const { id } = await params;
         const body = await request.json();
-        const tahapan = body.tahapan?.trim();
+
+        const jadwalTanggal = body.jadwalTanggal
+            ? new Date(body.jadwalTanggal)
+            : null;
+        const jadwalLokasi = body.jadwalLokasi?.trim() || null;
+        const jadwalCatatan = body.jadwalCatatan?.trim() || null;
         const kirimEmail = Boolean(body.kirimEmail);
 
-        if (!tahapan) {
+        if (!jadwalTanggal) {
             return NextResponse.json(
-                { message: "Tahapan wajib diisi" },
+                { message: "Tanggal & jam wajib diisi" },
                 { status: 400 }
             );
         }
@@ -48,39 +51,22 @@ export async function PUT(
             );
         }
 
-        if (tahapanSaatIni.tahapan !== tahapan) {
+        if (tahapanSaatIni.tahapan === "SCREENING") {
             return NextResponse.json(
-                {
-                    message: `Tahapan saat ini adalah ${tahapanSaatIni.tahapan}, harus diselesaikan berurutan`,
-                },
+                { message: "Tahapan Screening tidak memerlukan jadwal" },
                 { status: 400 }
             );
         }
 
         await prisma.lamaranTahapan.update({
             where: { id: tahapanSaatIni.id },
-            data: { selesaiPada: new Date() },
+            data: { jadwalTanggal, jadwalLokasi, jadwalCatatan },
         });
-
-        const isTahapanTerakhir =
-            tahapanSaatIni.urutan === semuaTahapan.length;
-
-        if (isTahapanTerakhir) {
-            await prisma.lamaran.update({
-                where: { id: Number(id) },
-                data: { status: "LOLOS" },
-            });
-        } else {
-            await prisma.lamaran.update({
-                where: { id: Number(id) },
-                data: { status: "INTERVIEW" },
-            });
-        }
 
         let emailResult = null;
 
         if (kirimEmail) {
-            const lamaranUser = await prisma.lamaran.findUnique({
+            const lamaran = await prisma.lamaran.findUnique({
                 where: { id: Number(id) },
                 include: {
                     user: { select: { nama: true, email: true } },
@@ -88,21 +74,16 @@ export async function PUT(
                 },
             });
 
-            if (lamaranUser) {
-                const tahapanSelanjutnya = isTahapanTerakhir
-                    ? null
-                    : semuaTahapan.find(
-                        (item) => item.urutan === tahapanSaatIni.urutan + 1
-                    )?.tahapan;
-
-                emailResult = await kirimEmailHasil({
+            if (lamaran) {
+                emailResult = await kirimEmailUndangan({
                     lamaranId: Number(id),
-                    penerima: lamaranUser.user.email,
-                    nama: lamaranUser.user.nama,
-                    posisi: lamaranUser.lowongan.posisi,
+                    penerima: lamaran.user.email,
+                    nama: lamaran.user.nama,
+                    posisi: lamaran.lowongan.posisi,
                     tahapan: tahapanSaatIni.tahapan,
-                    lolos: true,
-                    tahapanSelanjutnya,
+                    jadwalTanggal,
+                    jadwalLokasi,
+                    jadwalCatatan,
                 });
             }
         }
@@ -110,18 +91,16 @@ export async function PUT(
         const lamaran = await prisma.lamaran.findUnique({
             where: { id: Number(id) },
             include: {
-                tahapanProgress: {
-                    orderBy: { urutan: "asc" },
-                },
+                tahapanProgress: { orderBy: { urutan: "asc" } },
             },
         });
 
         return NextResponse.json({ lamaran, emailResult });
     } catch (error) {
-        console.error("PUT TAHAPAN ERROR:", error);
+        console.error("PUT JADWAL TAHAPAN ERROR:", error);
 
         return NextResponse.json(
-            { message: "Gagal memperbarui tahapan" },
+            { message: "Gagal mengatur jadwal" },
             { status: 500 }
         );
     }

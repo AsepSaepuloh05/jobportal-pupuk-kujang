@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
+import JadwalModal from "@/app/components/JadwalModal";
+import EmailBebasModal from "@/app/components/EmailBebasModal";
 import {
     ArrowLeft,
     Users,
@@ -13,7 +15,6 @@ import {
     Inbox,
     Eye,
     X,
-    XCircle,
     GraduationCap,
     Briefcase,
     Award,
@@ -23,6 +24,8 @@ import {
     Hourglass,
     Ban,
     ArrowUpDown,
+    CalendarClock,
+    Send,
 } from "lucide-react";
 
 interface HRUser {
@@ -39,13 +42,15 @@ interface TahapanProgress {
     tahapan: string;
     urutan: number;
     selesaiPada: string | null;
+    jadwalTanggal: string | null;
+    jadwalLokasi: string | null;
+    jadwalCatatan: string | null;
 }
 
 interface Pelamar {
     id: number;
     status: StatusLamaran;
     createdAt: string;
-    updatedAt: string;
     user: {
         id: number;
         nama: string;
@@ -119,15 +124,6 @@ const TAHAPAN_LABEL: Record<string, string> = {
     OFFERING: "Offering",
 };
 
-const TAHAPAN_BADGE: Record<string, string> = {
-    SCREENING: "bg-slate-100 text-slate-700",
-    ASSESSMENT: "bg-purple-100 text-purple-700",
-    INTERVIEW: "bg-blue-100 text-blue-700",
-    TECHNICAL_TEST: "bg-cyan-100 text-cyan-700",
-    MCU: "bg-orange-100 text-orange-700",
-    OFFERING: "bg-pink-100 text-pink-700",
-};
-
 const statusLabel: Record<StatusLamaran, string> = {
     DIPROSES: "Diproses",
     INTERVIEW: "Interview",
@@ -141,6 +137,16 @@ const statusBadge: Record<StatusLamaran, string> = {
     LOLOS: "bg-emerald-100 text-emerald-700",
     DITOLAK: "bg-red-100 text-red-700",
 };
+
+const TAHAPAN_BADGE: Record<string, string> = {
+    SCREENING: "bg-slate-100 text-slate-700",
+    ASSESSMENT: "bg-purple-100 text-purple-700",
+    INTERVIEW: "bg-blue-100 text-blue-700",
+    TECHNICAL_TEST: "bg-cyan-100 text-cyan-700",
+    MCU: "bg-orange-100 text-orange-700",
+    OFFERING: "bg-pink-100 text-pink-700",
+};
+
 
 export default function PelamarLowonganPage() {
     const router = useRouter();
@@ -160,20 +166,30 @@ export default function PelamarLowonganPage() {
 
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [processingId, setProcessingId] = useState<number | null>(null);
+
+    const [detailKandidat, setDetailKandidat] =
+        useState<DetailKandidat | null>(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
+
     const [confirmAction, setConfirmAction] = useState<{
         type: "tahapan" | "tolak" | "batalkan";
         lamaranId: number;
         nama: string;
         tahapan?: string;
     } | null>(null);
+    const [kirimEmailConfirm, setKirimEmailConfirm] = useState(true);
 
-    const [detailKandidat, setDetailKandidat] =
-        useState<DetailKandidat | null>(null);
-    const [loadingDetail, setLoadingDetail] = useState(false);
+    const [jadwalTarget, setJadwalTarget] = useState<{
+        lamaranId: number;
+        tahapan: string;
+    } | null>(null);
+    const [savingJadwal, setSavingJadwal] = useState(false);
 
-    // =====================================================
-    // CEK LOGIN
-    // =====================================================
+    const [emailTarget, setEmailTarget] = useState<{
+        lamaranId: number;
+        nama: string;
+    } | null>(null);
+    const [sendingEmail, setSendingEmail] = useState(false);
 
     useEffect(() => {
         const getUser = async () => {
@@ -204,10 +220,6 @@ export default function PelamarLowonganPage() {
         getUser();
     }, [router]);
 
-    // =====================================================
-    // AMBIL DATA
-    // =====================================================
-
     const getData = async () => {
         try {
             setLoadingData(true);
@@ -237,13 +249,10 @@ export default function PelamarLowonganPage() {
         }
     }, [hrUser, id]);
 
-    // =====================================================
-    // SELESAIKAN TAHAPAN
-    // =====================================================
-
     const eksekusiSelesaikanTahapan = async (
         lamaranId: number,
-        tahapan: string
+        tahapan: string,
+        kirimEmail: boolean
     ) => {
         if (processingId) return;
 
@@ -253,7 +262,7 @@ export default function PelamarLowonganPage() {
             const response = await fetch(`/api/lamaran/${lamaranId}/tahapan`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tahapan }),
+                body: JSON.stringify({ tahapan, kirimEmail }),
             });
 
             const data = await response.json();
@@ -267,8 +276,8 @@ export default function PelamarLowonganPage() {
                     item.id === lamaranId
                         ? {
                             ...item,
-                            status: data.status,
-                            tahapanProgress: data.tahapanProgress,
+                            status: data.lamaran.status,
+                            tahapanProgress: data.lamaran.tahapanProgress,
                         }
                         : item
                 )
@@ -283,18 +292,14 @@ export default function PelamarLowonganPage() {
         }
     };
 
-    // =====================================================
-    // TOLAK LAMARAN
-    // =====================================================
-
-    const eksekusiTolak = async (lamaranId: number) => {
+    const eksekusiTolak = async (lamaranId: number, kirimEmail: boolean) => {
         try {
             setProcessingId(lamaranId);
 
             const response = await fetch(`/api/lamaran/${lamaranId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: "DITOLAK" }),
+                body: JSON.stringify({ status: "DITOLAK", kirimEmail }),
             });
 
             const data = await response.json();
@@ -317,10 +322,6 @@ export default function PelamarLowonganPage() {
             setProcessingId(null);
         }
     };
-
-    // =====================================================
-    // BATALKAN LAMARAN
-    // =====================================================
 
     const eksekusiBatalkan = async (lamaranId: number) => {
         try {
@@ -351,12 +352,9 @@ export default function PelamarLowonganPage() {
         }
     };
 
-    // =====================================================
-    // TRIGGER & KONFIRMASI
-    // =====================================================
-
     const handleSelesaikanTahapan = (lamaranId: number, tahapan: string) => {
         const item = pelamar.find((p) => p.id === lamaranId);
+        setKirimEmailConfirm(true);
         setConfirmAction({
             type: "tahapan",
             lamaranId,
@@ -366,6 +364,7 @@ export default function PelamarLowonganPage() {
     };
 
     const handleTolak = (lamaranId: number, nama: string) => {
+        setKirimEmailConfirm(true);
         setConfirmAction({ type: "tolak", lamaranId, nama });
     };
 
@@ -377,9 +376,13 @@ export default function PelamarLowonganPage() {
         if (!confirmAction) return;
 
         if (confirmAction.type === "tahapan" && confirmAction.tahapan) {
-            eksekusiSelesaikanTahapan(confirmAction.lamaranId, confirmAction.tahapan);
+            eksekusiSelesaikanTahapan(
+                confirmAction.lamaranId,
+                confirmAction.tahapan,
+                kirimEmailConfirm
+            );
         } else if (confirmAction.type === "tolak") {
-            eksekusiTolak(confirmAction.lamaranId);
+            eksekusiTolak(confirmAction.lamaranId, kirimEmailConfirm);
         } else if (confirmAction.type === "batalkan") {
             eksekusiBatalkan(confirmAction.lamaranId);
         }
@@ -387,9 +390,82 @@ export default function PelamarLowonganPage() {
         setConfirmAction(null);
     };
 
-    // =====================================================
-    // DETAIL KANDIDAT (MODAL)
-    // =====================================================
+    const handleSubmitJadwal = async (formData: {
+        jadwalTanggal: string;
+        jadwalLokasi: string;
+        jadwalCatatan: string;
+        kirimEmail: boolean;
+    }) => {
+        if (!jadwalTarget) return;
+
+        try {
+            setSavingJadwal(true);
+
+            const response = await fetch(
+                `/api/lamaran/${jadwalTarget.lamaranId}/tahapan/jadwal`,
+                {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Gagal mengatur jadwal");
+            }
+
+            setPelamar((prev) =>
+                prev.map((item) =>
+                    item.id === jadwalTarget.lamaranId
+                        ? { ...item, tahapanProgress: data.lamaran.tahapanProgress }
+                        : item
+                )
+            );
+
+            setJadwalTarget(null);
+        } catch (error) {
+            console.error("SET JADWAL ERROR:", error);
+            alert(error instanceof Error ? error.message : "Gagal mengatur jadwal");
+        } finally {
+            setSavingJadwal(false);
+        }
+    };
+
+    const handleSubmitEmailBebas = async (formData: {
+        subjek: string;
+        isi: string;
+    }) => {
+        if (!emailTarget) return;
+
+        try {
+            setSendingEmail(true);
+
+            const response = await fetch(
+                `/api/lamaran/${emailTarget.lamaranId}/email`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Gagal mengirim email");
+            }
+
+            alert("Email berhasil dikirim");
+            setEmailTarget(null);
+        } catch (error) {
+            console.error("KIRIM EMAIL ERROR:", error);
+            alert(error instanceof Error ? error.message : "Gagal mengirim email");
+        } finally {
+            setSendingEmail(false);
+        }
+    };
 
     const bukaDetail = async (userId: number) => {
         try {
@@ -416,10 +492,6 @@ export default function PelamarLowonganPage() {
     const bukaBerkas = (userId: number) => {
         window.open(`/api/hr/kandidat/${userId}/pdf-gabungan`, "_blank");
     };
-
-    // =====================================================
-    // FILTER + SORT
-    // =====================================================
 
     const kolomTahapan = useMemo(() => {
         if (!lowongan) return [];
@@ -458,6 +530,19 @@ export default function PelamarLowonganPage() {
             year: "numeric",
         });
     };
+
+    const formatTanggalJam = (date: string) => {
+        return (
+            new Date(date).toLocaleString("id-ID", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+            }) + " WIB"
+        );
+    };
+
 
     if (loading) {
         return (
@@ -517,8 +602,6 @@ export default function PelamarLowonganPage() {
                     </div>
                 </div>
 
-                {/* FILTER */}
-
                 <div className="mb-6 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
 
                     <div className="relative w-full sm:max-w-md">
@@ -561,7 +644,6 @@ export default function PelamarLowonganPage() {
 
                 </div>
 
-                {/* LIST (ACCORDION) */}
 
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
 
@@ -600,8 +682,6 @@ export default function PelamarLowonganPage() {
                                 return (
                                     <div key={item.id}>
 
-                                        {/* ACCORDION HEADER */}
-
                                         <button
                                             type="button"
                                             onClick={() =>
@@ -635,7 +715,7 @@ export default function PelamarLowonganPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 <span className="text-xs text-slate-400">
                                                     {formatTanggal(item.createdAt)}
                                                 </span>
@@ -662,7 +742,7 @@ export default function PelamarLowonganPage() {
 
                                                     {item.status === "DITOLAK" && (
                                                         <span className="text-[10px] text-red-500">
-                                                            {formatTanggal(item.updatedAt)}
+                                                            {formatTanggal(item.createdAt)}
                                                         </span>
                                                     )}
                                                 </div>
@@ -691,6 +771,21 @@ export default function PelamarLowonganPage() {
                                                     Berkas
                                                 </div>
 
+                                                <div
+                                                    role="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEmailTarget({
+                                                            lamaranId: item.id,
+                                                            nama: item.user.nama,
+                                                        });
+                                                    }}
+                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                                                >
+                                                    <Send className="h-3.5 w-3.5" />
+                                                    Email
+                                                </div>
+
                                                 <ChevronDown
                                                     className={`h-4 w-4 text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""
                                                         }`}
@@ -698,8 +793,6 @@ export default function PelamarLowonganPage() {
                                             </div>
 
                                         </button>
-
-                                        {/* ACCORDION BODY - TAHAPAN SELEKSI */}
 
                                         {isExpanded && (
 
@@ -709,7 +802,7 @@ export default function PelamarLowonganPage() {
                                                     Progress Tahapan Seleksi
                                                 </p>
 
-                                                <div className="flex flex-wrap items-center gap-3">
+                                                <div className="flex flex-wrap items-start gap-4">
 
                                                     {kolomTahapan.map((tahapan) => {
                                                         const progress = item.tahapanProgress.find(
@@ -719,6 +812,10 @@ export default function PelamarLowonganPage() {
                                                         const isTahapanSaatIni =
                                                             !ditolak &&
                                                             tahapanBelumSelesai?.tahapan === tahapan;
+                                                        const butuhJadwal = tahapan !== "SCREENING";
+                                                        const sudahAdaJadwal = Boolean(
+                                                            progress?.jadwalTanggal
+                                                        );
 
                                                         return (
                                                             <div
@@ -726,7 +823,6 @@ export default function PelamarLowonganPage() {
                                                                 className="flex flex-col items-center gap-1.5"
                                                             >
                                                                 {selesai ? (
-
                                                                     <button
                                                                         type="button"
                                                                         disabled
@@ -734,42 +830,38 @@ export default function PelamarLowonganPage() {
                                                                     >
                                                                         <CheckCircle2 className="h-4 w-4" />
                                                                     </button>
-
-                                                                ) : ditolak && tahapanBelumSelesai?.tahapan === tahapan ? (
-
+                                                                ) : ditolak &&
+                                                                    tahapanBelumSelesai?.tahapan === tahapan ? (
                                                                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500 text-white">
-                                                                        <XCircle className="h-4 w-4" />
+                                                                        <X className="h-4 w-4" />
                                                                     </span>
-
                                                                 ) : ditolak ? (
-
                                                                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-300">
-                                                                        <XCircle className="h-4 w-4" />
+                                                                        <X className="h-4 w-4" />
                                                                     </span>
-
                                                                 ) : isTahapanSaatIni ? (
-
                                                                     <button
                                                                         type="button"
-                                                                        disabled={processingId === item.id}
-                                                                        onClick={() =>
-                                                                            handleSelesaikanTahapan(
-                                                                                item.id,
-                                                                                tahapan
-                                                                            )
+                                                                        disabled={
+                                                                            (butuhJadwal && !sudahAdaJadwal) ||
+                                                                            processingId === item.id
                                                                         }
-                                                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 transition hover:bg-emerald-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                                                                        title={`Tandai ${TAHAPAN_LABEL[tahapan]} selesai`}
+                                                                        title={
+                                                                            butuhJadwal && !sudahAdaJadwal
+                                                                                ? "Set jadwal dulu sebelum menyelesaikan tahap ini"
+                                                                                : `Tandai ${TAHAPAN_LABEL[tahapan]} selesai`
+                                                                        }
+                                                                        onClick={() =>
+                                                                            handleSelesaikanTahapan(item.id, tahapan)
+                                                                        }
+                                                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 transition hover:bg-emerald-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                                                                     >
                                                                         <CheckCircle2 className="h-4 w-4" />
                                                                     </button>
-
                                                                 ) : (
-
                                                                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-300">
                                                                         <Hourglass className="h-4 w-4" />
                                                                     </span>
-
                                                                 )}
 
                                                                 <span className="text-center text-[11px] font-medium text-slate-600">
@@ -782,11 +874,43 @@ export default function PelamarLowonganPage() {
                                                                     </span>
                                                                 )}
 
-                                                                {ditolak && tahapanBelumSelesai?.tahapan === tahapan && (
-                                                                    <span className="text-[10px] font-semibold text-red-500">
-                                                                        Ditolak di sini
-                                                                    </span>
-                                                                )}
+                                                                {ditolak &&
+                                                                    tahapanBelumSelesai?.tahapan === tahapan && (
+                                                                        <span className="text-[10px] font-semibold text-red-500">
+                                                                            Ditolak di sini
+                                                                        </span>
+                                                                    )}
+
+                                                                {!selesai &&
+                                                                    !ditolak &&
+                                                                    isTahapanSaatIni &&
+                                                                    butuhJadwal && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                setJadwalTarget({
+                                                                                    lamaranId: item.id,
+                                                                                    tahapan,
+                                                                                })
+                                                                            }
+                                                                            className="mt-1 inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 transition hover:bg-slate-50"
+                                                                        >
+                                                                            <CalendarClock className="h-3 w-3" />
+                                                                            {sudahAdaJadwal
+                                                                                ? "Ubah Jadwal"
+                                                                                : "Set Jadwal"}
+                                                                        </button>
+                                                                    )}
+
+                                                                {sudahAdaJadwal &&
+                                                                    progress?.jadwalTanggal &&
+                                                                    !selesai && (
+                                                                        <span className="max-w-[110px] text-center text-[9.5px] leading-tight text-slate-500">
+                                                                            {formatTanggalJam(
+                                                                                progress.jadwalTanggal
+                                                                            )}
+                                                                        </span>
+                                                                    )}
                                                             </div>
                                                         );
                                                     })}
@@ -846,7 +970,6 @@ export default function PelamarLowonganPage() {
 
             </main>
 
-            {/* MODAL DETAIL KANDIDAT */}
 
             {detailKandidat && (
 
@@ -1009,7 +1132,16 @@ export default function PelamarLowonganPage() {
 
             )}
 
-            {/* CONFIRM DIALOG */}
+            {loadingDetail && !detailKandidat && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+                    <div className="flex items-center gap-3 rounded-xl bg-white px-5 py-4 shadow-xl">
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-emerald-600" />
+                        <span className="text-sm font-medium text-slate-700">
+                            Memuat detail kandidat...
+                        </span>
+                    </div>
+                </div>
+            )}
 
             <ConfirmDialog
                 open={confirmAction !== null}
@@ -1032,20 +1164,37 @@ export default function PelamarLowonganPage() {
                 }
                 variant={confirmAction?.type === "tahapan" ? "default" : "danger"}
                 loading={processingId === confirmAction?.lamaranId}
+                showEmailOption={
+                    confirmAction?.type === "tahapan" || confirmAction?.type === "tolak"
+                }
+                emailChecked={kirimEmailConfirm}
+                onEmailCheckedChange={setKirimEmailConfirm}
+                emailLabel={
+                    confirmAction?.type === "tolak"
+                        ? "Kirim email pemberitahuan penolakan ke kandidat"
+                        : "Kirim email hasil ke kandidat"
+                }
                 onConfirm={jalankanKonfirmasi}
                 onCancel={() => setConfirmAction(null)}
             />
 
-            {loadingDetail && !detailKandidat && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-                    <div className="flex items-center gap-3 rounded-xl bg-white px-5 py-4 shadow-xl">
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-emerald-600" />
-                        <span className="text-sm font-medium text-slate-700">
-                            Memuat detail kandidat...
-                        </span>
-                    </div>
-                </div>
-            )}
+            <JadwalModal
+                open={jadwalTarget !== null}
+                tahapanLabel={
+                    jadwalTarget ? TAHAPAN_LABEL[jadwalTarget.tahapan] : ""
+                }
+                loading={savingJadwal}
+                onClose={() => setJadwalTarget(null)}
+                onSubmit={handleSubmitJadwal}
+            />
+
+            <EmailBebasModal
+                open={emailTarget !== null}
+                namaKandidat={emailTarget?.nama || ""}
+                loading={sendingEmail}
+                onClose={() => setEmailTarget(null)}
+                onSubmit={handleSubmitEmailBebas}
+            />
 
         </div>
     );
