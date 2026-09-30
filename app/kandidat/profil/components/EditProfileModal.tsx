@@ -469,7 +469,6 @@ footer={ <ModalFooter
 DATA PRIBADI
 ===================================================== */}
 
-```
     <div>
       <h3 className="mb-3 text-sm font-bold text-slate-900">
         Data Pribadi

@@ -3,6 +3,48 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
 // =====================================================
+// HELPER
+// =====================================================
+
+// Kolom database: ipk (Float). Frontend memakai: nilai (string).
+function toClient<T extends { ipk?: number | null }>(item: T) {
+  return {
+    ...item,
+    nilai:
+      item.ipk !== null && item.ipk !== undefined
+        ? item.ipk.toFixed(2)
+        : null,
+  };
+}
+
+// Validasi tahun: tepat 4 digit
+function isYear4(value: string) {
+  return /^\d{4}$/.test(value);
+}
+
+// Parse nilai: SMA/SMK 0.01 - 100, jenjang lain (IPK) 0.01 - 4.00
+// Return: number | null (kosong) | undefined (tidak valid)
+function parseNilai(
+  raw: unknown,
+  jenjang: string
+): number | null | undefined {
+  if (raw === null || raw === undefined) return null;
+
+  const str = String(raw).trim().replace(",", ".");
+
+  if (str === "") return null;
+
+  if (!/^\d{1,3}(\.\d{1,2})?$/.test(str)) return undefined;
+
+  const value = Number(str);
+  const max = jenjang === "SMA / SMK" ? 100 : 4;
+
+  if (!(value > 0 && value <= max)) return undefined;
+
+  return value;
+}
+
+// =====================================================
 // GET - AMBIL SEMUA DATA PENDIDIKAN USER
 // =====================================================
 
@@ -31,7 +73,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      pendidikan,
+      pendidikan: pendidikan.map(toClient),
     });
   } catch (error) {
     console.error("GET PENDIDIKAN ERROR:", error);
@@ -66,21 +108,12 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    console.log("POST PENDIDIKAN BODY:", body);
-    console.log("USER ID:", userId);
-
     const jenjang = String(body.jenjang ?? "").trim();
     const institusi = String(body.institusi ?? "").trim();
     const jurusan = String(body.jurusan ?? "").trim();
     const tahunMulai = String(body.tahunMulai ?? "").trim();
     const tahunSelesai = String(body.tahunSelesai ?? "").trim();
-
-    const nilai =
-      body.nilai !== null &&
-      body.nilai !== undefined &&
-      String(body.nilai).trim() !== ""
-        ? String(body.nilai).trim()
-        : null;
+    const ipk = parseNilai(body.nilai, jenjang);
 
     // =================================================
     // VALIDASI
@@ -116,21 +149,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!tahunMulai) {
+    if (!isYear4(tahunMulai)) {
       return NextResponse.json(
         {
           success: false,
-          message: "Tahun mulai wajib diisi",
+          message: "Tahun mulai harus 4 digit angka",
         },
         { status: 400 }
       );
     }
 
-    if (!tahunSelesai) {
+    if (!isYear4(tahunSelesai)) {
       return NextResponse.json(
         {
           success: false,
-          message: "Tahun selesai wajib diisi",
+          message: "Tahun selesai harus 4 digit angka",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (Number(tahunSelesai) < Number(tahunMulai)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Tahun selesai tidak boleh lebih kecil dari tahun mulai",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (ipk === undefined) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            jenjang === "SMA / SMK"
+              ? "Nilai rata-rata harus antara 0.01 dan 100"
+              : "IPK harus antara 0.01 dan 4.00",
         },
         { status: 400 }
       );
@@ -168,7 +225,7 @@ export async function POST(request: NextRequest) {
         jurusan: jurusan,
         tahunMulai: tahunMulai,
         tahunSelesai: tahunSelesai,
-        nilai: nilai,
+        ipk: ipk,
       },
     });
 
@@ -176,7 +233,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         message: "Pendidikan berhasil ditambahkan",
-        pendidikan: pendidikan,
+        pendidikan: toClient(pendidikan),
       },
       { status: 201 }
     );
@@ -217,8 +274,6 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
 
-    console.log("PUT PENDIDIKAN BODY:", body);
-
     const id = Number(body.id);
 
     const jenjang = String(body.jenjang ?? "").trim();
@@ -226,13 +281,7 @@ export async function PUT(request: NextRequest) {
     const jurusan = String(body.jurusan ?? "").trim();
     const tahunMulai = String(body.tahunMulai ?? "").trim();
     const tahunSelesai = String(body.tahunSelesai ?? "").trim();
-
-    const nilai =
-      body.nilai !== null &&
-      body.nilai !== undefined &&
-      String(body.nilai).trim() !== ""
-        ? String(body.nilai).trim()
-        : null;
+    const ipk = parseNilai(body.nilai, jenjang);
 
     // =================================================
     // VALIDASI ID
@@ -282,21 +331,45 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (!tahunMulai) {
+    if (!isYear4(tahunMulai)) {
       return NextResponse.json(
         {
           success: false,
-          message: "Tahun mulai wajib diisi",
+          message: "Tahun mulai harus 4 digit angka",
         },
         { status: 400 }
       );
     }
 
-    if (!tahunSelesai) {
+    if (!isYear4(tahunSelesai)) {
       return NextResponse.json(
         {
           success: false,
-          message: "Tahun selesai wajib diisi",
+          message: "Tahun selesai harus 4 digit angka",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (Number(tahunSelesai) < Number(tahunMulai)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Tahun selesai tidak boleh lebih kecil dari tahun mulai",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (ipk === undefined) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            jenjang === "SMA / SMK"
+              ? "Nilai rata-rata harus antara 0.01 dan 100"
+              : "IPK harus antara 0.01 dan 4.00",
         },
         { status: 400 }
       );
@@ -337,14 +410,14 @@ export async function PUT(request: NextRequest) {
         jurusan: jurusan,
         tahunMulai: tahunMulai,
         tahunSelesai: tahunSelesai,
-        nilai: nilai,
+        ipk: ipk,
       },
     });
 
     return NextResponse.json({
       success: true,
       message: "Pendidikan berhasil diperbarui",
-      pendidikan: pendidikan,
+      pendidikan: toClient(pendidikan),
     });
   } catch (error) {
     console.error("PUT PENDIDIKAN ERROR:", error);
@@ -455,11 +528,7 @@ async function getUserId(): Promise<number | null> {
   try {
     const cookieStore = await cookies();
 
-    // Ambil cookie user_id (harus sama persis dengan nama
-    // cookie yang di-set di app/api/login/route.ts)
     const userIdCookie = cookieStore.get("user_id")?.value;
-
-    console.log("COOKIE user_id:", userIdCookie);
 
     if (!userIdCookie) {
       console.error("COOKIE user_id TIDAK DITEMUKAN");

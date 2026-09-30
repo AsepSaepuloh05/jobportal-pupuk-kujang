@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -56,7 +58,6 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-[#f3f8f5] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center justify-center">
-
         <div className="grid w-full overflow-hidden rounded-3xl bg-white shadow-[0_20px_60px_rgba(44,105,76,0.12)] lg:grid-cols-2">
 
           {/* ================= KIRI ================= */}
@@ -120,6 +121,8 @@ export default function LoginPage() {
               </div>
 
               <form onSubmit={handleLogin} className="space-y-5">
+
+                {/* ================= EMAIL ================= */}
                 <div>
                   <label
                     htmlFor="email"
@@ -127,6 +130,7 @@ export default function LoginPage() {
                   >
                     Email
                   </label>
+
                   <input
                     id="email"
                     type="email"
@@ -139,6 +143,7 @@ export default function LoginPage() {
                   />
                 </div>
 
+                {/* ================= PASSWORD ================= */}
                 <div>
                   <label
                     htmlFor="password"
@@ -146,24 +151,47 @@ export default function LoginPage() {
                   >
                     Password
                   </label>
-                  <input
-                    id="password"
-                    type="password"
-                    placeholder="Masukkan password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                    className="w-full rounded-xl border border-[#dce9e1] bg-[#f9fcfa] px-4 py-3 text-sm text-[#234236] outline-none transition placeholder:text-[#a2b2aa] focus:border-[#4c9b70] focus:bg-white focus:ring-4 focus:ring-[#4c9b70]/10 disabled:cursor-not-allowed disabled:opacity-60"
-                  />
+
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Masukkan password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="w-full rounded-xl border border-[#dce9e1] bg-[#f9fcfa] px-4 py-3 pr-12 text-sm text-[#234236] outline-none transition placeholder:text-[#a2b2aa] focus:border-[#4c9b70] focus:bg-white focus:ring-4 focus:ring-[#4c9b70]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      disabled={loading}
+                      aria-label={
+                        showPassword
+                          ? "Sembunyikan password"
+                          : "Tampilkan password"
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-[#7b8e83] transition hover:bg-[#eaf4ee] hover:text-[#236b4c] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {showPassword ? (
+                        <EyeOff size={20} strokeWidth={2} />
+                      ) : (
+                        <Eye size={20} strokeWidth={2} />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
+                {/* ================= ERROR ================= */}
                 {error && (
                   <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-600">
                     {error}
                   </div>
                 )}
 
+                {/* ================= BUTTON ================= */}
                 <button
                   type="submit"
                   disabled={loading}
@@ -180,7 +208,8 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              <div className="mt-8 border-t border-[#edf2ef] pt-6 text-center space-y-3">
+              {/* ================= FOOTER ================= */}
+              <div className="mt-8 space-y-3 border-t border-[#edf2ef] pt-6 text-center">
                 <p className="text-sm text-[#7b8e83]">
                   Belum punya akun?{" "}
                   <a
@@ -201,7 +230,6 @@ export default function LoginPage() {
 
             </div>
           </div>
-
         </div>
       </div>
     </main>

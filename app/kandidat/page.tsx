@@ -67,6 +67,139 @@ interface Pendidikan {
   ijazahUkuranFile?: number | null;
 }
 
+// ============================================================
+// KARTU LOWONGAN REKOMENDASI
+// ============================================================
+
+function RecommendedJobCard({
+  job,
+  wide,
+}: {
+  job: Lowongan;
+  wide: boolean;
+}) {
+  // KARTU LEBAR (untuk 1 lowongan)
+  if (wide) {
+    return (
+      <Link
+        href={`/kandidat/lowongan/${job.id}`}
+        className="group flex flex-col gap-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-5 transition duration-200 hover:border-emerald-200 hover:bg-white hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div className="flex min-w-0 flex-1 items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm ring-1 ring-slate-100">
+            <BriefcaseBusiness size={22} />
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-700">
+                {job.posisi}
+              </h3>
+
+              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                Rekomendasi
+              </span>
+            </div>
+
+            <p className="mt-1 text-sm font-medium text-slate-500">
+              {job.departemen}
+            </p>
+
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-500">
+              {job.lokasi && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin
+                    size={14}
+                    className="shrink-0 text-slate-400"
+                  />
+                  {job.lokasi}
+                </span>
+              )}
+
+              {job.tipe && (
+                <span className="flex items-center gap-1.5">
+                  <BriefcaseBusiness
+                    size={14}
+                    className="shrink-0 text-slate-400"
+                  />
+                  {job.tipe}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <span className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition group-hover:bg-emerald-700 sm:w-auto">
+          Lihat Lowongan
+          <ChevronRight
+            size={16}
+            className="transition group-hover:translate-x-0.5"
+          />
+        </span>
+      </Link>
+    );
+  }
+
+  // KARTU BIASA (untuk 2 atau 3 lowongan)
+  return (
+    <Link
+      href={`/kandidat/lowongan/${job.id}`}
+      className="group flex flex-col rounded-2xl border border-slate-200 bg-slate-50/60 p-5 transition duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white hover:shadow-md"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm ring-1 ring-slate-100">
+          <BriefcaseBusiness size={19} />
+        </div>
+
+        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+          Rekomendasi
+        </span>
+      </div>
+
+      <h3 className="mt-4 line-clamp-2 text-sm font-bold text-slate-900 group-hover:text-emerald-700">
+        {job.posisi}
+      </h3>
+
+      <p className="mt-1 text-xs font-medium text-slate-500">
+        {job.departemen}
+      </p>
+
+      <div className="mt-4 space-y-2">
+        {job.lokasi && (
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <MapPin size={14} className="shrink-0 text-slate-400" />
+            <span className="truncate">{job.lokasi}</span>
+          </div>
+        )}
+
+        {job.tipe && (
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <BriefcaseBusiness
+              size={14}
+              className="shrink-0 text-slate-400"
+            />
+            <span>{job.tipe}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-auto flex items-center justify-between border-t border-slate-200 pt-4">
+        <span className="text-xs font-medium text-slate-400">
+          Sesuai kejuruan
+        </span>
+
+        <span className="flex items-center gap-1 text-xs font-semibold text-emerald-700">
+          Lihat
+          <ChevronRight
+            size={14}
+            className="transition group-hover:translate-x-0.5"
+          />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
 export default function KandidatDashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [lamaran, setLamaran] = useState<Lamaran[]>([]);
@@ -227,9 +360,8 @@ export default function KandidatDashboardPage() {
         normalizeDocumentType(item.jenisDokumen) === "IJAZAH"
     );
 
-    const dariPendidikan = pendidikan.some(
-      (item) =>
-        Boolean(item.ijazahPathFile?.trim())
+    const dariPendidikan = pendidikan.some((item) =>
+      Boolean(item.ijazahPathFile?.trim())
     );
 
     return dariDokumen || dariPendidikan;
@@ -239,8 +371,7 @@ export default function KandidatDashboardPage() {
   // FOTO PROFIL
   // ============================================================
 
-  const fotoProfil =
-    user?.dokumenProfil?.pathFile || null;
+  const fotoProfil = user?.dokumenProfil?.pathFile || null;
 
   // ============================================================
   // JURUSAN / KEJURUAN KANDIDAT
@@ -249,14 +380,12 @@ export default function KandidatDashboardPage() {
   const jurusanKandidat = useMemo(() => {
     if (!pendidikan.length) return "";
 
-    const pendidikanTerakhir = [...pendidikan].sort(
-      (a, b) => {
-        return (
-          Number(b.tahunSelesai || 0) -
-          Number(a.tahunSelesai || 0)
-        );
-      }
-    )[0];
+    const pendidikanTerakhir = [...pendidikan].sort((a, b) => {
+      return (
+        Number(b.tahunSelesai || 0) -
+        Number(a.tahunSelesai || 0)
+      );
+    })[0];
 
     return pendidikanTerakhir?.jurusan?.trim() || "";
   }, [pendidikan]);
@@ -270,9 +399,7 @@ export default function KandidatDashboardPage() {
       return [];
     }
 
-    const keyword = jurusanKandidat
-      .toLowerCase()
-      .trim();
+    const keyword = jurusanKandidat.toLowerCase().trim();
 
     if (!keyword) return [];
 
@@ -358,11 +485,13 @@ export default function KandidatDashboardPage() {
   // ============================================================
 
   const currentLamaran = useMemo(() => {
-    return [...lamaran].sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() -
-        new Date(a.createdAt).getTime()
-    )[0] || null;
+    return (
+      [...lamaran].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() -
+          new Date(a.createdAt).getTime()
+      )[0] || null
+    );
   }, [lamaran]);
 
   const statusLamaran = useMemo(() => {
@@ -376,9 +505,7 @@ export default function KandidatDashboardPage() {
       };
     }
 
-    const status = String(
-      currentLamaran.status || ""
-    ).toUpperCase();
+    const status = String(currentLamaran.status || "").toUpperCase();
 
     if (status === "LOLOS") {
       return {
@@ -394,8 +521,7 @@ export default function KandidatDashboardPage() {
       return {
         label: "Ditolak",
         description: "Lamaran tidak dilanjutkan",
-        className:
-          "bg-red-50 text-red-700 ring-1 ring-red-100",
+        className: "bg-red-50 text-red-700 ring-1 ring-red-100",
         icon: <XCircle size={15} />,
       };
     }
@@ -403,8 +529,7 @@ export default function KandidatDashboardPage() {
     if (status === "INTERVIEW") {
       return {
         label: "Interview",
-        description:
-          "Menunggu atau mengikuti tahap interview",
+        description: "Menunggu atau mengikuti tahap interview",
         className:
           "bg-amber-50 text-amber-700 ring-1 ring-amber-100",
         icon: <CalendarDays size={15} />,
@@ -413,10 +538,8 @@ export default function KandidatDashboardPage() {
 
     return {
       label: "Sedang Diproses",
-      description:
-        "Lamaran sedang dalam proses seleksi",
-      className:
-        "bg-blue-50 text-blue-700 ring-1 ring-blue-100",
+      description: "Lamaran sedang dalam proses seleksi",
+      className: "bg-blue-50 text-blue-700 ring-1 ring-blue-100",
       icon: <Clock3 size={15} />,
     };
   }, [currentLamaran]);
@@ -452,8 +575,16 @@ export default function KandidatDashboardPage() {
         complete: hasIjazah,
       },
       {
+        label: "Transkrip Nilai",
+        complete: hasDocument("Transkrip Nilai"),
+      },
+      {
         label: "KTP",
         complete: hasDocument("KTP"),
+      },
+      {
+        label: "Dokumen Pendukung",
+        complete: hasDocument("Dokumen Pendukung"),
       },
     ];
   }, [user, dokumen, hasIjazah]);
@@ -485,8 +616,7 @@ export default function KandidatDashboardPage() {
     if (normalized === "DITOLAK") {
       return {
         label: "Ditolak",
-        className:
-          "bg-red-50 text-red-700 ring-1 ring-red-100",
+        className: "bg-red-50 text-red-700 ring-1 ring-red-100",
         icon: <XCircle size={14} />,
       };
     }
@@ -502,8 +632,7 @@ export default function KandidatDashboardPage() {
 
     return {
       label: "Diproses",
-      className:
-        "bg-blue-50 text-blue-700 ring-1 ring-blue-100",
+      className: "bg-blue-50 text-blue-700 ring-1 ring-blue-100",
       icon: <Clock3 size={14} />,
     };
   };
@@ -549,7 +678,6 @@ export default function KandidatDashboardPage() {
   return (
     <div className="min-h-screen bg-[#f6faf8] text-slate-900">
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-
         {/* =====================================================
             HEADER
         ====================================================== */}
@@ -568,8 +696,8 @@ export default function KandidatDashboardPage() {
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm text-slate-500">
-              Pantau aktivitas lamaran dan kelengkapan
-              profil Anda melalui dashboard ini.
+              Pantau aktivitas lamaran dan kelengkapan profil
+              Anda melalui dashboard ini.
             </p>
           </div>
 
@@ -598,9 +726,7 @@ export default function KandidatDashboardPage() {
                 {user?.nama || "Kandidat"}
               </p>
 
-              <p className="text-xs text-slate-400">
-                Lihat profil
-              </p>
+              <p className="text-xs text-slate-400">Lihat profil</p>
             </div>
 
             <ChevronRight
@@ -615,7 +741,6 @@ export default function KandidatDashboardPage() {
         ====================================================== */}
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-
           {/* TOTAL LOWONGAN AKTIF */}
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -720,7 +845,6 @@ export default function KandidatDashboardPage() {
         ====================================================== */}
 
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
-
           <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div>
               <h2 className="text-base font-bold text-slate-900">
@@ -746,83 +870,26 @@ export default function KandidatDashboardPage() {
           </div>
 
           <div className="p-5 sm:p-6">
-
             {recommendedLowongan.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-
+              <div
+                className={`grid gap-4 ${
+                  recommendedLowongan.length === 1
+                    ? "grid-cols-1"
+                    : recommendedLowongan.length === 2
+                    ? "grid-cols-1 md:grid-cols-2"
+                    : "grid-cols-1 md:grid-cols-3"
+                }`}
+              >
                 {recommendedLowongan.map((job) => (
-                  <Link
+                  <RecommendedJobCard
                     key={job.id}
-                    href={`/kandidat/lowongan/${job.id}`}
-                    className="group rounded-2xl border border-slate-200 bg-slate-50/60 p-5 transition duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white hover:shadow-md"
-                  >
-
-                    <div className="flex items-start justify-between gap-3">
-
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm ring-1 ring-slate-100">
-                        <BriefcaseBusiness size={19} />
-                      </div>
-
-                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                        Rekomendasi
-                      </span>
-                    </div>
-
-                    <h3 className="mt-4 line-clamp-2 text-sm font-bold text-slate-900 group-hover:text-emerald-700">
-                      {job.posisi}
-                    </h3>
-
-                    <p className="mt-1 text-xs font-medium text-slate-500">
-                      {job.departemen}
-                    </p>
-
-                    <div className="mt-4 space-y-2">
-
-                      {job.lokasi && (
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                          <MapPin
-                            size={14}
-                            className="shrink-0 text-slate-400"
-                          />
-                          <span className="truncate">
-                            {job.lokasi}
-                          </span>
-                        </div>
-                      )}
-
-                      {job.tipe && (
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                          <BriefcaseBusiness
-                            size={14}
-                            className="shrink-0 text-slate-400"
-                          />
-                          <span>{job.tipe}</span>
-                        </div>
-                      )}
-
-                    </div>
-
-                    <div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-4">
-                      <span className="text-xs font-medium text-slate-400">
-                        Sesuai kejuruan
-                      </span>
-
-                      <span className="flex items-center gap-1 text-xs font-semibold text-emerald-700">
-                        Lihat
-                        <ChevronRight
-                          size={14}
-                          className="transition group-hover:translate-x-0.5"
-                        />
-                      </span>
-                    </div>
-
-                  </Link>
+                    job={job}
+                    wide={recommendedLowongan.length === 1}
+                  />
                 ))}
-
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 px-6 py-10 text-center">
-
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                   <BriefcaseBusiness size={22} />
                 </div>
@@ -850,10 +917,8 @@ export default function KandidatDashboardPage() {
                     : "Lengkapi Pendidikan"}
                   <ChevronRight size={15} />
                 </Link>
-
               </div>
             )}
-
           </div>
         </section>
 
@@ -862,15 +927,12 @@ export default function KandidatDashboardPage() {
         ====================================================== */}
 
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-
           {/* ===================================================
               LAMARAN TERBARU
           ==================================================== */}
 
           <section className="rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-2">
-
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
-
               <div>
                 <h2 className="text-base font-bold text-slate-900">
                   Lamaran Terakhir
@@ -888,35 +950,26 @@ export default function KandidatDashboardPage() {
                 Lihat semua
                 <ChevronRight size={16} />
               </Link>
-
             </div>
 
             <div className="divide-y divide-slate-100">
-
               {latestLamaran.length > 0 ? (
                 latestLamaran.map((item) => {
-                  const status = getStatusBadge(
-                    item.status
-                  );
+                  const status = getStatusBadge(item.status);
 
                   return (
                     <div
                       key={item.id}
                       className="px-5 py-5 transition hover:bg-slate-50/70 sm:px-6"
                     >
-
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
                         <div className="min-w-0 flex-1">
-
                           <div className="flex items-start gap-3">
-
                             <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
                               <BriefcaseBusiness size={19} />
                             </div>
 
                             <div className="min-w-0">
-
                               <h3 className="truncate text-sm font-bold text-slate-900">
                                 {item.lowongan?.posisi ||
                                   "Posisi tidak tersedia"}
@@ -928,7 +981,6 @@ export default function KandidatDashboardPage() {
                               </p>
 
                               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
-
                                 {item.lowongan?.lokasi && (
                                   <span className="flex items-center gap-1">
                                     <MapPin size={13} />
@@ -937,35 +989,27 @@ export default function KandidatDashboardPage() {
                                 )}
 
                                 <span>
-                                  {formatDate(
-                                    item.createdAt
-                                  )}
+                                  {formatDate(item.createdAt)}
                                 </span>
-
                               </div>
                             </div>
-
                           </div>
                         </div>
 
                         <div className="shrink-0">
-
                           <span
                             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${status.className}`}
                           >
                             {status.icon}
                             {status.label}
                           </span>
-
                         </div>
-
                       </div>
                     </div>
                   );
                 })
               ) : (
                 <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                     <FileText size={22} />
                   </div>
@@ -975,8 +1019,8 @@ export default function KandidatDashboardPage() {
                   </h3>
 
                   <p className="mt-1 max-w-sm text-xs text-slate-500">
-                    Anda belum mengirimkan lamaran ke
-                    lowongan apa pun.
+                    Anda belum mengirimkan lamaran ke lowongan apa
+                    pun.
                   </p>
 
                   <Link
@@ -986,10 +1030,8 @@ export default function KandidatDashboardPage() {
                     Cari Lowongan
                     <ChevronRight size={15} />
                   </Link>
-
                 </div>
               )}
-
             </div>
           </section>
 
@@ -998,9 +1040,7 @@ export default function KandidatDashboardPage() {
           ==================================================== */}
 
           <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-
             <div className="border-b border-slate-100 px-5 py-4">
-
               <h2 className="text-base font-bold text-slate-900">
                 Kelengkapan Profil
               </h2>
@@ -1009,19 +1049,14 @@ export default function KandidatDashboardPage() {
                 Lengkapi profil untuk meningkatkan kesiapan
                 lamaran.
               </p>
-
             </div>
 
             <div className="p-5">
-
               {/* FOTO + PERCENTAGE */}
 
               <div className="flex items-center justify-between">
-
                 <div className="flex items-center gap-3">
-
                   <div className="h-10 w-10 overflow-hidden rounded-xl bg-emerald-50">
-
                     {fotoProfil ? (
                       <img
                         src={fotoProfil}
@@ -1033,7 +1068,6 @@ export default function KandidatDashboardPage() {
                         <UserCircle size={21} />
                       </div>
                     )}
-
                   </div>
 
                   <div>
@@ -1045,39 +1079,32 @@ export default function KandidatDashboardPage() {
                       Profil lengkap
                     </p>
                   </div>
-
                 </div>
 
                 <span className="text-xs font-medium text-slate-400">
-                  {completedProfile}/
-                  {profileChecks.length}
+                  {completedProfile}/{profileChecks.length}
                 </span>
-
               </div>
 
               {/* PROGRESS */}
 
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-
                 <div
                   className="h-full rounded-full bg-emerald-600 transition-all duration-500"
                   style={{
                     width: `${profilePercentage}%`,
                   }}
                 />
-
               </div>
 
               {/* CHECKLIST */}
 
               <div className="mt-5 space-y-3">
-
                 {profileChecks.map((item) => (
                   <div
                     key={item.label}
                     className="flex items-center justify-between"
                   >
-
                     <span className="text-sm text-slate-600">
                       {item.label}
                     </span>
@@ -1093,10 +1120,8 @@ export default function KandidatDashboardPage() {
                         className="text-slate-300"
                       />
                     )}
-
                   </div>
                 ))}
-
               </div>
 
               {/* BUTTON */}
@@ -1108,7 +1133,6 @@ export default function KandidatDashboardPage() {
                 Lengkapi Profil
                 <ChevronRight size={16} />
               </Link>
-
             </div>
           </section>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -11,6 +12,10 @@ export default function RegisterPage() {
   const [nik, setNik] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -54,7 +59,9 @@ export default function RegisterPage() {
         return;
       }
 
-      router.replace(`/verify-email?email=${encodeURIComponent(email.trim())}`);
+      router.replace(
+        `/verify-email?email=${encodeURIComponent(email.trim())}`
+      );
     } catch (error) {
       console.error("REGISTER ERROR:", error);
       setError("Tidak dapat terhubung ke server.");
@@ -66,9 +73,7 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen bg-[#f3f8f5] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center justify-center">
-
         <div className="grid w-full overflow-hidden rounded-3xl bg-white shadow-[0_20px_60px_rgba(44,105,76,0.12)] lg:grid-cols-2">
-
           {/* ================= KIRI ================= */}
           <div className="relative hidden overflow-hidden bg-gradient-to-br from-[#164d36] via-[#236b4c] to-[#2f815d] p-10 text-white lg:flex lg:flex-col lg:justify-center">
             <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10" />
@@ -106,7 +111,6 @@ export default function RegisterPage() {
           {/* ================= KANAN ================= */}
           <div className="flex items-center justify-center px-6 py-10 sm:px-10 lg:px-14">
             <div className="w-full max-w-md">
-
               <div className="mb-8 flex justify-center lg:hidden">
                 <a
                   href="/"
@@ -124,12 +128,14 @@ export default function RegisterPage() {
                 <h2 className="text-3xl font-extrabold text-[#234236]">
                   Buat Akun Baru
                 </h2>
+
                 <p className="mt-2 text-sm text-[#7b8e83]">
                   Lengkapi data di bawah untuk mendaftar
                 </p>
               </div>
 
               <form onSubmit={handleRegister} className="space-y-5">
+                {/* Nama */}
                 <div>
                   <label
                     htmlFor="nama"
@@ -137,6 +143,7 @@ export default function RegisterPage() {
                   >
                     Nama Lengkap
                   </label>
+
                   <input
                     id="nama"
                     type="text"
@@ -149,6 +156,7 @@ export default function RegisterPage() {
                   />
                 </div>
 
+                {/* Email */}
                 <div>
                   <label
                     htmlFor="email"
@@ -156,6 +164,7 @@ export default function RegisterPage() {
                   >
                     Email
                   </label>
+
                   <input
                     id="email"
                     type="email"
@@ -168,6 +177,7 @@ export default function RegisterPage() {
                   />
                 </div>
 
+                {/* NIK */}
                 <div>
                   <label
                     htmlFor="nik"
@@ -175,6 +185,7 @@ export default function RegisterPage() {
                   >
                     NIK
                   </label>
+
                   <input
                     id="nik"
                     type="text"
@@ -188,6 +199,7 @@ export default function RegisterPage() {
                   />
                 </div>
 
+                {/* Password */}
                 <div>
                   <label
                     htmlFor="password"
@@ -195,18 +207,40 @@ export default function RegisterPage() {
                   >
                     Password
                   </label>
-                  <input
-                    id="password"
-                    type="password"
-                    placeholder="Masukkan password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                    className="w-full rounded-xl border border-[#dce9e1] bg-[#f9fcfa] px-4 py-3 text-sm text-[#234236] outline-none transition placeholder:text-[#a2b2aa] focus:border-[#4c9b70] focus:bg-white focus:ring-4 focus:ring-[#4c9b70]/10 disabled:cursor-not-allowed disabled:opacity-60"
-                  />
+
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Masukkan password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="w-full rounded-xl border border-[#dce9e1] bg-[#f9fcfa] px-4 py-3 pr-12 text-sm text-[#234236] outline-none transition placeholder:text-[#a2b2aa] focus:border-[#4c9b70] focus:bg-white focus:ring-4 focus:ring-[#4c9b70]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      disabled={loading}
+                      aria-label={
+                        showPassword
+                          ? "Sembunyikan password"
+                          : "Lihat password"
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-[#7b8e83] transition hover:bg-[#eaf4ee] hover:text-[#236b4c] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {showPassword ? (
+                        <EyeOff size={20} strokeWidth={2} />
+                      ) : (
+                        <Eye size={20} strokeWidth={2} />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
+                {/* Konfirmasi Password */}
                 <div>
                   <label
                     htmlFor="confirmPassword"
@@ -214,24 +248,51 @@ export default function RegisterPage() {
                   >
                     Konfirmasi Password
                   </label>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="Ulangi password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                    className="w-full rounded-xl border border-[#dce9e1] bg-[#f9fcfa] px-4 py-3 text-sm text-[#234236] outline-none transition placeholder:text-[#a2b2aa] focus:border-[#4c9b70] focus:bg-white focus:ring-4 focus:ring-[#4c9b70]/10 disabled:cursor-not-allowed disabled:opacity-60"
-                  />
+
+                  <div className="relative">
+                    <input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Ulangi password"
+                      value={confirmPassword}
+                      onChange={(e) =>
+                        setConfirmPassword(e.target.value)
+                      }
+                      required
+                      disabled={loading}
+                      className="w-full rounded-xl border border-[#dce9e1] bg-[#f9fcfa] px-4 py-3 pr-12 text-sm text-[#234236] outline-none transition placeholder:text-[#a2b2aa] focus:border-[#4c9b70] focus:bg-white focus:ring-4 focus:ring-[#4c9b70]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword((prev) => !prev)
+                      }
+                      disabled={loading}
+                      aria-label={
+                        showConfirmPassword
+                          ? "Sembunyikan konfirmasi password"
+                          : "Lihat konfirmasi password"
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-[#7b8e83] transition hover:bg-[#eaf4ee] hover:text-[#236b4c] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={20} strokeWidth={2} />
+                      ) : (
+                        <Eye size={20} strokeWidth={2} />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
+                {/* Error */}
                 {error && (
                   <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-600">
                     {error}
                   </div>
                 )}
 
+                {/* Submit */}
                 <button
                   type="submit"
                   disabled={loading}
@@ -248,7 +309,7 @@ export default function RegisterPage() {
                 </button>
               </form>
 
-              <div className="mt-8 border-t border-[#edf2ef] pt-6 text-center space-y-3">
+              <div className="mt-8 space-y-3 border-t border-[#edf2ef] pt-6 text-center">
                 <p className="text-sm text-[#7b8e83]">
                   Sudah punya akun?{" "}
                   <a
@@ -266,10 +327,8 @@ export default function RegisterPage() {
                   ← Kembali ke Beranda
                 </a>
               </div>
-
             </div>
           </div>
-
         </div>
       </div>
     </main>

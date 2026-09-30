@@ -6,10 +6,13 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const email = body.email?.trim();
+    const email = body.email?.trim().toLowerCase();
     const password = body.password;
 
-    // Validasi input
+    // ==========================================
+    // VALIDASI INPUT
+    // ==========================================
+
     if (!email || !password) {
       return NextResponse.json(
         {
@@ -20,14 +23,55 @@ export async function POST(request: Request) {
       );
     }
 
-    // Cari user berdasarkan email
-    const user = await prisma.user.findFirst({
+    // ==========================================
+    // CARI SEMUA USER DENGAN EMAIL YANG SAMA
+    // ==========================================
+
+    const users = await prisma.user.findMany({
       where: {
-        email: email,
+        email,
+      },
+      orderBy: {
+        id: "asc",
       },
     });
 
-    // User tidak ditemukan
+    // ==========================================
+    // USER TIDAK DITEMUKAN
+    // ==========================================
+
+    if (users.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Email atau password salah",
+        },
+        { status: 401 }
+      );
+    }
+
+    // ==========================================
+    // CARI AKUN YANG PASSWORD-NYA COCOK
+    // ==========================================
+
+    let user = null;
+
+    for (const candidate of users) {
+      const passwordMatch = await bcrypt.compare(
+        password,
+        candidate.password
+      );
+
+      if (passwordMatch) {
+        user = candidate;
+        break;
+      }
+    }
+
+    // ==========================================
+    // PASSWORD TIDAK COCOK DENGAN AKUN MANAPUN
+    // ==========================================
+
     if (!user) {
       return NextResponse.json(
         {
@@ -38,21 +82,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Cek password
-    const passwordMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
-
-    if (!passwordMatch) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Email atau password salah",
-        },
-        { status: 401 }
-      );
-    }
+    // ==========================================
+    // CEK STATUS AKUN
+    // ==========================================
 
     if (!user.isActive) {
       return NextResponse.json(
@@ -65,7 +97,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Response
+    // ==========================================
+    // RESPONSE LOGIN
+    // ==========================================
+
     const response = NextResponse.json({
       success: true,
       message: "Login berhasil",
@@ -78,7 +113,10 @@ export async function POST(request: Request) {
       },
     });
 
-    // Simpan informasi login di cookie
+    // ==========================================
+    // SIMPAN USER ID KE COOKIE
+    // ==========================================
+
     response.cookies.set("user_id", String(user.id), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -86,6 +124,10 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: 60 * 60 * 24,
     });
+
+    // ==========================================
+    // SIMPAN ROLE KE COOKIE
+    // ==========================================
 
     response.cookies.set("user_role", user.role, {
       httpOnly: true,

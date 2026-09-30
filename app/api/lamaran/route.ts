@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic"
 
+// Status lamaran yang dianggap masih berjalan
+const STATUS_AKTIF = ["DIPROSES", "INTERVIEW"] as const;
+
 export async function GET(request: Request) {
     try {
         const cookieStore = await cookies();
@@ -235,6 +238,42 @@ export async function POST(request: Request) {
                 {
                     message:
                         "Kamu sudah pernah melamar ke lowongan ini",
+                },
+                {
+                    status: 409,
+                }
+            );
+        }
+
+        /*
+         * =========================================================
+         * CEK LAMARAN AKTIF
+         * Kandidat hanya boleh memproses satu lowongan.
+         * Boleh melamar lagi setelah status LOLOS / DITOLAK.
+         * =========================================================
+         */
+
+        const lamaranAktif = await prisma.lamaran.findFirst({
+            where: {
+                userId: Number(userId),
+                status: {
+                    in: [...STATUS_AKTIF],
+                },
+            },
+            include: {
+                lowongan: {
+                    select: {
+                        posisi: true,
+                    },
+                },
+            },
+        });
+
+        if (lamaranAktif) {
+            return NextResponse.json(
+                {
+                    code: "LAMARAN_AKTIF",
+                    message: `Kamu masih memiliki lamaran yang sedang diproses untuk posisi ${lamaranAktif.lowongan.posisi}. Kamu bisa melamar lagi setelah proses tersebut selesai.`,
                 },
                 {
                     status: 409,
