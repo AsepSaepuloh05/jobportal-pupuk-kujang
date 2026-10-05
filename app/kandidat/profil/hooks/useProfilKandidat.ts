@@ -121,6 +121,10 @@ export function useProfilKandidat() {
 
   const [savingPengalaman, setSavingPengalaman] = useState(false);
 
+  const [paklaringFile, setPaklaringFile] = useState<File | null>(null);
+
+  const [uploadingPaklaring, setUploadingPaklaring] = useState(false);
+
   // ============================================================
   // SERTIFIKASI
   // ============================================================
@@ -160,6 +164,7 @@ export function useProfilKandidat() {
       });
 
       if (!response.ok) {
+        console.error("ME ERROR:", response.status);
         router.replace("/login");
         return;
       }
@@ -167,6 +172,7 @@ export function useProfilKandidat() {
       const data = await response.json();
 
       if (!data.success || !data.user || data.user.role !== "KANDIDAT") {
+        console.error("ME INVALID:", data);
         router.replace("/login");
         return;
       }
@@ -805,12 +811,24 @@ export function useProfilKandidat() {
 
   // ============================================================
   // SAVE PENDIDIKAN
-  // Validasi tahun 4 digit angka
+  // Validasi tahun 4 digit angka dan nilai sesuai jenjang
   // ============================================================
 
   const savePendidikan = async () => {
+    if (
+      !pendidikanForm.jenjang ||
+      !pendidikanForm.institusi.trim() ||
+      !pendidikanForm.jurusan.trim()
+    ) {
+      alert(
+        "Lengkapi seluruh data pendidikan terlebih dahulu."
+      );
+
+      return;
+    }
 
     const nilai = String(pendidikanForm.nilai ?? "").trim();
+
     // Nilai opsional, tapi kalau diisi harus sesuai jenjang
     if (
       nilai !== "" &&
@@ -1171,6 +1189,8 @@ export function useProfilKandidat() {
       ...initialPengalaman,
     });
 
+    setPaklaringFile(null);
+
     setShowPengalamanModal(true);
   };
 
@@ -1187,7 +1207,126 @@ export function useProfilKandidat() {
       ...item,
     });
 
+    setPaklaringFile(null);
+
     setShowPengalamanModal(true);
+  };
+
+  // ============================================================
+  // PAKLARING
+  // ============================================================
+
+  const handlePaklaringFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+
+    e.target.value = "";
+
+    if (!file) return;
+
+    const allowedTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("Format paklaring harus PDF, JPG, atau PNG.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Ukuran paklaring maksimal 5 MB.");
+      return;
+    }
+
+    setPaklaringFile(file);
+  };
+
+  const clearPaklaringFile = () => {
+    setPaklaringFile(null);
+  };
+
+  const uploadPaklaring = async (
+    pengalamanId: number,
+    file: File
+  ) => {
+    setUploadingPaklaring(true);
+
+    try {
+      const formData = new FormData();
+
+      formData.append("paklaring", file);
+
+      const res = await fetch(
+        `/api/pengalaman/${pengalamanId}/paklaring`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(data.message || "Gagal mengunggah paklaring.");
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("UPLOAD PAKLARING ERROR:", error);
+
+      alert("Terjadi kesalahan saat mengunggah paklaring.");
+
+      return false;
+    } finally {
+      setUploadingPaklaring(false);
+    }
+  };
+
+  const deletePaklaring = async (pengalamanId: number) => {
+    if (!confirm("Hapus paklaring ini?")) return;
+
+    try {
+      const res = await fetch(
+        `/api/pengalaman/${pengalamanId}/paklaring`,
+        { method: "DELETE" }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(data.message || "Gagal menghapus paklaring.");
+        return;
+      }
+
+      const kosong = {
+        paklaringNamaFile: null,
+        paklaringNamaAsli: null,
+        paklaringPathFile: null,
+        paklaringTipeFile: null,
+        paklaringUkuranFile: null,
+      };
+
+      setPengalaman((prev) =>
+        prev.map((item) =>
+          item.id === pengalamanId ? { ...item, ...kosong } : item
+        )
+      );
+
+      if (editingPengalamanId === pengalamanId) {
+        setPengalamanForm((prev) => ({ ...prev, ...kosong }));
+      }
+
+      setPaklaringFile(null);
+    } catch (error) {
+      console.error("DELETE PAKLARING ERROR:", error);
+
+      alert("Terjadi kesalahan saat menghapus paklaring.");
+    }
   };
 
   // ============================================================
@@ -1291,6 +1430,17 @@ export function useProfilKandidat() {
         return;
       }
 
+      const savedId: number | undefined =
+        data.pengalaman?.id ??
+        data.data?.id ??
+        editingPengalamanId ??
+        undefined;
+
+      // Upload paklaring setelah data pengalaman tersimpan
+      if (paklaringFile && savedId) {
+        await uploadPaklaring(savedId, paklaringFile);
+      }
+
       await fetchPengalaman();
 
       setShowPengalamanModal(false);
@@ -1300,6 +1450,8 @@ export function useProfilKandidat() {
       setPengalamanForm({
         ...initialPengalaman,
       });
+
+      setPaklaringFile(null);
     } catch (error) {
       console.error(
         "SAVE PENGALAMAN ERROR:",
@@ -1467,13 +1619,6 @@ export function useProfilKandidat() {
           null,
       };
 
-      console.log(
-        isEdit
-          ? "UPDATE SERTIFIKASI:"
-          : "CREATE SERTIFIKASI:",
-        body
-      );
-
       const res = await fetch(url, {
         method,
         headers: {
@@ -1501,14 +1646,6 @@ export function useProfilKandidat() {
 
         return;
       }
-
-      console.log(
-        "SAVE SERTIFIKASI RESPONSE:",
-        {
-          status: res.status,
-          data,
-        }
-      );
 
       if (!res.ok || !data.success) {
         alert(
@@ -1682,6 +1819,13 @@ export function useProfilKandidat() {
     openEditPengalaman,
     savePengalaman,
     deletePengalaman,
+
+    // PAKLARING
+    paklaringFile,
+    uploadingPaklaring,
+    handlePaklaringFileChange,
+    clearPaklaringFile,
+    deletePaklaring,
 
     // SERTIFIKASI
     sertifikasi,

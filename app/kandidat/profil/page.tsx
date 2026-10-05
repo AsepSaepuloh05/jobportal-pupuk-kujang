@@ -57,6 +57,11 @@ export default function ProfilKandidatPage() {
             form={p.pengalamanForm}
             setForm={p.setPengalamanForm}
             saving={p.savingPengalaman}
+            paklaringFile={p.paklaringFile}
+            uploadingPaklaring={p.uploadingPaklaring}
+            onPaklaringFileChange={p.handlePaklaringFileChange}
+            onClearPaklaringFile={p.clearPaklaringFile}
+            onDeletePaklaring={p.deletePaklaring}
             onOpenTambah={p.openTambahPengalaman}
             onOpenEdit={p.openEditPengalaman}
             onClose={() =>
