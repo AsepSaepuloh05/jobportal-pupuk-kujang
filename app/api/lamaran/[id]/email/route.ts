@@ -70,3 +70,36 @@ export async function POST(
         );
     }
 }
+
+export async function GET(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const cookieStore = await cookies();
+        const userRole = cookieStore.get("user_role")?.value;
+
+        if (userRole !== "HR") {
+            return NextResponse.json(
+                { message: "Hanya HR yang bisa melihat histori email" },
+                { status: 403 }
+            );
+        }
+
+        const { id } = await params;
+
+        const logs = await prisma.emailLog.findMany({
+            where: { lamaranId: Number(id) },
+            orderBy: { createdAt: "desc" },
+        });
+
+        return NextResponse.json(logs);
+    } catch (error) {
+        console.error("GET EMAIL LOG ERROR:", error);
+
+        return NextResponse.json(
+            { message: "Gagal mengambil histori email" },
+            { status: 500 }
+        );
+    }
+}

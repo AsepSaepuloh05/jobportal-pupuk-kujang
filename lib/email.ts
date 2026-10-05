@@ -203,3 +203,69 @@ export async function kirimEmailBebas({
         bodyHtml,
     });
 }
+
+export async function kirimEmailHasil({
+    lamaranId,
+    penerima,
+    nama,
+    posisi,
+    tahapan,
+    lolos,
+    tahapanSelanjutnya,
+}: {
+    lamaranId: number;
+    penerima: string;
+    nama: string;
+    posisi: string;
+    tahapan: string;
+    lolos: boolean;
+    tahapanSelanjutnya?: string | null;
+}) {
+    const labelTahapan = TAHAPAN_LABEL[tahapan] || tahapan;
+
+    let bodyHtml = "";
+
+    if (lolos) {
+        let infoLanjutan = "";
+
+        if (tahapanSelanjutnya) {
+            infoLanjutan =
+                "<p style=\"margin: 0; font-size: 14px; line-height: 1.7;\">Kamu akan lanjut ke tahap <strong>" +
+                (TAHAPAN_LABEL[tahapanSelanjutnya] || tahapanSelanjutnya) +
+                "</strong>. Informasi jadwal akan dikirimkan menyusul.</p>";
+        } else {
+            infoLanjutan =
+                "<p style=\"margin: 0; font-size: 14px; line-height: 1.7;\">Selamat, kamu telah menyelesaikan seluruh tahapan seleksi! Tim kami akan menghubungimu untuk proses selanjutnya.</p>";
+        }
+
+        bodyHtml =
+            "<p style=\"margin: 0 0 16px; font-size: 14px; line-height: 1.7;\">Selamat! Kamu <strong style=\"color: #16a34a;\">dinyatakan lolos</strong> tahap <strong>" +
+            labelTahapan +
+            "</strong> pada proses seleksi posisi <strong>" +
+            posisi +
+            "</strong> di PT Pupuk Kujang.</p>" +
+            infoLanjutan;
+    } else {
+        bodyHtml =
+            "<p style=\"margin: 0; font-size: 14px; line-height: 1.7;\">Terima kasih telah mengikuti proses seleksi tahap <strong>" +
+            labelTahapan +
+            "</strong> untuk posisi <strong>" +
+            posisi +
+            "</strong> di PT Pupuk Kujang. Mohon maaf, saat ini kami <strong style=\"color: #dc2626;\">belum dapat melanjutkan</strong> proses lamaranmu ke tahap berikutnya.</p>" +
+            "<p style=\"margin: 16px 0 0; font-size: 14px; line-height: 1.7;\">Kami menghargai waktu dan usahamu, dan berharap dapat berkesempatan bekerja sama di lain waktu.</p>";
+    }
+
+    const subjekEmail = lolos
+        ? "Selamat! Kamu Lolos Tahap " + labelTahapan + " - " + posisi
+        : "Informasi Hasil Seleksi - " + posisi;
+
+    return kirimDanCatat({
+        lamaranId,
+        penerima,
+        nama,
+        tipe: lolos ? "HASIL_LOLOS" : "HASIL_DITOLAK",
+        tahapan,
+        subjek: subjekEmail,
+        bodyHtml,
+    });
+}

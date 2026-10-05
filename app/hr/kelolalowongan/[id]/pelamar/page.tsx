@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import JadwalModal from "@/app/components/JadwalModal";
 import EmailBebasModal from "@/app/components/EmailBebasModal";
+import EmailHistoryModal from "@/app/components/EmailHistoryModal";
+import TahapanStepper from "@/app/components/TahapanStepper";
 import {
     ArrowLeft,
     Users,
@@ -26,6 +28,7 @@ import {
     ArrowUpDown,
     CalendarClock,
     Send,
+    History
 } from "lucide-react";
 
 interface HRUser {
@@ -190,6 +193,11 @@ export default function PelamarLowonganPage() {
         nama: string;
     } | null>(null);
     const [sendingEmail, setSendingEmail] = useState(false);
+
+    const [historyTarget, setHistoryTarget] = useState<{
+        lamaranId: number;
+        nama: string;
+    } | null>(null);
 
     useEffect(() => {
         const getUser = async () => {
@@ -786,6 +794,21 @@ export default function PelamarLowonganPage() {
                                                     Email
                                                 </div>
 
+                                                <div
+                                                    role="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setHistoryTarget({
+                                                            lamaranId: item.id,
+                                                            nama: item.user.nama,
+                                                        });
+                                                    }}
+                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                                                >
+                                                    <History className="h-3.5 w-3.5" />
+                                                    Histori
+                                                </div>
+
                                                 <ChevronDown
                                                     className={`h-4 w-4 text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""
                                                         }`}
@@ -802,120 +825,21 @@ export default function PelamarLowonganPage() {
                                                     Progress Tahapan Seleksi
                                                 </p>
 
-                                                <div className="flex flex-wrap items-start gap-4">
-
-                                                    {kolomTahapan.map((tahapan) => {
-                                                        const progress = item.tahapanProgress.find(
-                                                            (t) => t.tahapan === tahapan
-                                                        );
-                                                        const selesai = progress?.selesaiPada;
-                                                        const isTahapanSaatIni =
-                                                            !ditolak &&
-                                                            tahapanBelumSelesai?.tahapan === tahapan;
-                                                        const butuhJadwal = tahapan !== "SCREENING";
-                                                        const sudahAdaJadwal = Boolean(
-                                                            progress?.jadwalTanggal
-                                                        );
-
-                                                        return (
-                                                            <div
-                                                                key={tahapan}
-                                                                className="flex flex-col items-center gap-1.5"
-                                                            >
-                                                                {selesai ? (
-                                                                    <button
-                                                                        type="button"
-                                                                        disabled
-                                                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-white"
-                                                                    >
-                                                                        <CheckCircle2 className="h-4 w-4" />
-                                                                    </button>
-                                                                ) : ditolak &&
-                                                                    tahapanBelumSelesai?.tahapan === tahapan ? (
-                                                                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500 text-white">
-                                                                        <X className="h-4 w-4" />
-                                                                    </span>
-                                                                ) : ditolak ? (
-                                                                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-300">
-                                                                        <X className="h-4 w-4" />
-                                                                    </span>
-                                                                ) : isTahapanSaatIni ? (
-                                                                    <button
-                                                                        type="button"
-                                                                        disabled={
-                                                                            (butuhJadwal && !sudahAdaJadwal) ||
-                                                                            processingId === item.id
-                                                                        }
-                                                                        title={
-                                                                            butuhJadwal && !sudahAdaJadwal
-                                                                                ? "Set jadwal dulu sebelum menyelesaikan tahap ini"
-                                                                                : `Tandai ${TAHAPAN_LABEL[tahapan]} selesai`
-                                                                        }
-                                                                        onClick={() =>
-                                                                            handleSelesaikanTahapan(item.id, tahapan)
-                                                                        }
-                                                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 transition hover:bg-emerald-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                                                                    >
-                                                                        <CheckCircle2 className="h-4 w-4" />
-                                                                    </button>
-                                                                ) : (
-                                                                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-300">
-                                                                        <Hourglass className="h-4 w-4" />
-                                                                    </span>
-                                                                )}
-
-                                                                <span className="text-center text-[11px] font-medium text-slate-600">
-                                                                    {TAHAPAN_LABEL[tahapan]}
-                                                                </span>
-
-                                                                {selesai && (
-                                                                    <span className="text-[10px] text-emerald-600">
-                                                                        {formatTanggal(selesai)}
-                                                                    </span>
-                                                                )}
-
-                                                                {ditolak &&
-                                                                    tahapanBelumSelesai?.tahapan === tahapan && (
-                                                                        <span className="text-[10px] font-semibold text-red-500">
-                                                                            Ditolak di sini
-                                                                        </span>
-                                                                    )}
-
-                                                                {!selesai &&
-                                                                    !ditolak &&
-                                                                    isTahapanSaatIni &&
-                                                                    butuhJadwal && (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() =>
-                                                                                setJadwalTarget({
-                                                                                    lamaranId: item.id,
-                                                                                    tahapan,
-                                                                                })
-                                                                            }
-                                                                            className="mt-1 inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 transition hover:bg-slate-50"
-                                                                        >
-                                                                            <CalendarClock className="h-3 w-3" />
-                                                                            {sudahAdaJadwal
-                                                                                ? "Ubah Jadwal"
-                                                                                : "Set Jadwal"}
-                                                                        </button>
-                                                                    )}
-
-                                                                {sudahAdaJadwal &&
-                                                                    progress?.jadwalTanggal &&
-                                                                    !selesai && (
-                                                                        <span className="max-w-[110px] text-center text-[9.5px] leading-tight text-slate-500">
-                                                                            {formatTanggalJam(
-                                                                                progress.jadwalTanggal
-                                                                            )}
-                                                                        </span>
-                                                                    )}
-                                                            </div>
-                                                        );
-                                                    })}
-
-                                                </div>
+                                                <TahapanStepper
+                                                    tahapanList={kolomTahapan}
+                                                    progressList={item.tahapanProgress}
+                                                    ditolak={ditolak}
+                                                    disabled={processingId === item.id}
+                                                    onSelesaikan={(tahapan) =>
+                                                        handleSelesaikanTahapan(item.id, tahapan)
+                                                    }
+                                                    onSetJadwal={(tahapan) =>
+                                                        setJadwalTarget({
+                                                            lamaranId: item.id,
+                                                            tahapan,
+                                                        })
+                                                    }
+                                                />
 
                                                 <div className="mt-5 flex gap-2 border-t border-slate-200 pt-4">
 
@@ -1194,6 +1118,13 @@ export default function PelamarLowonganPage() {
                 loading={sendingEmail}
                 onClose={() => setEmailTarget(null)}
                 onSubmit={handleSubmitEmailBebas}
+            />
+
+            <EmailHistoryModal
+                open={historyTarget !== null}
+                lamaranId={historyTarget?.lamaranId ?? null}
+                namaKandidat={historyTarget?.nama || ""}
+                onClose={() => setHistoryTarget(null)}
             />
 
         </div>
