@@ -65,6 +65,13 @@ export interface Pengalaman {
   tahunMulai: string;
   tahunSelesai: string | null;
   deskripsi: string | null;
+
+  // Paklaring
+  paklaringNamaFile?: string | null;
+  paklaringNamaAsli?: string | null;
+  paklaringPathFile?: string | null;
+  paklaringTipeFile?: string | null;
+  paklaringUkuranFile?: number | null;
 }
 
 export interface Sertifikasi {
@@ -106,6 +113,11 @@ export const initialPengalaman: Pengalaman = {
   tahunMulai: "",
   tahunSelesai: "",
   deskripsi: "",
+  paklaringNamaFile: null,
+  paklaringNamaAsli: null,
+  paklaringPathFile: null,
+  paklaringTipeFile: null,
+  paklaringUkuranFile: null,
 };
 
 export const initialSertifikasi: Sertifikasi = {
