@@ -20,6 +20,7 @@ interface User {
   email: string;
   nik: string;
   role: string;
+  fotoProfil?: { pathFile: string } | null;
 }
 
 export default function HRLayout({
@@ -69,6 +70,54 @@ export default function HRLayout({
   // =====================================================
   // LOGOUT
   // =====================================================
+
+  useEffect(() => {
+    const refreshUser = async () => {
+      try {
+        const response = await fetch("/api/me", { cache: "no-store" });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        if (data.user) {
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error("REFRESH USER ERROR:", error);
+      }
+    };
+
+    window.addEventListener("hr-profile-updated", refreshUser);
+
+    return () => {
+      window.removeEventListener("hr-profile-updated", refreshUser);
+    };
+  }, []);
+
+  useEffect(() => {
+    const refreshUser = async () => {
+      try {
+        const response = await fetch("/api/me", { cache: "no-store" });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        if (data.user) {
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error("REFRESH USER ERROR:", error);
+      }
+    };
+
+    window.addEventListener("hr-profile-updated", refreshUser);
+
+    return () => {
+      window.removeEventListener("hr-profile-updated", refreshUser);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -214,8 +263,8 @@ export default function HRLayout({
                   type="button"
                   onClick={() => router.push(item.path)}
                   className={`group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-all duration-200 ${active
-                      ? "bg-emerald-50 text-emerald-600"
-                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                    ? "bg-emerald-50 text-emerald-600"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                     }`}
                 >
 
@@ -265,8 +314,8 @@ export default function HRLayout({
             type="button"
             onClick={() => router.push("/hr/profile")}
             className={`group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-all duration-200 ${isActive("/hr/profile")
-                ? "bg-emerald-50 text-emerald-600"
-                : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+              ? "bg-emerald-50 text-emerald-600"
+              : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
               }`}
           >
 
@@ -314,9 +363,17 @@ export default function HRLayout({
 
             {/* AVATAR */}
 
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
-              {user.nama.charAt(0).toUpperCase()}
-            </div>
+            {user.fotoProfil?.pathFile ? (
+              <img
+                src={user.fotoProfil.pathFile}
+                alt={user.nama}
+                className="h-9 w-9 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
+                {user.nama.charAt(0).toUpperCase()}
+              </div>
+            )}
 
             {/* USER INFO */}
 
