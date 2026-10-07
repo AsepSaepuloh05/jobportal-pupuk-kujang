@@ -4,14 +4,52 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-const TAHAPAN_LABEL: Record<string, string> = {
-    SCREENING: "Screening",
-    ASSESSMENT: "Assessment",
-    INTERVIEW: "Interview",
-    TECHNICAL_TEST: "Technical Test",
-    MCU: "MCU",
-    OFFERING: "Offering",
-};
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+const TAHAPAN_KEYS = [
+    "SCREENING",
+    "ASSESSMENT",
+    "INTERVIEW",
+    "TECHNICAL_TEST",
+    "MCU",
+    "OFFERING",
+];
+
+type PosisiTerkini = { tahapan: string; urutan: number };
+
+function hitungAwalPeriode(sekarang: Date) {
+    const wib = new Date(sekarang.getTime() + WIB_OFFSET_MS);
+    const tahun = wib.getUTCFullYear();
+    const bulan = wib.getUTCMonth();
+    const tanggal = wib.getUTCDate();
+    const selisihSenin = (wib.getUTCDay() + 6) % 7;
+
+    return {
+        hari: new Date(Date.UTC(tahun, bulan, tanggal) - WIB_OFFSET_MS),
+        minggu: new Date(
+            Date.UTC(tahun, bulan, tanggal - selisihSenin) - WIB_OFFSET_MS
+        ),
+        bulan: new Date(Date.UTC(tahun, bulan, 1) - WIB_OFFSET_MS),
+    };
+}
+
+function ambilLowongan(dari: Date | null) {
+    return prisma.lowongan.findMany({
+        where: {
+            status: "AKTIF",
+            ...(dari ? { createdAt: { gte: dari } } : {}),
+        },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: {
+            id: true,
+            posisi: true,
+            departemen: true,
+            pelamar: true,
+            tanggalBerakhir: true,
+        },
+    });
+}
 
 export async function GET() {
     try {
@@ -25,14 +63,7 @@ export async function GET() {
             );
         }
 
-        const sekarang = new Date();
-
-        const awalHariIni = new Date(sekarang);
-        awalHariIni.setHours(0, 0, 0, 0);
-
-        const tujuhHariLalu = new Date(
-            sekarang.getTime() - 7 * 24 * 60 * 60 * 1000
-        );
+        const awal = hitungAwalPeriode(new Date());
 
         const [
             lowonganAktif,
@@ -40,122 +71,72 @@ export async function GET() {
             totalKandidat,
             kandidatBaruMingguIni,
             totalLamaran,
-            lamaranHariIni,
-            dalamSeleksi,
-            menungguProses,
+            lamaranHari,
+            lamaranMinggu,
+            lamaranBulan,
+            sedangDiproses,
             lowonganKadaluarsa,
-            lowonganTerbaru,
-            lamaranTerbaru,
-            kandidatTerbaru,
-            tahapanTerbaru,
-            lamaranDitolak,
+            lowonganSemua,
+            lowonganHari,
+            lowonganMinggu,
+            lowonganBulan,
+            tahapanBerjalan,
         ] = await Promise.all([
             prisma.lowongan.count({ where: { status: "AKTIF" } }),
             prisma.lowongan.count(),
             prisma.user.count({ where: { role: "KANDIDAT", isActive: true } }),
             prisma.user.count({
-                where: { role: "KANDIDAT", createdAt: { gte: tujuhHariLalu } },
+                where: {
+                    role: "KANDIDAT",
+                    isActive: true,
+                    createdAt: { gte: awal.minggu },
+                },
             }),
             prisma.lamaran.count(),
-            prisma.lamaran.count({ where: { createdAt: { gte: awalHariIni } } }),
+            prisma.lamaran.count({ where: { createdAt: { gte: awal.hari } } }),
+            prisma.lamaran.count({ where: { createdAt: { gte: awal.minggu } } }),
+            prisma.lamaran.count({ where: { createdAt: { gte: awal.bulan } } }),
             prisma.lamaran.count({
                 where: { status: { in: ["DIPROSES", "INTERVIEW"] } },
             }),
-            prisma.lamaran.count({ where: { status: "DIPROSES" } }),
             prisma.lowongan.count({
-                where: { status: "AKTIF", tanggalBerakhir: { lt: awalHariIni } },
+                where: { status: "AKTIF", tanggalBerakhir: { lt: awal.hari } },
             }),
-            prisma.lowongan.findMany({
-                where: { status: "AKTIF" },
-                orderBy: { createdAt: "desc" },
-                take: 5,
-                select: {
-                    id: true,
-                    posisi: true,
-                    departemen: true,
-                    pelamar: true,
-                    tanggalBerakhir: true,
-                },
-            }),
-            prisma.lamaran.findMany({
-                orderBy: { createdAt: "desc" },
-                take: 5,
-                select: {
-                    id: true,
-                    createdAt: true,
-                    user: { select: { nama: true } },
-                    lowongan: { select: { posisi: true } },
-                },
-            }),
-            prisma.user.findMany({
-                where: { role: "KANDIDAT" },
-                orderBy: { createdAt: "desc" },
-                take: 5,
-                select: { id: true, nama: true, createdAt: true },
-            }),
+            ambilLowongan(null),
+            ambilLowongan(awal.hari),
+            ambilLowongan(awal.minggu),
+            ambilLowongan(awal.bulan),
             prisma.lamaranTahapan.findMany({
-                where: { selesaiPada: { not: null } },
-                orderBy: { selesaiPada: "desc" },
-                take: 5,
-                select: {
-                    id: true,
-                    tahapan: true,
-                    selesaiPada: true,
-                    lamaran: {
-                        select: {
-                            user: { select: { nama: true } },
-                            lowongan: { select: { posisi: true } },
-                        },
-                    },
+                where: {
+                    selesaiPada: null,
+                    lamaran: { status: { in: ["DIPROSES", "INTERVIEW"] } },
                 },
-            }),
-            prisma.lamaran.findMany({
-                where: { status: "DITOLAK" },
-                orderBy: { updatedAt: "desc" },
-                take: 5,
-                select: {
-                    id: true,
-                    updatedAt: true,
-                    user: { select: { nama: true } },
-                    lowongan: { select: { posisi: true } },
-                },
+                select: { lamaranId: true, tahapan: true, urutan: true },
             }),
         ]);
 
-        const aktivitas = [
-            ...lamaranTerbaru.map((item) => ({
-                key: `lamaran-${item.id}`,
-                type: "lamaran",
-                title: "Lamaran baru diterima",
-                desc: `${item.user.nama} melamar posisi ${item.lowongan.posisi}`,
-                time: item.createdAt.toISOString(),
-            })),
-            ...kandidatTerbaru.map((item) => ({
-                key: `kandidat-${item.id}`,
-                type: "kandidat",
-                title: "Kandidat baru terdaftar",
-                desc: `${item.nama} membuat akun`,
-                time: item.createdAt.toISOString(),
-            })),
-            ...tahapanTerbaru.map((item) => ({
-                key: `tahapan-${item.id}`,
-                type: "tahapan",
-                title: `Tahap ${TAHAPAN_LABEL[item.tahapan] || item.tahapan} selesai`,
-                desc: `${item.lamaran.user.nama} - ${item.lamaran.lowongan.posisi}`,
-                time: (item.selesaiPada as Date).toISOString(),
-            })),
-            ...lamaranDitolak.map((item) => ({
-                key: `ditolak-${item.id}`,
-                type: "ditolak",
-                title: "Lamaran ditolak",
-                desc: `${item.user.nama} - ${item.lowongan.posisi}`,
-                time: item.updatedAt.toISOString(),
-            })),
-        ]
-            .sort(
-                (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
-            )
-            .slice(0, 6);
+        const posisiTerkini = new Map<number, PosisiTerkini>();
+
+        for (const item of tahapanBerjalan) {
+            const saatIni = posisiTerkini.get(item.lamaranId);
+
+            if (!saatIni || item.urutan < saatIni.urutan) {
+                posisiTerkini.set(item.lamaranId, {
+                    tahapan: item.tahapan,
+                    urutan: item.urutan,
+                });
+            }
+        }
+
+        const sebaranTahapan: Record<string, number> = {};
+
+        for (const key of TAHAPAN_KEYS) {
+            sebaranTahapan[key] = 0;
+        }
+
+        for (const posisi of posisiTerkini.values()) {
+            sebaranTahapan[posisi.tahapan] += 1;
+        }
 
         return NextResponse.json({
             stats: {
@@ -164,13 +145,22 @@ export async function GET() {
                 totalKandidat,
                 kandidatBaruMingguIni,
                 totalLamaran,
-                lamaranHariIni,
-                dalamSeleksi,
-                menungguProses,
+                lamaranPeriode: {
+                    hari: lamaranHari,
+                    minggu: lamaranMinggu,
+                    bulan: lamaranBulan,
+                    semua: totalLamaran,
+                },
+                sedangDiproses,
             },
+            sebaranTahapan,
             lowonganKadaluarsa,
-            lowonganTerbaru,
-            aktivitas,
+            lowonganTerbaru: {
+                semua: lowonganSemua,
+                hari: lowonganHari,
+                minggu: lowonganMinggu,
+                bulan: lowonganBulan,
+            },
         });
     } catch (error) {
         console.error("GET DASHBOARD ERROR:", error);

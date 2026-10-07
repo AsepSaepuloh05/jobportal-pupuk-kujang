@@ -7,11 +7,14 @@ import {
   LayoutDashboard,
   BriefcaseBusiness,
   Users,
-  FileText,
   ClipboardCheck,
   UserCircle,
   LogOut,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Menu,
+  X,
 } from "lucide-react";
 
 interface User {
@@ -23,6 +26,8 @@ interface User {
   fotoProfil?: { pathFile: string } | null;
 }
 
+const SIDEBAR_KEY = "hr-sidebar-collapsed";
+
 export default function HRLayout({
   children,
 }: {
@@ -33,6 +38,18 @@ export default function HRLayout({
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+
+    try {
+      return window.localStorage.getItem(SIDEBAR_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // =====================================================
   // CEK USER
@@ -68,7 +85,7 @@ export default function HRLayout({
   }, [router]);
 
   // =====================================================
-  // LOGOUT
+  // REFRESH USER SAAT PROFIL DIPERBARUI
   // =====================================================
 
   useEffect(() => {
@@ -95,29 +112,41 @@ export default function HRLayout({
     };
   }, []);
 
+  // =====================================================
+  // TUTUP DRAWER DENGAN TOMBOL ESCAPE
+  // =====================================================
+
   useEffect(() => {
-    const refreshUser = async () => {
-      try {
-        const response = await fetch("/api/me", { cache: "no-store" });
+    if (!mobileOpen) return;
 
-        if (!response.ok) return;
-
-        const data = await response.json();
-
-        if (data.user) {
-          setUser(data.user);
-        }
-      } catch (error) {
-        console.error("REFRESH USER ERROR:", error);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMobileOpen(false);
       }
     };
 
-    window.addEventListener("hr-profile-updated", refreshUser);
+    window.addEventListener("keydown", onKeyDown);
 
     return () => {
-      window.removeEventListener("hr-profile-updated", refreshUser);
+      window.removeEventListener("keydown", onKeyDown);
     };
-  }, []);
+  }, [mobileOpen]);
+
+  // =====================================================
+  // TOGGLE & LOGOUT
+  // =====================================================
+
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+
+    setCollapsed(next);
+
+    try {
+      window.localStorage.setItem(SIDEBAR_KEY, next ? "1" : "0");
+    } catch {
+      /* penyimpanan tidak tersedia, abaikan */
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -165,6 +194,11 @@ export default function HRLayout({
     return pathname.startsWith(path);
   };
 
+  const goTo = (path: string) => {
+    setMobileOpen(false);
+    router.push(path);
+  };
+
   // =====================================================
   // MENU
   // =====================================================
@@ -192,20 +226,106 @@ export default function HRLayout({
     },
   ];
 
+  const sembunyiSaatKecil = collapsed ? "lg:hidden" : "";
+
+  const renderNavItem = (
+    path: string,
+    label: string,
+    Icon: React.ElementType
+  ) => {
+    const active = isActive(path);
+
+    return (
+      <button
+        key={path}
+        type="button"
+        onClick={() => goTo(path)}
+        title={collapsed ? label : undefined}
+        className={
+          "group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-all duration-200 " +
+          (collapsed ? "lg:justify-center lg:px-0 " : "") +
+          (active
+            ? "bg-emerald-50 text-emerald-600"
+            : "text-slate-500 hover:bg-slate-50 hover:text-slate-800")
+        }
+      >
+        <div className="flex items-center gap-3">
+          <Icon
+            size={19}
+            strokeWidth={active ? 2.3 : 2}
+            className={
+              active
+                ? "text-emerald-600"
+                : "text-slate-400 transition-colors group-hover:text-slate-600"
+            }
+          />
+
+          <span className={sembunyiSaatKecil}>{label}</span>
+        </div>
+
+        {active && (
+          <ChevronRight
+            size={16}
+            strokeWidth={2.2}
+            className={"text-emerald-500 " + sembunyiSaatKecil}
+          />
+        )}
+      </button>
+    );
+  };
+
   return (
     <main className="flex min-h-screen bg-slate-50">
+
+      {/* =====================================================
+          OVERLAY (LAYAR KECIL)
+      ===================================================== */}
+
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
 
       {/* =====================================================
           SIDEBAR
       ===================================================== */}
 
-      <aside className="fixed inset-y-0 left-0 z-50 flex w-[250px] flex-col border-r border-slate-200 bg-white">
+      <aside
+        className={
+          "fixed inset-y-0 left-0 z-50 flex w-[250px] flex-col border-r border-slate-200 bg-white transition-all duration-300 " +
+          (collapsed ? "lg:w-[76px] " : "") +
+          (mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0")
+        }
+      >
+
+        {/* TOMBOL KECILKAN / PERLUAS (DESKTOP) */}
+
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? "Perluas sidebar" : "Kecilkan sidebar"}
+          title={collapsed ? "Perluas sidebar" : "Kecilkan sidebar"}
+          className="absolute -right-3 top-[60px] z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm transition hover:text-emerald-600 lg:flex"
+        >
+          {collapsed ? (
+            <ChevronsRight size={14} />
+          ) : (
+            <ChevronsLeft size={14} />
+          )}
+        </button>
 
         {/* =================================================
             BRAND
         ================================================= */}
 
-        <div className="flex h-[72px] items-center border-b border-slate-100 px-5">
+        <div
+          className={
+            "flex h-[72px] items-center border-b border-slate-100 px-5 " +
+            (collapsed ? "lg:justify-center lg:px-0" : "")
+          }
+        >
 
           <div className="flex items-center gap-3">
 
@@ -223,7 +343,7 @@ export default function HRLayout({
 
             {/* BRAND TEXT */}
 
-            <div className="flex flex-col">
+            <div className={"flex flex-col " + sembunyiSaatKecil}>
 
               <span className="text-[15px] font-bold tracking-tight text-slate-800">
                 JobPortal
@@ -237,6 +357,17 @@ export default function HRLayout({
 
           </div>
 
+          {/* TOMBOL TUTUP (LAYAR KECIL) */}
+
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Tutup menu"
+            className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 lg:hidden"
+          >
+            <X size={18} />
+          </button>
+
         </div>
 
         {/* =================================================
@@ -247,107 +378,39 @@ export default function HRLayout({
 
           {/* MENU UTAMA */}
 
-          <p className="mb-3 px-3 text-[10px] font-bold tracking-[0.08em] text-slate-400">
+          <p
+            className={
+              "mb-3 px-3 text-[10px] font-bold tracking-[0.08em] text-slate-400 " +
+              sembunyiSaatKecil
+            }
+          >
             MENU UTAMA
           </p>
 
           <div className="space-y-1">
-
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.path);
-
-              return (
-                <button
-                  key={item.path}
-                  type="button"
-                  onClick={() => router.push(item.path)}
-                  className={`group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-all duration-200 ${active
-                    ? "bg-emerald-50 text-emerald-600"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                    }`}
-                >
-
-                  <div className="flex items-center gap-3">
-
-                    <Icon
-                      size={19}
-                      strokeWidth={active ? 2.3 : 2}
-                      className={
-                        active
-                          ? "text-emerald-600"
-                          : "text-slate-400 transition-colors group-hover:text-slate-600"
-                      }
-                    />
-
-                    <span>
-                      {item.label}
-                    </span>
-
-                  </div>
-
-                  {active && (
-                    <ChevronRight
-                      size={16}
-                      strokeWidth={2.2}
-                      className="text-emerald-500"
-                    />
-                  )}
-
-                </button>
-              );
-            })}
-
+            {menuItems.map((item) =>
+              renderNavItem(item.path, item.label, item.icon)
+            )}
           </div>
 
           {/* =================================================
               LAINNYA
           ================================================= */}
 
-          <p className="mb-3 mt-8 px-3 text-[10px] font-bold tracking-[0.08em] text-slate-400">
+          <p
+            className={
+              "mb-3 mt-8 px-3 text-[10px] font-bold tracking-[0.08em] text-slate-400 " +
+              sembunyiSaatKecil
+            }
+          >
             LAINNYA
           </p>
 
-          {/* PROFILE */}
+          {collapsed && (
+            <div className="my-4 hidden border-t border-slate-100 lg:block" />
+          )}
 
-          <button
-            type="button"
-            onClick={() => router.push("/hr/profile")}
-            className={`group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-all duration-200 ${isActive("/hr/profile")
-              ? "bg-emerald-50 text-emerald-600"
-              : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-              }`}
-          >
-
-            <div className="flex items-center gap-3">
-
-              <UserCircle
-                size={19}
-                strokeWidth={
-                  isActive("/hr/profile") ? 2.3 : 2
-                }
-                className={
-                  isActive("/hr/profile")
-                    ? "text-emerald-600"
-                    : "text-slate-400 transition-colors group-hover:text-slate-600"
-                }
-              />
-
-              <span>
-                Profil Saya
-              </span>
-
-            </div>
-
-            {isActive("/hr/profile") && (
-              <ChevronRight
-                size={16}
-                strokeWidth={2.2}
-                className="text-emerald-500"
-              />
-            )}
-
-          </button>
+          {renderNavItem("/hr/profile", "Profil Saya", UserCircle)}
 
         </nav>
 
@@ -359,7 +422,13 @@ export default function HRLayout({
 
           {/* USER */}
 
-          <div className="mb-2 flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
+          <div
+            className={
+              "mb-2 flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5 " +
+              (collapsed ? "lg:justify-center lg:px-0" : "")
+            }
+            title={collapsed ? user.nama : undefined}
+          >
 
             {/* AVATAR */}
 
@@ -377,7 +446,7 @@ export default function HRLayout({
 
             {/* USER INFO */}
 
-            <div className="min-w-0 flex-1">
+            <div className={"min-w-0 flex-1 " + sembunyiSaatKecil}>
 
               <p className="truncate text-xs font-semibold text-slate-700">
                 {user.nama}
@@ -396,7 +465,11 @@ export default function HRLayout({
           <button
             type="button"
             onClick={handleLogout}
-            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-medium text-slate-500 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
+            title={collapsed ? "Keluar" : undefined}
+            className={
+              "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-medium text-slate-500 transition-all duration-200 hover:bg-red-50 hover:text-red-600 " +
+              (collapsed ? "lg:justify-center lg:px-0" : "")
+            }
           >
 
             <LogOut
@@ -405,9 +478,7 @@ export default function HRLayout({
               className="text-slate-400 transition-colors group-hover:text-red-500"
             />
 
-            <span>
-              Keluar
-            </span>
+            <span className={sembunyiSaatKecil}>Keluar</span>
 
           </button>
 
@@ -419,7 +490,29 @@ export default function HRLayout({
           MAIN CONTENT
       ===================================================== */}
 
-      <section className="ml-[250px] min-h-screen w-[calc(100%-250px)]">
+      <section
+        className={
+          "min-h-screen min-w-0 flex-1 transition-[margin] duration-300 " +
+          (collapsed ? "lg:ml-[76px]" : "lg:ml-[250px]")
+        }
+      >
+
+        {/* BAR ATAS (LAYAR KECIL) */}
+
+        <div className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4 lg:hidden">
+
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Buka menu"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50"
+          >
+            <Menu size={18} />
+          </button>
+
+          <span className="text-sm font-bold text-slate-800">JobPortal</span>
+
+        </div>
 
         {children}
 
