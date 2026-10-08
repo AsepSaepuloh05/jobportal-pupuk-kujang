@@ -31,8 +31,8 @@ const PENDIDIKAN_OPTIONS = [
     "S3",
 ];
 
+const LOKASI_OPTIONS = ["Cikampek"];
 const PENDIDIKAN_SLTA = "SMA / SMK";
-
 const DESA_OPTIONS = ["Kalihurip", "Dawuan Tengah", "Dawuan Barat"];
 
 const TAHAPAN_OPTIONS = [
@@ -64,7 +64,7 @@ export default function TambahLowonganPage() {
 
     const [posisi, setPosisi] = useState("");
     const [departemen, setDepartemen] = useState("");
-    const [lokasi, setLokasi] = useState("");
+    const [lokasi, setLokasi] = useState("Cikampek");
     const [tipe, setTipe] = useState("TKNO");
     const [status, setStatus] = useState("DRAFT");
     const [deskripsi, setDeskripsi] = useState("");
@@ -266,15 +266,19 @@ export default function TambahLowonganPage() {
                             </label>
                             <div className="relative">
                                 <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                <input
+                                <select
                                     id="lokasi"
-                                    type="text"
-                                    placeholder="Contoh: Cikampek"
                                     value={lokasi}
                                     onChange={(e) => setLokasi(e.target.value)}
                                     disabled={saving}
                                     className={`${inputClass} pl-10`}
-                                />
+                                >
+                                    {LOKASI_OPTIONS.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                            {opt}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 

@@ -89,6 +89,15 @@ export async function POST(request: Request) {
             );
         }
 
+        const LOKASI_VALID = ["Cikampek"];
+
+        if (!LOKASI_VALID.includes(lokasi)) {
+            return NextResponse.json(
+                { message: "Pilihan lokasi tidak valid" },
+                { status: 400 }
+            );
+        }
+
         const statusValid = ["AKTIF", "DRAFT", "DITUTUP"];
 
         if (status && !statusValid.includes(status)) {
