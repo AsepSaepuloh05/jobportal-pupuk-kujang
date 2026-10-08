@@ -8,8 +8,10 @@ import {
   BriefcaseBusiness,
   UserRound,
   FileText,
-  CalendarDays,
   LogOut,
+  ChevronsLeft,
+  ChevronsRight,
+  X,
 } from "lucide-react";
 
 type User = {
@@ -26,7 +28,19 @@ type User = {
   } | null;
 };
 
-export default function SidebarKandidat() {
+interface SidebarKandidatProps {
+  collapsed: boolean;
+  mobileOpen: boolean;
+  onToggleCollapse: () => void;
+  onCloseMobile: () => void;
+}
+
+export default function SidebarKandidat({
+  collapsed,
+  mobileOpen,
+  onToggleCollapse,
+  onCloseMobile,
+}: SidebarKandidatProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -117,7 +131,6 @@ export default function SidebarKandidat() {
       href: "/kandidat/lamaran",
       icon: FileText,
     },
-    
   ];
 
   // ============================================================
@@ -131,6 +144,10 @@ export default function SidebarKandidat() {
     return pathname.startsWith(href);
   };
 
+  const profilAktif = pathname.startsWith("/kandidat/profil");
+
+  const sembunyiSaatKecil = collapsed ? "lg:hidden" : "";
+
   // ============================================================
   // FOTO PROFIL
   // ============================================================
@@ -143,14 +160,43 @@ export default function SidebarKandidat() {
   // RENDER
   // ============================================================
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-[250px] flex-col border-r border-slate-200 bg-white">
+    <aside
+      className={
+        "fixed left-0 top-0 flex h-screen w-[250px] flex-col border-r border-slate-200 bg-white transition-all duration-300 " +
+        (mobileOpen
+          ? "z-50 translate-x-0 "
+          : "z-40 -translate-x-full lg:translate-x-0 ") +
+        (collapsed ? "lg:w-[76px]" : "")
+      }
+    >
+
+      {/* TOMBOL KECILKAN / PERLUAS (DESKTOP) */}
+      <button
+        type="button"
+        onClick={onToggleCollapse}
+        aria-label={collapsed ? "Perluas sidebar" : "Kecilkan sidebar"}
+        title={collapsed ? "Perluas sidebar" : "Kecilkan sidebar"}
+        className="absolute -right-3 top-[64px] z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm transition hover:text-emerald-600 lg:flex"
+      >
+        {collapsed ? (
+          <ChevronsRight size={14} />
+        ) : (
+          <ChevronsLeft size={14} />
+        )}
+      </button>
 
       {/* ======================================================
           HEADER / LOGO
       ====================================================== */}
-      <div className="flex h-[76px] items-center border-b border-slate-100 px-5">
+      <div
+        className={
+          "flex h-[76px] items-center border-b border-slate-100 px-5 " +
+          (collapsed ? "lg:justify-center lg:px-0" : "")
+        }
+      >
         <Link
           href="/kandidat"
+          onClick={onCloseMobile}
           className="flex items-center gap-3"
         >
           {/* LOGO */}
@@ -163,7 +209,7 @@ export default function SidebarKandidat() {
           </div>
 
           {/* NAMA SISTEM */}
-          <div className="min-w-0 leading-tight">
+          <div className={"min-w-0 leading-tight " + sembunyiSaatKecil}>
             <p className="truncate text-[15px] font-bold text-slate-800">
               SIO Karir
             </p>
@@ -173,14 +219,34 @@ export default function SidebarKandidat() {
             </p>
           </div>
         </Link>
+
+        {/* TOMBOL TUTUP (LAYAR KECIL) */}
+        <button
+          type="button"
+          onClick={onCloseMobile}
+          aria-label="Tutup menu"
+          className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 lg:hidden"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       {/* ======================================================
           NAVIGATION
       ====================================================== */}
-      <nav className="flex-1 overflow-y-auto px-4 py-5">
+      <nav
+        className={
+          "flex-1 overflow-y-auto px-4 py-5 " +
+          (collapsed ? "lg:px-3" : "")
+        }
+      >
 
-        <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+        <p
+          className={
+            "mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 " +
+            sembunyiSaatKecil
+          }
+        >
           Menu Utama
         </p>
 
@@ -193,11 +259,15 @@ export default function SidebarKandidat() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                  active
+                onClick={onCloseMobile}
+                title={collapsed ? item.label : undefined}
+                className={
+                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all " +
+                  (collapsed ? "lg:justify-center lg:px-0 " : "") +
+                  (active
                     ? "bg-emerald-50 text-emerald-700"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                }`}
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900")
+                }
               >
                 <Icon
                   size={18}
@@ -209,7 +279,7 @@ export default function SidebarKandidat() {
                   }
                 />
 
-                <span>{item.label}</span>
+                <span className={sembunyiSaatKecil}>{item.label}</span>
               </Link>
             );
           })}
@@ -219,10 +289,20 @@ export default function SidebarKandidat() {
       {/* ======================================================
           BAGIAN ACCOUNT
       ====================================================== */}
-      <div className="border-t border-slate-100 px-3 py-4">
+      <div
+        className={
+          "border-t border-slate-100 px-3 py-4 " +
+          (collapsed ? "lg:px-2" : "")
+        }
+      >
 
         {/* LABEL ACCOUNT */}
-        <p className="mb-2.5 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+        <p
+          className={
+            "mb-2.5 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 " +
+            sembunyiSaatKecil
+          }
+        >
           Account
         </p>
 
@@ -232,11 +312,17 @@ export default function SidebarKandidat() {
         ==================================================== */}
         <Link
           href="/kandidat/profil"
-          className={`group block rounded-2xl border p-2.5 transition-all ${
-            pathname.startsWith("/kandidat/profil")
+          onClick={onCloseMobile}
+          title={collapsed ? user?.nama || "Profil & Dokumen" : undefined}
+          className={
+            "group block rounded-2xl border p-2.5 transition-all " +
+            (collapsed
+              ? "lg:flex lg:justify-center lg:border-transparent lg:bg-transparent lg:p-1.5 lg:shadow-none "
+              : "") +
+            (profilAktif
               ? "border-emerald-200 bg-emerald-50/60 shadow-sm"
-              : "border-slate-200 bg-white shadow-sm hover:border-emerald-200 hover:bg-emerald-50/30 hover:shadow-md"
-          }`}
+              : "border-slate-200 bg-white shadow-sm hover:border-emerald-200 hover:bg-emerald-50/30 hover:shadow-md")
+          }
         >
           <div className="flex items-center gap-3">
 
@@ -244,15 +330,16 @@ export default function SidebarKandidat() {
             <div className="relative shrink-0">
 
               <div
-                className={`h-10 w-10 overflow-hidden rounded-full bg-emerald-50 ring-2 ring-white ring-offset-1 ${
-                  pathname.startsWith("/kandidat/profil")
+                className={
+                  "h-10 w-10 overflow-hidden rounded-full bg-emerald-50 ring-2 ring-white ring-offset-1 " +
+                  (profilAktif
                     ? "ring-offset-emerald-100"
-                    : "ring-offset-slate-100"
-                }`}
+                    : "ring-offset-slate-100")
+                }
               >
                 {!loading && fotoPath && !fotoError ? (
                   <img
-                    src={`${fotoPath}?v=${fotoVersion}`}
+                    src={fotoPath + "?v=" + fotoVersion}
                     alt={user?.nama || "Foto profil"}
                     className="h-full w-full object-cover"
                     onError={() => setFotoError(true)}
@@ -272,7 +359,7 @@ export default function SidebarKandidat() {
             </div>
 
             {/* DATA USER */}
-            <div className="min-w-0 flex-1">
+            <div className={"min-w-0 flex-1 " + sembunyiSaatKecil}>
 
               {loading ? (
                 <>
@@ -283,11 +370,12 @@ export default function SidebarKandidat() {
               ) : (
                 <>
                   <p
-                    className={`truncate text-[13px] font-semibold ${
-                      pathname.startsWith("/kandidat/profil")
+                    className={
+                      "truncate text-[13px] font-semibold " +
+                      (profilAktif
                         ? "text-emerald-700"
-                        : "text-slate-800 group-hover:text-emerald-700"
-                    }`}
+                        : "text-slate-800 group-hover:text-emerald-700")
+                    }
                   >
                     {user?.nama || "Kandidat"}
                   </p>
@@ -309,14 +397,18 @@ export default function SidebarKandidat() {
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-500 transition-all hover:bg-red-50 hover:text-red-600"
+          title={collapsed ? "Keluar" : undefined}
+          className={
+            "mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-500 transition-all hover:bg-red-50 hover:text-red-600 " +
+            (collapsed ? "lg:justify-center lg:px-0" : "")
+          }
         >
           <LogOut
             size={17}
             strokeWidth={1.8}
           />
 
-          <span>Keluar</span>
+          <span className={sembunyiSaatKecil}>Keluar</span>
         </button>
 
       </div>
