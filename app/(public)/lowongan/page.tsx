@@ -1078,12 +1078,12 @@ export default function LowonganPage() {
                         )}
                       />
 
-                      <DetailItem
+                      {/* <DetailItem
                         label="Berlaku Hingga"
                         value={formatDate(
                           selectedJob.tanggalBerakhir
                         )}
-                      />
+                      /> */}
 
                     </div>
 

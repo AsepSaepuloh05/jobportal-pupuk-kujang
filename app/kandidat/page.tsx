@@ -67,6 +67,22 @@ interface Pendidikan {
   ijazahUkuranFile?: number | null;
 }
 
+interface Pengalaman {
+  id: number;
+  posisi?: string | null;
+  perusahaan?: string | null;
+  tahunMulai?: number | null;
+  tahunSelesai?: number | null;
+}
+
+interface Sertifikasi {
+  id: number;
+  namaSertifikasi?: string | null;
+  penerbit?: string | null;
+  tanggalTerbit?: string | null;
+  tanggalKadaluarsa?: string | null;
+}
+
 // ============================================================
 // KARTU LOWONGAN REKOMENDASI
 // ============================================================
@@ -78,7 +94,6 @@ function RecommendedJobCard({
   job: Lowongan;
   wide: boolean;
 }) {
-  // KARTU LEBAR (untuk 1 lowongan)
   if (wide) {
     return (
       <Link
@@ -140,7 +155,6 @@ function RecommendedJobCard({
     );
   }
 
-  // KARTU BIASA (untuk 2 atau 3 lowongan)
   return (
     <Link
       href={`/kandidat/lowongan/${job.id}`}
@@ -205,6 +219,8 @@ export default function KandidatDashboardPage() {
   const [lamaran, setLamaran] = useState<Lamaran[]>([]);
   const [dokumen, setDokumen] = useState<Dokumen[]>([]);
   const [pendidikan, setPendidikan] = useState<Pendidikan[]>([]);
+  const [pengalaman, setPengalaman] = useState<Pengalaman[]>([]);
+  const [sertifikasi, setSertifikasi] = useState<Sertifikasi[]>([]);
   const [lowongan, setLowongan] = useState<Lowongan[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -221,6 +237,8 @@ export default function KandidatDashboardPage() {
         lamaranRes,
         dokumenRes,
         pendidikanRes,
+        pengalamanRes,
+        sertifikasiRes,
         lowonganRes,
       ] = await Promise.all([
         fetch("/api/me", {
@@ -236,6 +254,14 @@ export default function KandidatDashboardPage() {
         }),
 
         fetch("/api/pendidikan", {
+          cache: "no-store",
+        }),
+
+        fetch("/api/pengalaman", {
+          cache: "no-store",
+        }),
+
+        fetch("/api/sertifikasi", {
           cache: "no-store",
         }),
 
@@ -283,6 +309,8 @@ export default function KandidatDashboardPage() {
 
         const dokumenList = Array.isArray(dokumenData?.dokumen)
           ? dokumenData.dokumen
+          : Array.isArray(dokumenData?.data)
+          ? dokumenData.data
           : [];
 
         setDokumen(dokumenList);
@@ -304,6 +332,46 @@ export default function KandidatDashboardPage() {
           : [];
 
         setPendidikan(pendidikanList);
+      }
+
+      // ============================================================
+      // PENGALAMAN
+      // ============================================================
+
+      if (pengalamanRes.ok) {
+        const pengalamanData = await pengalamanRes.json();
+
+        const pengalamanList = Array.isArray(
+          pengalamanData?.pengalaman
+        )
+          ? pengalamanData.pengalaman
+          : Array.isArray(pengalamanData?.data)
+          ? pengalamanData.data
+          : Array.isArray(pengalamanData)
+          ? pengalamanData
+          : [];
+
+        setPengalaman(pengalamanList);
+      }
+
+      // ============================================================
+      // SERTIFIKASI
+      // ============================================================
+
+      if (sertifikasiRes.ok) {
+        const sertifikasiData = await sertifikasiRes.json();
+
+        const sertifikasiList = Array.isArray(
+          sertifikasiData?.sertifikasi
+        )
+          ? sertifikasiData.sertifikasi
+          : Array.isArray(sertifikasiData?.data)
+          ? sertifikasiData.data
+          : Array.isArray(sertifikasiData)
+          ? sertifikasiData
+          : [];
+
+        setSertifikasi(sertifikasiList);
       }
 
       // ============================================================
@@ -553,41 +621,72 @@ export default function KandidatDashboardPage() {
       {
         label: "Nama lengkap",
         complete: Boolean(user?.nama?.trim()),
+        wajib: false,
       },
       {
         label: "Email",
         complete: Boolean(user?.email?.trim()),
+        wajib: false,
       },
       {
         label: "NIK",
         complete: Boolean(user?.nik?.trim()),
+        wajib: true,
       },
       {
         label: "Alamat",
         complete: Boolean(user?.alamat?.trim()),
+        wajib: true,
+      },
+      {
+        label: "Pendidikan",
+        complete: pendidikan.length > 0,
+        wajib: false,
+      },
+      {
+        label: "Pengalaman",
+        complete: pengalaman.length > 0,
+        wajib: false,
+      },
+      {
+        label: "Sertifikasi",
+        complete: sertifikasi.length > 0,
+        wajib: false,
       },
       {
         label: "CV",
         complete: hasDocument("CV"),
+        wajib: true,
       },
       {
         label: "Ijazah",
         complete: hasIjazah,
+        wajib: false,
       },
       {
         label: "Transkrip Nilai",
         complete: hasDocument("Transkrip Nilai"),
+        wajib: false,
       },
       {
         label: "KTP",
         complete: hasDocument("KTP"),
+        wajib: false,
       },
       {
         label: "Dokumen Pendukung",
         complete: hasDocument("Dokumen Pendukung"),
+        wajib: false,
       },
     ];
-  }, [user, dokumen, hasIjazah]);
+  }, [
+    user,
+    pendidikan,
+    pengalaman,
+    sertifikasi,
+    dokumen,
+    hasIjazah,
+  ]);
 
   const completedProfile = profileChecks.filter(
     (item) => item.complete
@@ -1103,21 +1202,29 @@ export default function KandidatDashboardPage() {
                 {profileChecks.map((item) => (
                   <div
                     key={item.label}
-                    className="flex items-center justify-between"
+                    className="flex items-center justify-between gap-3"
                   >
-                    <span className="text-sm text-slate-600">
-                      {item.label}
-                    </span>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="text-sm text-slate-600">
+                        {item.label}
+                      </span>
+
+                      {item.wajib && (
+                        <span className="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-600">
+                          Wajib
+                        </span>
+                      )}
+                    </div>
 
                     {item.complete ? (
                       <CheckCircle2
                         size={18}
-                        className="text-emerald-600"
+                        className="shrink-0 text-emerald-600"
                       />
                     ) : (
                       <XCircle
                         size={18}
-                        className="text-slate-300"
+                        className="shrink-0 text-slate-300"
                       />
                     )}
                   </div>

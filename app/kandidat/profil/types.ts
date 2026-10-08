@@ -1,24 +1,38 @@
 export interface UserData {
   id: number;
+
   nama: string;
+
   email: string;
+
   nik: string;
+
   role: string;
 
   // Alamat
   alamat?: string | null;
+
   rt?: number | null;
+
   rw?: number | null;
 
   // Wilayah
   provinsiId?: string | null;
+
   provinsi?: string | null;
+
   kabupatenId?: string | null;
+
   kabupaten?: string | null;
+
   kecamatanId?: string | null;
+
   kecamatan?: string | null;
+
   desaId?: string | null;
+
   desa?: string | null;
+
   kodePos?: string | null;
 
   // Nomor Telepon
@@ -32,126 +46,231 @@ export interface UserData {
 
 export interface UploadedDokumen {
   id: number;
+
   jenisDokumen: string;
+
   namaAsli: string;
+
   pathFile: string;
+
   tipeFile: string;
+
   ukuranFile: number;
+
   updatedAt: string;
 }
 
 export interface Pendidikan {
   id: number;
+
   jenjang: string;
+
   institusi: string;
+
   jurusan: string;
+
   tahunMulai: string;
+
   tahunSelesai: string;
+
   nilai: string | null;
 
   // Ijazah
   ijazahNamaFile?: string | null;
+
   ijazahNamaAsli?: string | null;
+
   ijazahPathFile?: string | null;
+
   ijazahTipeFile?: string | null;
+
   ijazahUkuranFile?: number | null;
 }
 
 export interface Pengalaman {
   id: number;
+
   posisi: string;
+
   perusahaan: string;
+
   lokasi: string | null;
+
   tahunMulai: string;
+
   tahunSelesai: string | null;
+
   deskripsi: string | null;
 
   // Paklaring
   paklaringNamaFile?: string | null;
+
   paklaringNamaAsli?: string | null;
+
   paklaringPathFile?: string | null;
+
   paklaringTipeFile?: string | null;
+
   paklaringUkuranFile?: number | null;
 }
 
 export interface Sertifikasi {
   id: number;
+
   nama: string;
+
   penerbit: string;
+
   nomor: string | null;
+
   tanggalTerbit: string | null;
+
   tanggalKadaluarsa: string | null;
+
+  // Sertifikat
+  sertifikatNamaFile?: string | null;
+
+  sertifikatNamaAsli?: string | null;
+
+  sertifikatPathFile?: string | null;
+
+  sertifikatTipeFile?: string | null;
+
+  sertifikatUkuranFile?: number | null;
+
+  /**
+   * File hanya digunakan sementara di frontend
+   * sebelum dikirim melalui FormData.
+   */
+  file?: File | null;
 }
 
 export interface DokumenConfig {
   key: string;
+
   label: string;
+
   description: string;
+
   accept: string;
 }
 
 export const initialPendidikan: Pendidikan = {
   id: 0,
+
   jenjang: "",
+
   institusi: "",
+
   jurusan: "",
+
   tahunMulai: "",
+
   tahunSelesai: "",
+
   nilai: null,
+
   ijazahNamaFile: null,
+
   ijazahNamaAsli: null,
+
   ijazahPathFile: null,
+
   ijazahTipeFile: null,
+
   ijazahUkuranFile: null,
 };
 
 export const initialPengalaman: Pengalaman = {
   id: 0,
+
   posisi: "",
+
   perusahaan: "",
+
   lokasi: "",
+
   tahunMulai: "",
+
   tahunSelesai: "",
+
   deskripsi: "",
+
   paklaringNamaFile: null,
+
   paklaringNamaAsli: null,
+
   paklaringPathFile: null,
+
   paklaringTipeFile: null,
+
   paklaringUkuranFile: null,
 };
 
 export const initialSertifikasi: Sertifikasi = {
   id: 0,
+
   nama: "",
+
   penerbit: "",
+
   nomor: "",
+
   tanggalTerbit: "",
+
   tanggalKadaluarsa: "",
+
+  sertifikatNamaFile: null,
+
+  sertifikatNamaAsli: null,
+
+  sertifikatPathFile: null,
+
+  sertifikatTipeFile: null,
+
+  sertifikatUkuranFile: null,
+
+  file: null,
 };
 
 export const documents: DokumenConfig[] = [
   {
     key: "cv",
+
     label: "Curriculum Vitae",
+
     description: "PDF, maksimal 5 MB",
+
     accept: "application/pdf",
   },
+
   {
     key: "ktp",
+
     label: "KTP",
+
     description: "PDF, JPG, atau PNG — maksimal 5 MB",
+
     accept: "application/pdf,image/jpeg,image/png",
   },
+
   {
     key: "transkrip",
+
     label: "Transkrip Nilai",
+
     description: "PDF, JPG, atau PNG — maksimal 5 MB",
+
     accept: "application/pdf,image/jpeg,image/png",
   },
+
   {
     key: "lainnya",
+
     label: "Dokumen Pendukung",
+
     description: "PDF, JPG, atau PNG — maksimal 5 MB",
+
     accept: "application/pdf,image/jpeg,image/png",
   },
 ];

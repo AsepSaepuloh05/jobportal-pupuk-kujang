@@ -3,8 +3,12 @@
 import {
   Award,
   CalendarDays,
+  FileText,
   Pencil,
   Trash2,
+  Upload,
+  X,
+  ExternalLink,
 } from "lucide-react";
 
 import { Sertifikasi } from "../types";
@@ -21,6 +25,34 @@ import {
   ModalFooter,
   ModalInput,
 } from "./ModalPrimitives";
+
+/* ============================================================
+   KONFIGURASI FILE
+============================================================ */
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+const ALLOWED_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+];
+
+/* ============================================================
+   FORMAT UKURAN
+============================================================ */
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(0)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 /* ============================================================
    CERTIFICATION ITEM
@@ -47,17 +79,14 @@ function CertificationItem({
         {/* HEADER */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            {/* NAMA */}
             <h3 className="text-[15px] font-bold leading-6 text-slate-900 sm:text-base">
               {item.nama}
             </h3>
 
-            {/* PENERBIT */}
             <p className="mt-0.5 text-sm font-medium text-slate-600">
               {item.penerbit}
             </p>
 
-            {/* NOMOR */}
             {item.nomor && (
               <p className="mt-1.5 text-xs text-slate-400">
                 Nomor sertifikat:{" "}
@@ -95,6 +124,7 @@ function CertificationItem({
           {item.tanggalTerbit && (
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-medium text-slate-600">
               <CalendarDays className="h-3.5 w-3.5" />
+
               Terbit {formatDate(item.tanggalTerbit)}
             </span>
           )}
@@ -106,6 +136,219 @@ function CertificationItem({
             </span>
           )}
         </div>
+
+        {/* FILE SERTIFIKAT */}
+        {item.sertifikatPathFile && (
+          <div className="mt-3">
+            <a
+              href={item.sertifikatPathFile}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+            >
+              <FileText className="h-4 w-4" />
+
+              <span>
+                {item.sertifikatNamaAsli ||
+                  "Lihat Sertifikat"}
+              </span>
+
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   FILE UPLOAD
+============================================================ */
+
+function SertifikatUpload({
+  form,
+  setForm,
+}: {
+  form: Sertifikasi;
+
+  setForm: React.Dispatch<
+    React.SetStateAction<Sertifikasi>
+  >;
+}) {
+  const handleFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    /* Validasi tipe */
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      alert(
+        "Format file harus PDF, JPG, JPEG, atau PNG."
+      );
+
+      event.target.value = "";
+
+      return;
+    }
+
+    /* Validasi ukuran */
+    if (file.size > MAX_FILE_SIZE) {
+      alert("Ukuran file maksimal 5 MB.");
+
+      event.target.value = "";
+
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+
+      file,
+
+      sertifikatNamaAsli: file.name,
+
+      sertifikatTipeFile: file.type,
+
+      sertifikatUkuranFile: file.size,
+    }));
+  };
+
+  const handleRemoveNewFile = () => {
+    setForm((prev) => ({
+      ...prev,
+
+      file: null,
+
+      sertifikatNamaAsli:
+        prev.sertifikatPathFile
+          ? prev.sertifikatNamaAsli
+          : null,
+
+      sertifikatTipeFile:
+        prev.sertifikatPathFile
+          ? prev.sertifikatTipeFile
+          : null,
+
+      sertifikatUkuranFile:
+        prev.sertifikatPathFile
+          ? prev.sertifikatUkuranFile
+          : null,
+    }));
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-semibold text-slate-700">
+        Sertifikat
+        <span className="ml-1 text-xs font-normal text-slate-400">
+          (Opsional)
+        </span>
+      </label>
+
+      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50/30">
+        {/* FILE BARU */}
+        {form.file ? (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-white p-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <FileText className="h-5 w-5" />
+              </div>
+
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-700">
+                  {form.file.name}
+                </p>
+
+                <p className="mt-0.5 text-xs text-slate-400">
+                  {formatFileSize(form.file.size)}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleRemoveNewFile}
+              className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+              title="Hapus file"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : form.sertifikatPathFile ? (
+          /* FILE LAMA */
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                <FileText className="h-5 w-5" />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-slate-700">
+                  {form.sertifikatNamaAsli ||
+                    "Sertifikat tersimpan"}
+                </p>
+
+                {form.sertifikatUkuranFile && (
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    {formatFileSize(
+                      form.sertifikatUkuranFile
+                    )}
+                  </p>
+                )}
+              </div>
+
+              <a
+                href={form.sertifikatPathFile}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-600"
+                title="Lihat sertifikat"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
+
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
+              <Upload className="h-4 w-4" />
+
+              Ganti Sertifikat
+
+              <input
+                type="file"
+                className="hidden"
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                onChange={handleFileChange}
+              />
+            </label>
+          </div>
+        ) : (
+          /* UPLOAD BARU */
+          <label className="flex cursor-pointer flex-col items-center justify-center py-4 text-center">
+            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm">
+              <Upload className="h-5 w-5" />
+            </div>
+
+            <p className="text-sm font-semibold text-slate-600">
+              Pilih file sertifikat
+            </p>
+
+            <p className="mt-1 text-xs text-slate-400">
+              PDF, JPG, JPEG, atau PNG • Maksimal 5 MB
+            </p>
+
+            <input
+              type="file"
+              className="hidden"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              onChange={handleFileChange}
+            />
+          </label>
+        )}
       </div>
     </div>
   );
@@ -124,10 +367,17 @@ function SertifikasiModal({
   onSave,
 }: {
   isEdit: boolean;
+
   form: Sertifikasi;
-  setForm: React.Dispatch<React.SetStateAction<Sertifikasi>>;
+
+  setForm: React.Dispatch<
+    React.SetStateAction<Sertifikasi>
+  >;
+
   saving: boolean;
+
   onClose: () => void;
+
   onSave: () => void;
 }) {
   return (
@@ -139,7 +389,9 @@ function SertifikasiModal({
       }
       description="Masukkan sertifikasi atau pelatihan yang dimiliki."
       onClose={() => {
-        if (!saving) onClose();
+        if (!saving) {
+          onClose();
+        }
       }}
       footer={
         <ModalFooter
@@ -211,6 +463,12 @@ function SertifikasiModal({
             }
           />
         </div>
+
+        {/* UPLOAD SERTIFIKAT */}
+        <SertifikatUpload
+          form={form}
+          setForm={setForm}
+        />
       </div>
     </Modal>
   );
@@ -234,15 +492,27 @@ export function SertifikasiSection({
   onDelete,
 }: {
   items: Sertifikasi[];
+
   showModal: boolean;
+
   editingId: number | null;
+
   form: Sertifikasi;
-  setForm: React.Dispatch<React.SetStateAction<Sertifikasi>>;
+
+  setForm: React.Dispatch<
+    React.SetStateAction<Sertifikasi>
+  >;
+
   saving: boolean;
+
   onOpenTambah: () => void;
+
   onOpenEdit: (item: Sertifikasi) => void;
+
   onClose: () => void;
+
   onSave: () => void;
+
   onDelete: (id: number) => void;
 }) {
   return (
@@ -275,7 +545,9 @@ export function SertifikasiSection({
                 item={item}
                 last={index === items.length - 1}
                 onEdit={() => onOpenEdit(item)}
-                onDelete={() => onDelete(item.id)}
+                onDelete={() =>
+                  onDelete(item.id)
+                }
               />
             ))}
           </div>

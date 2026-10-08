@@ -248,7 +248,6 @@ model Pengalaman {
 
 model Sertifikasi {
   id Int @id @default(autoincrement())
-
   userId Int
 
   nama              String
@@ -256,6 +255,13 @@ model Sertifikasi {
   nomor             String?
   tanggalTerbit     String?
   tanggalKadaluarsa String?
+
+  // Data sertifikat
+  sertifikatNamaFile   String?
+  sertifikatNamaAsli   String?
+  sertifikatPathFile   String?
+  sertifikatTipeFile   String?
+  sertifikatUkuranFile Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

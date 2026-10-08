@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+
 import {
   UserData,
   UploadedDokumen,
@@ -12,6 +13,7 @@ import {
   initialPengalaman,
   initialSertifikasi,
 } from "../types";
+
 import { isYear4, isNilaiByJenjang } from "../utils";
 import { PreviewTarget } from "../components/Documentpreviewmodal";
 
@@ -44,13 +46,16 @@ export function useProfilKandidat() {
 
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
-  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const fileInputRefs = useRef<
+    Record<string, HTMLInputElement | null>
+  >({});
 
   // ============================================================
   // PREVIEW DOKUMEN
   // ============================================================
 
-  const [previewDoc, setPreviewDoc] = useState<PreviewTarget | null>(null);
+  const [previewDoc, setPreviewDoc] =
+    useState<PreviewTarget | null>(null);
 
   // ============================================================
   // EDIT PROFIL
@@ -89,9 +94,11 @@ export function useProfilKandidat() {
   // PENDIDIKAN
   // ============================================================
 
-  const [pendidikan, setPendidikan] = useState<Pendidikan[]>([]);
+  const [pendidikan, setPendidikan] =
+    useState<Pendidikan[]>([]);
 
-  const [showPendidikanModal, setShowPendidikanModal] = useState(false);
+  const [showPendidikanModal, setShowPendidikanModal] =
+    useState(false);
 
   const [editingPendidikanId, setEditingPendidikanId] =
     useState<number | null>(null);
@@ -99,19 +106,24 @@ export function useProfilKandidat() {
   const [pendidikanForm, setPendidikanForm] =
     useState<Pendidikan>(initialPendidikan);
 
-  const [savingPendidikan, setSavingPendidikan] = useState(false);
+  const [savingPendidikan, setSavingPendidikan] =
+    useState(false);
 
-  const [ijazahFile, setIjazahFile] = useState<File | null>(null);
+  const [ijazahFile, setIjazahFile] =
+    useState<File | null>(null);
 
-  const [uploadingIjazah, setUploadingIjazah] = useState(false);
+  const [uploadingIjazah, setUploadingIjazah] =
+    useState(false);
 
   // ============================================================
   // PENGALAMAN
   // ============================================================
 
-  const [pengalaman, setPengalaman] = useState<Pengalaman[]>([]);
+  const [pengalaman, setPengalaman] =
+    useState<Pengalaman[]>([]);
 
-  const [showPengalamanModal, setShowPengalamanModal] = useState(false);
+  const [showPengalamanModal, setShowPengalamanModal] =
+    useState(false);
 
   const [editingPengalamanId, setEditingPengalamanId] =
     useState<number | null>(null);
@@ -119,19 +131,24 @@ export function useProfilKandidat() {
   const [pengalamanForm, setPengalamanForm] =
     useState<Pengalaman>(initialPengalaman);
 
-  const [savingPengalaman, setSavingPengalaman] = useState(false);
+  const [savingPengalaman, setSavingPengalaman] =
+    useState(false);
 
-  const [paklaringFile, setPaklaringFile] = useState<File | null>(null);
+  const [paklaringFile, setPaklaringFile] =
+    useState<File | null>(null);
 
-  const [uploadingPaklaring, setUploadingPaklaring] = useState(false);
+  const [uploadingPaklaring, setUploadingPaklaring] =
+    useState(false);
 
   // ============================================================
   // SERTIFIKASI
   // ============================================================
 
-  const [sertifikasi, setSertifikasi] = useState<Sertifikasi[]>([]);
+  const [sertifikasi, setSertifikasi] =
+    useState<Sertifikasi[]>([]);
 
-  const [showSertifikasiModal, setShowSertifikasiModal] = useState(false);
+  const [showSertifikasiModal, setShowSertifikasiModal] =
+    useState(false);
 
   const [editingSertifikasiId, setEditingSertifikasiId] =
     useState<number | null>(null);
@@ -139,7 +156,8 @@ export function useProfilKandidat() {
   const [sertifikasiForm, setSertifikasiForm] =
     useState<Sertifikasi>(initialSertifikasi);
 
-  const [savingSertifikasi, setSavingSertifikasi] = useState(false);
+  const [savingSertifikasi, setSavingSertifikasi] =
+    useState(false);
 
   // ============================================================
   // INITIAL LOAD
@@ -164,15 +182,27 @@ export function useProfilKandidat() {
       });
 
       if (!response.ok) {
-        console.error("ME ERROR:", response.status);
+        console.error(
+          "ME ERROR:",
+          response.status
+        );
+
         router.replace("/login");
         return;
       }
 
       const data = await response.json();
 
-      if (!data.success || !data.user || data.user.role !== "KANDIDAT") {
-        console.error("ME INVALID:", data);
+      if (
+        !data.success ||
+        !data.user ||
+        data.user.role !== "KANDIDAT"
+      ) {
+        console.error(
+          "ME INVALID:",
+          data
+        );
+
         router.replace("/login");
         return;
       }
@@ -181,366 +211,6 @@ export function useProfilKandidat() {
 
       // ========================================================
       // LOAD PROFILE FORM
-      // ========================================================
-
-      setProfileForm({
-        nama: data.user.nama || "",
-        email: data.user.email || "",
-        nik: data.user.nik || "",
-        noTelepon: data.user.noTelepon || "",
-        alamat: data.user.alamat || "",
-
-        rt:
-          data.user.rt !== null && data.user.rt !== undefined
-            ? String(data.user.rt).padStart(3, "0")
-            : "",
-
-        rw:
-          data.user.rw !== null && data.user.rw !== undefined
-            ? String(data.user.rw).padStart(3, "0")
-            : "",
-
-        provinsiId: data.user.provinsiId || "",
-        provinsi: data.user.provinsi || "",
-
-        kabupatenId: data.user.kabupatenId || "",
-        kabupaten: data.user.kabupaten || "",
-
-        kecamatanId: data.user.kecamatanId || "",
-        kecamatan: data.user.kecamatan || "",
-
-        desaId: data.user.desaId || "",
-        desa: data.user.desa || "",
-
-        kodePos: data.user.kodePos || "",
-      });
-
-      if (data.user.dokumenProfil?.pathFile) {
-        setFotoPreview(null);
-      }
-
-      await Promise.all([
-        fetchDokumen(),
-        fetchPendidikan(),
-        fetchPengalaman(),
-        fetchSertifikasi(),
-      ]);
-    } catch (error) {
-      console.error("GET PROFILE ERROR:", error);
-
-      router.replace("/login");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ============================================================
-  // FETCH DOKUMEN
-  // ============================================================
-
-  const fetchDokumen = async () => {
-    try {
-      const res = await fetch("/api/profil/dokumen", {
-        cache: "no-store",
-      });
-
-      if (!res.ok) return;
-
-      const data = await res.json();
-
-      if (data.success && Array.isArray(data.dokumen)) {
-        const map: Record<string, UploadedDokumen> = {};
-
-        data.dokumen.forEach((document: UploadedDokumen) => {
-          map[document.jenisDokumen.toLowerCase()] = document;
-        });
-
-        setUploadedDocs(map);
-      }
-    } catch (error) {
-      console.error("FETCH DOKUMEN ERROR:", error);
-    }
-  };
-
-  // ============================================================
-  // FETCH PENDIDIKAN
-  // ============================================================
-
-  const fetchPendidikan = async () => {
-    try {
-      const res = await fetch("/api/pendidikan", {
-        cache: "no-store",
-      });
-
-      if (!res.ok) return;
-
-      const data = await res.json();
-
-      if (data.success) {
-        setPendidikan(data.pendidikan || data.data || []);
-      }
-    } catch (error) {
-      console.error("FETCH PENDIDIKAN ERROR:", error);
-    }
-  };
-
-  // ============================================================
-  // FETCH PENGALAMAN
-  // Database menyimpan tahun sebagai Int, form memakai string
-  // ============================================================
-
-  const fetchPengalaman = async () => {
-    try {
-      const res = await fetch("/api/pengalaman", {
-        cache: "no-store",
-      });
-
-      if (!res.ok) return;
-
-      const data = await res.json();
-
-      if (data.success) {
-        const list = data.pengalaman || data.data || [];
-
-        setPengalaman(
-          list.map((item: any) => ({
-            ...item,
-            tahunMulai: String(item.tahunMulai ?? ""),
-            tahunSelesai:
-              item.tahunSelesai !== null &&
-              item.tahunSelesai !== undefined
-                ? String(item.tahunSelesai)
-                : "",
-          }))
-        );
-      }
-    } catch (error) {
-      console.error("FETCH PENGALAMAN ERROR:", error);
-    }
-  };
-
-  // ============================================================
-  // FETCH SERTIFIKASI
-  // ============================================================
-
-  const fetchSertifikasi = async () => {
-    try {
-      const res = await fetch("/api/sertifikasi", {
-        cache: "no-store",
-      });
-
-      if (!res.ok) return;
-
-      const data = await res.json();
-
-      if (data.success) {
-        setSertifikasi(data.sertifikasi || data.data || []);
-      }
-    } catch (error) {
-      console.error("FETCH SERTIFIKASI ERROR:", error);
-    }
-  };
-
-  // ============================================================
-  // FOTO PROFIL
-  // ============================================================
-
-  const handleFotoChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0];
-
-    e.target.value = "";
-
-    if (!file) return;
-
-    const allowedTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      alert("Format foto harus JPG atau PNG.");
-      return;
-    }
-
-    if (file.size === 0) {
-      alert("File foto kosong.");
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Ukuran foto maksimal 2 MB.");
-      return;
-    }
-
-    const localPreview = URL.createObjectURL(file);
-
-    setFotoPreview(localPreview);
-    setUploadingFoto(true);
-
-    try {
-      const formData = new FormData();
-
-      formData.append("foto", file);
-
-      const res = await fetch("/api/profil/foto", {
-        method: "POST",
-        body: formData,
-        cache: "no-store",
-      });
-
-      let data;
-
-      try {
-        data = await res.json();
-      } catch {
-        data = {
-          success: false,
-          message: "Response server tidak valid.",
-        };
-      }
-
-      if (!res.ok || !data.success) {
-        alert(
-          data.message || "Gagal mengunggah foto profil."
-        );
-
-        setFotoPreview(null);
-        return;
-      }
-
-      if (data.fotoProfil) {
-        setUser((prev) =>
-          prev
-            ? {
-                ...prev,
-                dokumenProfil: {
-                  pathFile: data.fotoProfil,
-                },
-              }
-            : prev
-        );
-
-        setFotoPreview(
-          `${data.fotoProfil}?t=${Date.now()}`
-        );
-      }
-
-      const profileRes = await fetch("/api/me", {
-        cache: "no-store",
-      });
-
-      if (profileRes.ok) {
-        const profileData = await profileRes.json();
-
-        if (profileData.success && profileData.user) {
-          setUser(profileData.user);
-        }
-      }
-
-      setTimeout(() => {
-        URL.revokeObjectURL(localPreview);
-      }, 1000);
-    } catch (error) {
-      console.error("UPLOAD FOTO ERROR:", error);
-
-      alert(
-        "Terjadi kesalahan saat mengunggah foto profil."
-      );
-
-      setFotoPreview(null);
-    } finally {
-      setUploadingFoto(false);
-    }
-  };
-
-  // ============================================================
-  // SAVE PROFILE
-  // ============================================================
-
-  const saveProfile = async () => {
-    if (
-      !profileForm.nama.trim() ||
-      !profileForm.email.trim() ||
-      !profileForm.nik.trim()
-    ) {
-      alert("Nama, email, dan NIK wajib diisi.");
-      return;
-    }
-
-    setSavingProfile(true);
-
-    try {
-      const res = await fetch("/api/profil", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          nama: profileForm.nama.trim(),
-          email: profileForm.email.trim(),
-          nik: profileForm.nik.trim(),
-          noTelepon: profileForm.noTelepon.trim() || null,
-          alamat: profileForm.alamat.trim(),
-
-          rt: profileForm.rt
-            ? Number(profileForm.rt)
-            : null,
-
-          rw: profileForm.rw
-            ? Number(profileForm.rw)
-            : null,
-
-          provinsiId: profileForm.provinsiId || null,
-          provinsi: profileForm.provinsi || null,
-
-          kabupatenId: profileForm.kabupatenId || null,
-          kabupaten: profileForm.kabupaten || null,
-
-          kecamatanId: profileForm.kecamatanId || null,
-          kecamatan: profileForm.kecamatan || null,
-
-          desaId: profileForm.desaId || null,
-          desa: profileForm.desa || null,
-
-          kodePos: profileForm.kodePos.trim() || null,
-        }),
-      });
-
-      let data;
-
-      try {
-        data = await res.json();
-      } catch {
-        alert("Response dari server tidak valid.");
-        return;
-      }
-
-      if (!res.ok || !data.success) {
-        alert(
-          data.message || "Gagal memperbarui profil."
-        );
-
-        return;
-      }
-
-      // ========================================================
-      // UPDATE USER
-      // ========================================================
-
-      setUser((prev) =>
-        prev
-          ? {
-              ...prev,
-              ...data.user,
-            }
-          : data.user
-      );
-
-      // ========================================================
-      // UPDATE FORM DARI RESPONSE SERVER
       // ========================================================
 
       setProfileForm({
@@ -562,19 +232,581 @@ export function useProfilKandidat() {
             ? String(data.user.rw).padStart(3, "0")
             : "",
 
-        provinsiId: data.user.provinsiId || "",
-        provinsi: data.user.provinsi || "",
+        provinsiId:
+          data.user.provinsiId || "",
 
-        kabupatenId: data.user.kabupatenId || "",
-        kabupaten: data.user.kabupaten || "",
+        provinsi:
+          data.user.provinsi || "",
 
-        kecamatanId: data.user.kecamatanId || "",
-        kecamatan: data.user.kecamatan || "",
+        kabupatenId:
+          data.user.kabupatenId || "",
 
-        desaId: data.user.desaId || "",
-        desa: data.user.desa || "",
+        kabupaten:
+          data.user.kabupaten || "",
 
-        kodePos: data.user.kodePos || "",
+        kecamatanId:
+          data.user.kecamatanId || "",
+
+        kecamatan:
+          data.user.kecamatan || "",
+
+        desaId:
+          data.user.desaId || "",
+
+        desa:
+          data.user.desa || "",
+
+        kodePos:
+          data.user.kodePos || "",
+      });
+
+      if (data.user.dokumenProfil?.pathFile) {
+        setFotoPreview(null);
+      }
+
+      await Promise.all([
+        fetchDokumen(),
+        fetchPendidikan(),
+        fetchPengalaman(),
+        fetchSertifikasi(),
+      ]);
+    } catch (error) {
+      console.error(
+        "GET PROFILE ERROR:",
+        error
+      );
+
+      router.replace("/login");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ============================================================
+  // FETCH DOKUMEN
+  // ============================================================
+
+  const fetchDokumen = async () => {
+    try {
+      const res = await fetch(
+        "/api/profil/dokumen",
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      if (
+        data.success &&
+        Array.isArray(data.dokumen)
+      ) {
+        const map: Record<
+          string,
+          UploadedDokumen
+        > = {};
+
+        data.dokumen.forEach(
+          (document: UploadedDokumen) => {
+            map[
+              document.jenisDokumen.toLowerCase()
+            ] = document;
+          }
+        );
+
+        setUploadedDocs(map);
+      }
+    } catch (error) {
+      console.error(
+        "FETCH DOKUMEN ERROR:",
+        error
+      );
+    }
+  };
+
+  // ============================================================
+  // FETCH PENDIDIKAN
+  // ============================================================
+
+  const fetchPendidikan = async () => {
+    try {
+      const res = await fetch(
+        "/api/pendidikan",
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      if (data.success) {
+        setPendidikan(
+          data.pendidikan ||
+            data.data ||
+            []
+        );
+      }
+    } catch (error) {
+      console.error(
+        "FETCH PENDIDIKAN ERROR:",
+        error
+      );
+    }
+  };
+
+  // ============================================================
+  // FETCH PENGALAMAN
+  // Database menyimpan tahun sebagai Int,
+  // form menggunakan String
+  // ============================================================
+
+  const fetchPengalaman = async () => {
+    try {
+      const res = await fetch(
+        "/api/pengalaman",
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      if (data.success) {
+        const list =
+          data.pengalaman ||
+          data.data ||
+          [];
+
+        setPengalaman(
+          list.map((item: any) => ({
+            ...item,
+
+            tahunMulai:
+              String(
+                item.tahunMulai ?? ""
+              ),
+
+            tahunSelesai:
+              item.tahunSelesai !== null &&
+              item.tahunSelesai !== undefined
+                ? String(
+                    item.tahunSelesai
+                  )
+                : "",
+          }))
+        );
+      }
+    } catch (error) {
+      console.error(
+        "FETCH PENGALAMAN ERROR:",
+        error
+      );
+    }
+  };
+
+  // ============================================================
+  // FETCH SERTIFIKASI
+  // ============================================================
+
+  const fetchSertifikasi = async () => {
+    try {
+      const res = await fetch(
+        "/api/sertifikasi",
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      if (data.success) {
+        setSertifikasi(
+          data.sertifikasi ||
+            data.data ||
+            []
+        );
+      }
+    } catch (error) {
+      console.error(
+        "FETCH SERTIFIKASI ERROR:",
+        error
+      );
+    }
+  };
+
+  // ============================================================
+  // FOTO PROFIL
+  // ============================================================
+
+  const handleFotoChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file =
+      e.target.files?.[0];
+
+    e.target.value = "";
+
+    if (!file) return;
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+
+    if (
+      !allowedTypes.includes(
+        file.type
+      )
+    ) {
+      alert(
+        "Format foto harus JPG atau PNG."
+      );
+
+      return;
+    }
+
+    if (file.size === 0) {
+      alert(
+        "File foto kosong."
+      );
+
+      return;
+    }
+
+    if (
+      file.size >
+      2 * 1024 * 1024
+    ) {
+      alert(
+        "Ukuran foto maksimal 2 MB."
+      );
+
+      return;
+    }
+
+    const localPreview =
+      URL.createObjectURL(file);
+
+    setFotoPreview(
+      localPreview
+    );
+
+    setUploadingFoto(true);
+
+    try {
+      const formData =
+        new FormData();
+
+      formData.append(
+        "foto",
+        file
+      );
+
+      const res = await fetch(
+        "/api/profil/foto",
+        {
+          method: "POST",
+          body: formData,
+          cache: "no-store",
+        }
+      );
+
+      let data;
+
+      try {
+        data = await res.json();
+      } catch {
+        data = {
+          success: false,
+          message:
+            "Response server tidak valid.",
+        };
+      }
+
+      if (
+        !res.ok ||
+        !data.success
+      ) {
+        alert(
+          data.message ||
+            "Gagal mengunggah foto profil."
+        );
+
+        setFotoPreview(null);
+
+        return;
+      }
+
+      if (data.fotoProfil) {
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+
+                dokumenProfil: {
+                  pathFile:
+                    data.fotoProfil,
+                },
+              }
+            : prev
+        );
+
+        setFotoPreview(
+          `${data.fotoProfil}?t=${Date.now()}`
+        );
+      }
+
+      const profileRes =
+        await fetch(
+          "/api/me",
+          {
+            cache: "no-store",
+          }
+        );
+
+      if (profileRes.ok) {
+        const profileData =
+          await profileRes.json();
+
+        if (
+          profileData.success &&
+          profileData.user
+        ) {
+          setUser(
+            profileData.user
+          );
+        }
+      }
+
+      setTimeout(() => {
+        URL.revokeObjectURL(
+          localPreview
+        );
+      }, 1000);
+    } catch (error) {
+      console.error(
+        "UPLOAD FOTO ERROR:",
+        error
+      );
+
+      alert(
+        "Terjadi kesalahan saat mengunggah foto profil."
+      );
+
+      setFotoPreview(null);
+    } finally {
+      setUploadingFoto(false);
+    }
+  };
+
+  // ============================================================
+  // SAVE PROFILE
+  // ============================================================
+
+  const saveProfile = async () => {
+    if (
+      !profileForm.nama.trim() ||
+      !profileForm.email.trim() ||
+      !profileForm.nik.trim()
+    ) {
+      alert(
+        "Nama, email, dan NIK wajib diisi."
+      );
+
+      return;
+    }
+
+    setSavingProfile(true);
+
+    try {
+      const res = await fetch(
+        "/api/profil",
+        {
+          method: "PUT",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            nama:
+              profileForm.nama.trim(),
+
+            email:
+              profileForm.email.trim(),
+
+            nik:
+              profileForm.nik.trim(),
+
+            noTelepon:
+              profileForm.noTelepon.trim() ||
+              null,
+
+            alamat:
+              profileForm.alamat.trim(),
+
+            rt:
+              profileForm.rt
+                ? Number(
+                    profileForm.rt
+                  )
+                : null,
+
+            rw:
+              profileForm.rw
+                ? Number(
+                    profileForm.rw
+                  )
+                : null,
+
+            provinsiId:
+              profileForm.provinsiId ||
+              null,
+
+            provinsi:
+              profileForm.provinsi ||
+              null,
+
+            kabupatenId:
+              profileForm.kabupatenId ||
+              null,
+
+            kabupaten:
+              profileForm.kabupaten ||
+              null,
+
+            kecamatanId:
+              profileForm.kecamatanId ||
+              null,
+
+            kecamatan:
+              profileForm.kecamatan ||
+              null,
+
+            desaId:
+              profileForm.desaId ||
+              null,
+
+            desa:
+              profileForm.desa ||
+              null,
+
+            kodePos:
+              profileForm.kodePos.trim() ||
+              null,
+          }),
+        }
+      );
+
+      let data;
+
+      try {
+        data = await res.json();
+      } catch {
+        alert(
+          "Response dari server tidak valid."
+        );
+
+        return;
+      }
+
+      if (
+        !res.ok ||
+        !data.success
+      ) {
+        alert(
+          data.message ||
+            "Gagal memperbarui profil."
+        );
+
+        return;
+      }
+
+      // ========================================================
+      // UPDATE USER
+      // ========================================================
+
+      setUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...data.user,
+            }
+          : data.user
+      );
+
+      // ========================================================
+      // UPDATE FORM
+      // ========================================================
+
+      setProfileForm({
+        nama:
+          data.user.nama || "",
+
+        email:
+          data.user.email || "",
+
+        nik:
+          data.user.nik || "",
+
+        noTelepon:
+          data.user.noTelepon || "",
+
+        alamat:
+          data.user.alamat || "",
+
+        rt:
+          data.user.rt !== null &&
+          data.user.rt !== undefined
+            ? String(
+                data.user.rt
+              ).padStart(3, "0")
+            : "",
+
+        rw:
+          data.user.rw !== null &&
+          data.user.rw !== undefined
+            ? String(
+                data.user.rw
+              ).padStart(3, "0")
+            : "",
+
+        provinsiId:
+          data.user.provinsiId || "",
+
+        provinsi:
+          data.user.provinsi || "",
+
+        kabupatenId:
+          data.user.kabupatenId || "",
+
+        kabupaten:
+          data.user.kabupaten || "",
+
+        kecamatanId:
+          data.user.kecamatanId || "",
+
+        kecamatan:
+          data.user.kecamatan || "",
+
+        desaId:
+          data.user.desaId || "",
+
+        desa:
+          data.user.desa || "",
+
+        kodePos:
+          data.user.kodePos || "",
       });
 
       setEditingProfile(false);
@@ -583,53 +815,110 @@ export function useProfilKandidat() {
       // REFRESH DATA PROFILE
       // ========================================================
 
-      const profileRes = await fetch("/api/me", {
-        cache: "no-store",
-      });
+      const profileRes =
+        await fetch(
+          "/api/me",
+          {
+            cache: "no-store",
+          }
+        );
 
       if (profileRes.ok) {
-        const profileData = await profileRes.json();
+        const profileData =
+          await profileRes.json();
 
-        if (profileData.success && profileData.user) {
-          setUser(profileData.user);
+        if (
+          profileData.success &&
+          profileData.user
+        ) {
+          setUser(
+            profileData.user
+          );
 
           setProfileForm({
-            nama: profileData.user.nama || "",
-            email: profileData.user.email || "",
-            nik: profileData.user.nik || "",
-            noTelepon: profileData.user.noTelepon || "",
-            alamat: profileData.user.alamat || "",
+            nama:
+              profileData.user.nama ||
+              "",
+
+            email:
+              profileData.user.email ||
+              "",
+
+            nik:
+              profileData.user.nik ||
+              "",
+
+            noTelepon:
+              profileData.user.noTelepon ||
+              "",
+
+            alamat:
+              profileData.user.alamat ||
+              "",
 
             rt:
-              profileData.user.rt !== null &&
-              profileData.user.rt !== undefined
-                ? String(profileData.user.rt).padStart(3, "0")
+              profileData.user.rt !==
+                null &&
+              profileData.user.rt !==
+                undefined
+                ? String(
+                    profileData.user.rt
+                  ).padStart(3, "0")
                 : "",
 
             rw:
-              profileData.user.rw !== null &&
-              profileData.user.rw !== undefined
-                ? String(profileData.user.rw).padStart(3, "0")
+              profileData.user.rw !==
+                null &&
+              profileData.user.rw !==
+                undefined
+                ? String(
+                    profileData.user.rw
+                  ).padStart(3, "0")
                 : "",
 
-            provinsiId: profileData.user.provinsiId || "",
-            provinsi: profileData.user.provinsi || "",
+            provinsiId:
+              profileData.user
+                .provinsiId || "",
 
-            kabupatenId: profileData.user.kabupatenId || "",
-            kabupaten: profileData.user.kabupaten || "",
+            provinsi:
+              profileData.user
+                .provinsi || "",
 
-            kecamatanId: profileData.user.kecamatanId || "",
-            kecamatan: profileData.user.kecamatan || "",
+            kabupatenId:
+              profileData.user
+                .kabupatenId || "",
 
-            desaId: profileData.user.desaId || "",
-            desa: profileData.user.desa || "",
+            kabupaten:
+              profileData.user
+                .kabupaten || "",
 
-            kodePos: profileData.user.kodePos || "",
+            kecamatanId:
+              profileData.user
+                .kecamatanId || "",
+
+            kecamatan:
+              profileData.user
+                .kecamatan || "",
+
+            desaId:
+              profileData.user
+                .desaId || "",
+
+            desa:
+              profileData.user
+                .desa || "",
+
+            kodePos:
+              profileData.user
+                .kodePos || "",
           });
         }
       }
     } catch (error) {
-      console.error("UPDATE PROFILE ERROR:", error);
+      console.error(
+        "UPDATE PROFILE ERROR:",
+        error
+      );
 
       alert(
         "Terjadi kesalahan saat memperbarui profil."
@@ -647,8 +936,14 @@ export function useProfilKandidat() {
     key: string,
     file: File
   ) => {
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Ukuran file maksimal 5 MB.");
+    if (
+      file.size >
+      5 * 1024 * 1024
+    ) {
+      alert(
+        "Ukuran file maksimal 5 MB."
+      );
+
       return;
     }
 
@@ -658,9 +953,13 @@ export function useProfilKandidat() {
     }));
 
     try {
-      const formData = new FormData();
+      const formData =
+        new FormData();
 
-      formData.append("file", file);
+      formData.append(
+        "file",
+        file
+      );
 
       formData.append(
         "jenisDokumen",
@@ -675,9 +974,13 @@ export function useProfilKandidat() {
         }
       );
 
-      const data = await res.json();
+      const data =
+        await res.json();
 
-      if (!res.ok || !data.success) {
+      if (
+        !res.ok ||
+        !data.success
+      ) {
         alert(
           data.message ||
             "Gagal mengunggah dokumen."
@@ -686,21 +989,31 @@ export function useProfilKandidat() {
         return;
       }
 
-      setUploadedDocs((prev) => ({
-        ...prev,
-        [key]: data.dokumen,
-      }));
+      setUploadedDocs(
+        (prev) => ({
+          ...prev,
+
+          [key]:
+            data.dokumen,
+        })
+      );
     } catch (error) {
-      console.error("UPLOAD ERROR:", error);
+      console.error(
+        "UPLOAD ERROR:",
+        error
+      );
 
       alert(
         "Terjadi kesalahan saat mengunggah dokumen."
       );
     } finally {
-      setUploading((prev) => ({
-        ...prev,
-        [key]: false,
-      }));
+      setUploading(
+        (prev) => ({
+          ...prev,
+
+          [key]: false,
+        })
+      );
     }
   };
 
@@ -711,7 +1024,11 @@ export function useProfilKandidat() {
   const handleDeleteDocument = async (
     key: string
   ) => {
-    if (!confirm("Hapus dokumen ini?")) {
+    if (
+      !confirm(
+        "Hapus dokumen ini?"
+      )
+    ) {
       return;
     }
 
@@ -720,18 +1037,26 @@ export function useProfilKandidat() {
         "/api/profil/dokumen/delete",
         {
           method: "POST",
+
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
+
           body: JSON.stringify({
-            jenisDokumen: key.toUpperCase(),
+            jenisDokumen:
+              key.toUpperCase(),
           }),
         }
       );
 
-      const data = await res.json();
+      const data =
+        await res.json();
 
-      if (!res.ok || !data.success) {
+      if (
+        !res.ok ||
+        !data.success
+      ) {
         alert(
           data.message ||
             "Gagal menghapus dokumen."
@@ -740,15 +1065,17 @@ export function useProfilKandidat() {
         return;
       }
 
-      setUploadedDocs((prev) => {
-        const next = {
-          ...prev,
-        };
+      setUploadedDocs(
+        (prev) => {
+          const next = {
+            ...prev,
+          };
 
-        delete next[key];
+          delete next[key];
 
-        return next;
-      });
+          return next;
+        }
+      );
     } catch (error) {
       console.error(
         "DELETE DOCUMENT ERROR:",
@@ -798,7 +1125,9 @@ export function useProfilKandidat() {
   const openEditPendidikan = (
     item: Pendidikan
   ) => {
-    setEditingPendidikanId(item.id);
+    setEditingPendidikanId(
+      item.id
+    );
 
     setPendidikanForm({
       ...item,
@@ -827,38 +1156,64 @@ export function useProfilKandidat() {
       return;
     }
 
-    const nilai = String(pendidikanForm.nilai ?? "").trim();
+    const nilai =
+      String(
+        pendidikanForm.nilai ?? ""
+      ).trim();
 
-    // Nilai opsional, tapi kalau diisi harus sesuai jenjang
     if (
       nilai !== "" &&
-      !isNilaiByJenjang(nilai, pendidikanForm.jenjang)
+      !isNilaiByJenjang(
+        nilai,
+        pendidikanForm.jenjang
+      )
     ) {
       alert(
-        pendidikanForm.jenjang === "SMA / SMK"
+        pendidikanForm.jenjang ===
+          "SMA / SMK"
           ? "Nilai rata-rata harus berupa angka antara 0.01 dan 100 (contoh: 85.50)."
           : "IPK harus berupa angka antara 0.01 dan 4.00 (contoh: 3.75)."
       );
+
       return;
     }
 
-    const mulai = String(pendidikanForm.tahunMulai ?? "");
-    const selesai = String(pendidikanForm.tahunSelesai ?? "");
+    const mulai =
+      String(
+        pendidikanForm.tahunMulai ??
+          ""
+      );
+
+    const selesai =
+      String(
+        pendidikanForm.tahunSelesai ??
+          ""
+      );
 
     if (!isYear4(mulai)) {
-      alert("Tahun mulai harus 4 digit angka.");
+      alert(
+        "Tahun mulai harus 4 digit angka."
+      );
+
       return;
     }
 
     if (!isYear4(selesai)) {
-      alert("Tahun selesai harus 4 digit angka.");
+      alert(
+        "Tahun selesai harus 4 digit angka."
+      );
+
       return;
     }
 
-    if (Number(selesai) < Number(mulai)) {
+    if (
+      Number(selesai) <
+      Number(mulai)
+    ) {
       alert(
         "Tahun selesai tidak boleh lebih kecil dari tahun mulai."
       );
+
       return;
     }
 
@@ -866,7 +1221,8 @@ export function useProfilKandidat() {
 
     try {
       const isEdit =
-        editingPendidikanId !== null;
+        editingPendidikanId !==
+        null;
 
       const url = isEdit
         ? `/api/pendidikan/${editingPendidikanId}`
@@ -886,25 +1242,40 @@ export function useProfilKandidat() {
         jurusan:
           pendidikanForm.jurusan.trim(),
 
-        // kolom database tetap String
-        tahunMulai: mulai,
-        tahunSelesai: selesai,
+        tahunMulai:
+          mulai,
+
+        tahunSelesai:
+          selesai,
 
         nilai:
-          pendidikanForm.nilai || null,
+          pendidikanForm.nilai ||
+          null,
       };
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
+      const res = await fetch(
+        url,
+        {
+          method,
 
-      const data = await res.json();
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
 
-      if (!res.ok || !data.success) {
+          body: JSON.stringify(
+            body
+          ),
+        }
+      );
+
+      const data =
+        await res.json();
+
+      if (
+        !res.ok ||
+        !data.success
+      ) {
         alert(
           data.message ||
             "Gagal menyimpan pendidikan."
@@ -913,13 +1284,18 @@ export function useProfilKandidat() {
         return;
       }
 
-      const savedId: number | undefined =
+      const savedId:
+        | number
+        | undefined =
         data.pendidikan?.id ??
         data.data?.id ??
         editingPendidikanId ??
         undefined;
 
-      if (ijazahFile && savedId) {
+      if (
+        ijazahFile &&
+        savedId
+      ) {
         await uploadIjazah(
           savedId,
           ijazahFile
@@ -928,9 +1304,13 @@ export function useProfilKandidat() {
 
       await fetchPendidikan();
 
-      setShowPendidikanModal(false);
+      setShowPendidikanModal(
+        false
+      );
 
-      setEditingPendidikanId(null);
+      setEditingPendidikanId(
+        null
+      );
 
       setPendidikanForm({
         ...initialPendidikan,
@@ -947,7 +1327,9 @@ export function useProfilKandidat() {
         "Terjadi kesalahan saat menyimpan pendidikan."
       );
     } finally {
-      setSavingPendidikan(false);
+      setSavingPendidikan(
+        false
+      );
     }
   };
 
@@ -972,7 +1354,11 @@ export function useProfilKandidat() {
       "image/png",
     ];
 
-    if (!allowedTypes.includes(file.type)) {
+    if (
+      !allowedTypes.includes(
+        file.type
+      )
+    ) {
       alert(
         "Format ijazah harus PDF, JPG, atau PNG."
       );
@@ -980,7 +1366,10 @@ export function useProfilKandidat() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (
+      file.size >
+      5 * 1024 * 1024
+    ) {
       alert(
         "Ukuran ijazah maksimal 5 MB."
       );
@@ -1010,7 +1399,8 @@ export function useProfilKandidat() {
     setUploadingIjazah(true);
 
     try {
-      const formData = new FormData();
+      const formData =
+        new FormData();
 
       formData.append(
         "ijazah",
@@ -1025,9 +1415,13 @@ export function useProfilKandidat() {
         }
       );
 
-      const data = await res.json();
+      const data =
+        await res.json();
 
-      if (!res.ok || !data.success) {
+      if (
+        !res.ok ||
+        !data.success
+      ) {
         alert(
           data.message ||
             "Gagal mengunggah ijazah."
@@ -1051,7 +1445,9 @@ export function useProfilKandidat() {
 
       return false;
     } finally {
-      setUploadingIjazah(false);
+      setUploadingIjazah(
+        false
+      );
     }
   };
 
@@ -1062,7 +1458,11 @@ export function useProfilKandidat() {
   const deleteIjazah = async (
     pendidikanId: number
   ) => {
-    if (!confirm("Hapus ijazah ini?")) {
+    if (
+      !confirm(
+        "Hapus ijazah ini?"
+      )
+    ) {
       return;
     }
 
@@ -1074,9 +1474,13 @@ export function useProfilKandidat() {
         }
       );
 
-      const data = await res.json();
+      const data =
+        await res.json();
 
-      if (!res.ok || !data.success) {
+      if (
+        !res.ok ||
+        !data.success
+      ) {
         alert(
           data.message ||
             "Gagal menghapus ijazah."
@@ -1085,33 +1489,58 @@ export function useProfilKandidat() {
         return;
       }
 
-      setPendidikan((prev) =>
-        prev.map((item) =>
-          item.id === pendidikanId
-            ? {
-                ...item,
-                ijazahNamaFile: null,
-                ijazahNamaAsli: null,
-                ijazahPathFile: null,
-                ijazahTipeFile: null,
-                ijazahUkuranFile: null,
-              }
-            : item
-        )
+      setPendidikan(
+        (prev) =>
+          prev.map(
+            (item) =>
+              item.id ===
+              pendidikanId
+                ? {
+                    ...item,
+
+                    ijazahNamaFile:
+                      null,
+
+                    ijazahNamaAsli:
+                      null,
+
+                    ijazahPathFile:
+                      null,
+
+                    ijazahTipeFile:
+                      null,
+
+                    ijazahUkuranFile:
+                      null,
+                  }
+                : item
+          )
       );
 
       if (
         editingPendidikanId ===
         pendidikanId
       ) {
-        setPendidikanForm((prev) => ({
-          ...prev,
-          ijazahNamaFile: null,
-          ijazahNamaAsli: null,
-          ijazahPathFile: null,
-          ijazahTipeFile: null,
-          ijazahUkuranFile: null,
-        }));
+        setPendidikanForm(
+          (prev) => ({
+            ...prev,
+
+            ijazahNamaFile:
+              null,
+
+            ijazahNamaAsli:
+              null,
+
+            ijazahPathFile:
+              null,
+
+            ijazahTipeFile:
+              null,
+
+            ijazahUkuranFile:
+              null,
+          })
+        );
       }
 
       setIjazahFile(null);
@@ -1150,9 +1579,13 @@ export function useProfilKandidat() {
         }
       );
 
-      const data = await res.json();
+      const data =
+        await res.json();
 
-      if (!res.ok || !data.success) {
+      if (
+        !res.ok ||
+        !data.success
+      ) {
         alert(
           data.message ||
             "Gagal menghapus pendidikan."
@@ -1161,10 +1594,12 @@ export function useProfilKandidat() {
         return;
       }
 
-      setPendidikan((prev) =>
-        prev.filter(
-          (item) => item.id !== id
-        )
+      setPendidikan(
+        (prev) =>
+          prev.filter(
+            (item) =>
+              item.id !== id
+          )
       );
     } catch (error) {
       console.error(
@@ -1182,17 +1617,22 @@ export function useProfilKandidat() {
   // TAMBAH PENGALAMAN
   // ============================================================
 
-  const openTambahPengalaman = () => {
-    setEditingPengalamanId(null);
+  const openTambahPengalaman =
+    () => {
+      setEditingPengalamanId(
+        null
+      );
 
-    setPengalamanForm({
-      ...initialPengalaman,
-    });
+      setPengalamanForm({
+        ...initialPengalaman,
+      });
 
-    setPaklaringFile(null);
+      setPaklaringFile(null);
 
-    setShowPengalamanModal(true);
-  };
+      setShowPengalamanModal(
+        true
+      );
+    };
 
   // ============================================================
   // EDIT PENGALAMAN
@@ -1201,7 +1641,9 @@ export function useProfilKandidat() {
   const openEditPengalaman = (
     item: Pengalaman
   ) => {
-    setEditingPengalamanId(item.id);
+    setEditingPengalamanId(
+      item.id
+    );
 
     setPengalamanForm({
       ...item,
@@ -1209,56 +1651,84 @@ export function useProfilKandidat() {
 
     setPaklaringFile(null);
 
-    setShowPengalamanModal(true);
+    setShowPengalamanModal(
+      true
+    );
   };
 
   // ============================================================
   // PAKLARING
   // ============================================================
 
-  const handlePaklaringFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0];
+  const handlePaklaringFileChange =
+    (
+      e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+      const file =
+        e.target.files?.[0];
 
-    e.target.value = "";
+      e.target.value = "";
 
-    if (!file) return;
+      if (!file) return;
 
-    const allowedTypes = [
-      "application/pdf",
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-    ];
+      const allowedTypes = [
+        "application/pdf",
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+      ];
 
-    if (!allowedTypes.includes(file.type)) {
-      alert("Format paklaring harus PDF, JPG, atau PNG.");
-      return;
-    }
+      if (
+        !allowedTypes.includes(
+          file.type
+        )
+      ) {
+        alert(
+          "Format paklaring harus PDF, JPG, atau PNG."
+        );
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Ukuran paklaring maksimal 5 MB.");
-      return;
-    }
+        return;
+      }
 
-    setPaklaringFile(file);
-  };
+      if (
+        file.size >
+        5 * 1024 * 1024
+      ) {
+        alert(
+          "Ukuran paklaring maksimal 5 MB."
+        );
 
-  const clearPaklaringFile = () => {
-    setPaklaringFile(null);
-  };
+        return;
+      }
+
+      setPaklaringFile(file);
+    };
+
+  const clearPaklaringFile =
+    () => {
+      setPaklaringFile(null);
+    };
+
+  // ============================================================
+  // UPLOAD PAKLARING
+  // ============================================================
 
   const uploadPaklaring = async (
     pengalamanId: number,
     file: File
   ) => {
-    setUploadingPaklaring(true);
+    setUploadingPaklaring(
+      true
+    );
 
     try {
-      const formData = new FormData();
+      const formData =
+        new FormData();
 
-      formData.append("paklaring", file);
+      formData.append(
+        "paklaring",
+        file
+      );
 
       const res = await fetch(
         `/api/pengalaman/${pengalamanId}/paklaring`,
@@ -1268,70 +1738,138 @@ export function useProfilKandidat() {
         }
       );
 
-      const data = await res.json();
+      const data =
+        await res.json();
 
-      if (!res.ok || !data.success) {
-        alert(data.message || "Gagal mengunggah paklaring.");
+      if (
+        !res.ok ||
+        !data.success
+      ) {
+        alert(
+          data.message ||
+            "Gagal mengunggah paklaring."
+        );
+
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error("UPLOAD PAKLARING ERROR:", error);
+      console.error(
+        "UPLOAD PAKLARING ERROR:",
+        error
+      );
 
-      alert("Terjadi kesalahan saat mengunggah paklaring.");
+      alert(
+        "Terjadi kesalahan saat mengunggah paklaring."
+      );
 
       return false;
     } finally {
-      setUploadingPaklaring(false);
+      setUploadingPaklaring(
+        false
+      );
     }
   };
 
-  const deletePaklaring = async (pengalamanId: number) => {
-    if (!confirm("Hapus paklaring ini?")) return;
+  // ============================================================
+  // DELETE PAKLARING
+  // ============================================================
+
+  const deletePaklaring = async (
+    pengalamanId: number
+  ) => {
+    if (
+      !confirm(
+        "Hapus paklaring ini?"
+      )
+    ) {
+      return;
+    }
 
     try {
       const res = await fetch(
         `/api/pengalaman/${pengalamanId}/paklaring`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+        }
       );
 
-      const data = await res.json();
+      const data =
+        await res.json();
 
-      if (!res.ok || !data.success) {
-        alert(data.message || "Gagal menghapus paklaring.");
+      if (
+        !res.ok ||
+        !data.success
+      ) {
+        alert(
+          data.message ||
+            "Gagal menghapus paklaring."
+        );
+
         return;
       }
 
       const kosong = {
-        paklaringNamaFile: null,
-        paklaringNamaAsli: null,
-        paklaringPathFile: null,
-        paklaringTipeFile: null,
-        paklaringUkuranFile: null,
+        paklaringNamaFile:
+          null,
+
+        paklaringNamaAsli:
+          null,
+
+        paklaringPathFile:
+          null,
+
+        paklaringTipeFile:
+          null,
+
+        paklaringUkuranFile:
+          null,
       };
 
-      setPengalaman((prev) =>
-        prev.map((item) =>
-          item.id === pengalamanId ? { ...item, ...kosong } : item
-        )
+      setPengalaman(
+        (prev) =>
+          prev.map(
+            (item) =>
+              item.id ===
+              pengalamanId
+                ? {
+                    ...item,
+                    ...kosong,
+                  }
+                : item
+          )
       );
 
-      if (editingPengalamanId === pengalamanId) {
-        setPengalamanForm((prev) => ({ ...prev, ...kosong }));
+      if (
+        editingPengalamanId ===
+        pengalamanId
+      ) {
+        setPengalamanForm(
+          (prev) => ({
+            ...prev,
+            ...kosong,
+          })
+        );
       }
 
       setPaklaringFile(null);
     } catch (error) {
-      console.error("DELETE PAKLARING ERROR:", error);
+      console.error(
+        "DELETE PAKLARING ERROR:",
+        error
+      );
 
-      alert("Terjadi kesalahan saat menghapus paklaring.");
+      alert(
+        "Terjadi kesalahan saat menghapus paklaring."
+      );
     }
   };
 
   // ============================================================
   // SAVE PENGALAMAN
-  // Validasi 4 digit angka, dikirim sebagai Int
+  // Validasi 4 digit angka,
+  // dikirim sebagai Int
   // ============================================================
 
   const savePengalaman = async () => {
@@ -1339,37 +1877,63 @@ export function useProfilKandidat() {
       !pengalamanForm.posisi.trim() ||
       !pengalamanForm.perusahaan.trim()
     ) {
-      alert("Posisi dan perusahaan wajib diisi.");
+      alert(
+        "Posisi dan perusahaan wajib diisi."
+      );
+
       return;
     }
 
-    const mulai = String(pengalamanForm.tahunMulai ?? "");
-    const selesai = String(pengalamanForm.tahunSelesai ?? "");
+    const mulai =
+      String(
+        pengalamanForm.tahunMulai ??
+          ""
+      );
+
+    const selesai =
+      String(
+        pengalamanForm.tahunSelesai ??
+          ""
+      );
 
     if (!isYear4(mulai)) {
-      alert("Tahun mulai harus 4 digit angka.");
+      alert(
+        "Tahun mulai harus 4 digit angka."
+      );
+
       return;
     }
 
     if (!isYear4(selesai)) {
-      alert("Tahun selesai harus 4 digit angka.");
+      alert(
+        "Tahun selesai harus 4 digit angka."
+      );
+
       return;
     }
 
-    if (Number(selesai) < Number(mulai)) {
+    if (
+      Number(selesai) <
+      Number(mulai)
+    ) {
       alert(
         "Tahun selesai tidak boleh lebih kecil dari tahun mulai."
       );
+
       return;
     }
 
-    setSavingPengalaman(true);
+    setSavingPengalaman(
+      true
+    );
 
     try {
       const isEdit =
-        editingPengalamanId !== null;
+        editingPengalamanId !==
+        null;
 
-      const url = "/api/pengalaman";
+      const url =
+        "/api/pengalaman";
 
       const method = isEdit
         ? "PUT"
@@ -1377,7 +1941,8 @@ export function useProfilKandidat() {
 
       const body = {
         ...(isEdit && {
-          id: editingPengalamanId,
+          id:
+            editingPengalamanId,
         }),
 
         posisi:
@@ -1387,28 +1952,41 @@ export function useProfilKandidat() {
           pengalamanForm.perusahaan.trim(),
 
         lokasi:
-          pengalamanForm.lokasi || null,
+          pengalamanForm.lokasi ||
+          null,
 
-        // kolom database bertipe Int
-        tahunMulai: Number(mulai),
-        tahunSelesai: Number(selesai),
+        tahunMulai:
+          Number(mulai),
+
+        tahunSelesai:
+          Number(selesai),
 
         deskripsi:
-          pengalamanForm.deskripsi || null,
+          pengalamanForm.deskripsi ||
+          null,
       };
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
+      const res = await fetch(
+        url,
+        {
+          method,
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify(
+            body
+          ),
+        }
+      );
 
       let data;
 
       try {
-        data = await res.json();
+        data =
+          await res.json();
       } catch {
         console.error(
           "SAVE PENGALAMAN: response bukan JSON"
@@ -1421,7 +1999,10 @@ export function useProfilKandidat() {
         return;
       }
 
-      if (!res.ok || !data.success) {
+      if (
+        !res.ok ||
+        !data.success
+      ) {
         alert(
           data.message ||
             "Gagal menyimpan pengalaman."
@@ -1430,22 +2011,37 @@ export function useProfilKandidat() {
         return;
       }
 
-      const savedId: number | undefined =
+      const savedId:
+        | number
+        | undefined =
         data.pengalaman?.id ??
         data.data?.id ??
         editingPengalamanId ??
         undefined;
 
-      // Upload paklaring setelah data pengalaman tersimpan
-      if (paklaringFile && savedId) {
-        await uploadPaklaring(savedId, paklaringFile);
+      // ========================================================
+      // UPLOAD PAKLARING
+      // ========================================================
+
+      if (
+        paklaringFile &&
+        savedId
+      ) {
+        await uploadPaklaring(
+          savedId,
+          paklaringFile
+        );
       }
 
       await fetchPengalaman();
 
-      setShowPengalamanModal(false);
+      setShowPengalamanModal(
+        false
+      );
 
-      setEditingPengalamanId(null);
+      setEditingPengalamanId(
+        null
+      );
 
       setPengalamanForm({
         ...initialPengalaman,
@@ -1462,7 +2058,9 @@ export function useProfilKandidat() {
         "Terjadi kesalahan saat menyimpan pengalaman."
       );
     } finally {
-      setSavingPengalaman(false);
+      setSavingPengalaman(
+        false
+      );
     }
   };
 
@@ -1486,9 +2084,12 @@ export function useProfilKandidat() {
         "/api/pengalaman",
         {
           method: "DELETE",
+
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
+
           body: JSON.stringify({
             id,
           }),
@@ -1498,7 +2099,8 @@ export function useProfilKandidat() {
       let data;
 
       try {
-        data = await res.json();
+        data =
+          await res.json();
       } catch {
         console.error(
           "DELETE PENGALAMAN: response bukan JSON"
@@ -1511,7 +2113,10 @@ export function useProfilKandidat() {
         return;
       }
 
-      if (!res.ok || !data.success) {
+      if (
+        !res.ok ||
+        !data.success
+      ) {
         alert(
           data.message ||
             "Gagal menghapus pengalaman."
@@ -1520,10 +2125,12 @@ export function useProfilKandidat() {
         return;
       }
 
-      setPengalaman((prev) =>
-        prev.filter(
-          (item) => item.id !== id
-        )
+      setPengalaman(
+        (prev) =>
+          prev.filter(
+            (item) =>
+              item.id !== id
+          )
       );
     } catch (error) {
       console.error(
@@ -1541,15 +2148,20 @@ export function useProfilKandidat() {
   // TAMBAH SERTIFIKASI
   // ============================================================
 
-  const openTambahSertifikasi = () => {
-    setEditingSertifikasiId(null);
+  const openTambahSertifikasi =
+    () => {
+      setEditingSertifikasiId(
+        null
+      );
 
-    setSertifikasiForm({
-      ...initialSertifikasi,
-    });
+      setSertifikasiForm({
+        ...initialSertifikasi,
+      });
 
-    setShowSertifikasiModal(true);
-  };
+      setShowSertifikasiModal(
+        true
+      );
+    };
 
   // ============================================================
   // EDIT SERTIFIKASI
@@ -1558,17 +2170,25 @@ export function useProfilKandidat() {
   const openEditSertifikasi = (
     item: Sertifikasi
   ) => {
-    setEditingSertifikasiId(item.id);
+    setEditingSertifikasiId(
+      item.id
+    );
 
     setSertifikasiForm({
       ...item,
+
+      // File baru tidak ikut dari data server
+      file: null,
     });
 
-    setShowSertifikasiModal(true);
+    setShowSertifikasiModal(
+      true
+    );
   };
 
   // ============================================================
   // SAVE SERTIFIKASI
+  // Menggunakan FormData karena mendukung upload file
   // ============================================================
 
   const saveSertifikasi = async () => {
@@ -1583,60 +2203,120 @@ export function useProfilKandidat() {
       return;
     }
 
-    setSavingSertifikasi(true);
+    setSavingSertifikasi(
+      true
+    );
 
     try {
       const isEdit =
-        editingSertifikasiId !== null;
+        editingSertifikasiId !==
+        null;
 
-      const url = "/api/sertifikasi";
+      // ========================================================
+      // FORM DATA
+      // ========================================================
 
-      const method = isEdit
-        ? "PUT"
-        : "POST";
+      const formData =
+        new FormData();
 
-      const body = {
-        ...(isEdit && {
-          id: editingSertifikasiId,
-        }),
+      // ========================================================
+      // DATA SERTIFIKASI
+      // ========================================================
 
-        nama:
-          sertifikasiForm.nama.trim(),
+      formData.append(
+        "nama",
+        sertifikasiForm.nama.trim()
+      );
 
-        penerbit:
-          sertifikasiForm.penerbit.trim(),
+      formData.append(
+        "penerbit",
+        sertifikasiForm.penerbit.trim()
+      );
 
-        nomor:
-          sertifikasiForm.nomor?.trim() ||
-          null,
+      formData.append(
+        "nomor",
+        sertifikasiForm.nomor?.trim() ||
+          ""
+      );
 
-        tanggalTerbit:
-          sertifikasiForm.tanggalTerbit ||
-          null,
+      formData.append(
+        "tanggalTerbit",
+        sertifikasiForm.tanggalTerbit ||
+          ""
+      );
 
-        tanggalKadaluarsa:
-          sertifikasiForm.tanggalKadaluarsa ||
-          null,
-      };
+      formData.append(
+        "tanggalKadaluarsa",
+        sertifikasiForm.tanggalKadaluarsa ||
+          ""
+      );
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
+      // ========================================================
+      // ID UNTUK EDIT
+      // ========================================================
+
+      if (
+        isEdit &&
+        editingSertifikasiId !==
+          null
+      ) {
+        formData.append(
+          "id",
+          String(
+            editingSertifikasiId
+          )
+        );
+      }
+
+      // ========================================================
+      // FILE SERTIFIKAT
+      // ========================================================
+
+      if (
+        sertifikasiForm.file instanceof
+        File
+      ) {
+        formData.append(
+          "file",
+          sertifikasiForm.file
+        );
+      }
+
+      // ========================================================
+      // REQUEST
+      //
+      // JANGAN menambahkan:
+      // Content-Type: multipart/form-data
+      //
+      // Browser akan otomatis menentukan Content-Type
+      // beserta boundary.
+      // ========================================================
+
+      const res = await fetch(
+        "/api/sertifikasi",
+        {
+          method: isEdit
+            ? "PUT"
+            : "POST",
+
+          body: formData,
+        }
+      );
 
       let data;
 
       try {
-        data = await res.json();
+        data =
+          await res.json();
       } catch {
         console.error(
           "SAVE SERTIFIKASI: response bukan JSON",
           {
-            status: res.status,
-            statusText: res.statusText,
+            status:
+              res.status,
+
+            statusText:
+              res.statusText,
           }
         );
 
@@ -1647,7 +2327,14 @@ export function useProfilKandidat() {
         return;
       }
 
-      if (!res.ok || !data.success) {
+      // ========================================================
+      // VALIDASI RESPONSE
+      // ========================================================
+
+      if (
+        !res.ok ||
+        !data.success
+      ) {
         alert(
           data.message ||
             "Gagal menyimpan sertifikasi."
@@ -1656,11 +2343,23 @@ export function useProfilKandidat() {
         return;
       }
 
+      // ========================================================
+      // REFRESH DATA
+      // ========================================================
+
       await fetchSertifikasi();
 
-      setShowSertifikasiModal(false);
+      // ========================================================
+      // RESET
+      // ========================================================
 
-      setEditingSertifikasiId(null);
+      setShowSertifikasiModal(
+        false
+      );
+
+      setEditingSertifikasiId(
+        null
+      );
 
       setSertifikasiForm({
         ...initialSertifikasi,
@@ -1675,7 +2374,9 @@ export function useProfilKandidat() {
         "Terjadi kesalahan saat menyimpan sertifikasi."
       );
     } finally {
-      setSavingSertifikasi(false);
+      setSavingSertifikasi(
+        false
+      );
     }
   };
 
@@ -1699,9 +2400,12 @@ export function useProfilKandidat() {
         "/api/sertifikasi",
         {
           method: "DELETE",
+
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
+
           body: JSON.stringify({
             id,
           }),
@@ -1711,7 +2415,8 @@ export function useProfilKandidat() {
       let data;
 
       try {
-        data = await res.json();
+        data =
+          await res.json();
       } catch {
         console.error(
           "DELETE SERTIFIKASI: response bukan JSON"
@@ -1724,7 +2429,10 @@ export function useProfilKandidat() {
         return;
       }
 
-      if (!res.ok || !data.success) {
+      if (
+        !res.ok ||
+        !data.success
+      ) {
         alert(
           data.message ||
             "Gagal menghapus sertifikasi."
@@ -1733,10 +2441,12 @@ export function useProfilKandidat() {
         return;
       }
 
-      setSertifikasi((prev) =>
-        prev.filter(
-          (item) => item.id !== id
-        )
+      setSertifikasi(
+        (prev) =>
+          prev.filter(
+            (item) =>
+              item.id !== id
+          )
       );
     } catch (error) {
       console.error(
@@ -1755,29 +2465,44 @@ export function useProfilKandidat() {
   // ============================================================
 
   return {
+    // ==========================================================
     // CORE
+    // ==========================================================
+
     user,
     loading,
 
+    // ==========================================================
     // FOTO
+    // ==========================================================
+
     uploadingFoto,
     fotoPreview,
     fotoInputRef,
     handleFotoChange,
 
+    // ==========================================================
     // DOKUMEN
+    // ==========================================================
+
     uploadedDocs,
     uploading,
     fileInputRefs,
     handleUpload,
     handleDeleteDocument,
 
+    // ==========================================================
     // PREVIEW
+    // ==========================================================
+
     previewDoc,
     openPreview,
     closePreview,
 
+    // ==========================================================
     // EDIT PROFIL
+    // ==========================================================
+
     editingProfile,
     setEditingProfile,
     profileForm,
@@ -1785,7 +2510,10 @@ export function useProfilKandidat() {
     savingProfile,
     saveProfile,
 
+    // ==========================================================
     // PENDIDIKAN
+    // ==========================================================
+
     pendidikan,
     showPendidikanModal,
     setShowPendidikanModal,
@@ -1799,14 +2527,20 @@ export function useProfilKandidat() {
     savePendidikan,
     deletePendidikan,
 
+    // ==========================================================
     // IJAZAH
+    // ==========================================================
+
     ijazahFile,
     uploadingIjazah,
     handleIjazahFileChange,
     clearIjazahFile,
     deleteIjazah,
 
+    // ==========================================================
     // PENGALAMAN
+    // ==========================================================
+
     pengalaman,
     showPengalamanModal,
     setShowPengalamanModal,
@@ -1820,14 +2554,20 @@ export function useProfilKandidat() {
     savePengalaman,
     deletePengalaman,
 
+    // ==========================================================
     // PAKLARING
+    // ==========================================================
+
     paklaringFile,
     uploadingPaklaring,
     handlePaklaringFileChange,
     clearPaklaringFile,
     deletePaklaring,
 
+    // ==========================================================
     // SERTIFIKASI
+    // ==========================================================
+
     sertifikasi,
     showSertifikasiModal,
     setShowSertifikasiModal,
