@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { APP_NAME, APP_NAME_LENGKAP, APP_DESKRIPSI } from "@/lib/app-config";
 
 import "./globals.css";
 
@@ -9,8 +10,11 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Career Portal PT Pupuk Kujang",
-  description: "Platform Pencarian Kerja PT Pupuk Kujang",
+  title: {
+    default: APP_NAME_LENGKAP,
+    template: "%s · " + APP_NAME,
+  },
+  description: APP_DESKRIPSI,
 };
 
 export default function RootLayout({

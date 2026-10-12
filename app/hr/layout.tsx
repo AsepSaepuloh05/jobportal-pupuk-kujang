@@ -341,7 +341,7 @@ export default function HRLayout({
             <div className={"flex flex-col " + sembunyiSaatKecil}>
 
               <span className="text-[15px] font-bold tracking-tight text-slate-800">
-                JobPortal
+                SIO Karir
               </span>
 
               <span className="text-[11px] font-medium text-slate-400">
@@ -505,7 +505,7 @@ export default function HRLayout({
             <Menu size={18} />
           </button>
 
-          <span className="text-sm font-bold text-slate-800">JobPortal</span>
+          <span className="text-sm font-bold text-slate-800">SIO Karir</span>
 
         </div>
 

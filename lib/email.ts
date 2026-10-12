@@ -19,7 +19,7 @@ function wrapTemplate(nama: string, bodyHtml: string) {
     <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #1e293b;">
       <div style="text-align: center; margin-bottom: 24px;">
         <p style="font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: #4da477; text-transform: uppercase; margin: 0;">
-          PT Pupuk Kujang &middot; SIO Karir
+          SIO Karir PT Pupuk Kujang
         </p>
       </div>
 
