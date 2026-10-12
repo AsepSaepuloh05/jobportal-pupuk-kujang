@@ -6,12 +6,18 @@ import {
   Briefcase,
   MapPin,
   Calendar,
-  ChevronRight,
+  Clock,
+  CalendarClock,
   Inbox,
+  FileText,
   CheckCircle2,
   XCircle,
-  Circle,
+  Info,
 } from "lucide-react";
+import TahapanStepperKandidat, {
+  formatTanggalWib,
+  formatJamWib,
+} from "@/app/components/TahapanStepperKandidat";
 
 interface User {
   id: number;
@@ -28,12 +34,16 @@ interface TahapanProgress {
   tahapan: string;
   urutan: number;
   selesaiPada: string | null;
+  jadwalTanggal: string | null;
+  jadwalLokasi: string | null;
+  jadwalCatatan: string | null;
 }
 
 interface Lamaran {
   id: number;
   status: StatusLamaran;
   createdAt: string;
+  updatedAt: string;
   lowongan: {
     id: number;
     posisi: string;
@@ -45,6 +55,15 @@ interface Lamaran {
     tahapanSeleksi: string[];
   };
   tahapanProgress: TahapanProgress[];
+}
+
+interface JadwalItem {
+  lamaranId: number;
+  posisi: string;
+  tahapan: string;
+  jadwal: string;
+  lokasi: string | null;
+  catatan: string | null;
 }
 
 const TAHAPAN_URUTAN: Record<string, number> = {
@@ -93,7 +112,7 @@ const statusConfig: Record<
     dot: "bg-amber-500",
   },
   INTERVIEW: {
-    label: "Interview",
+    label: "Diproses",
     badge: "bg-blue-50 text-blue-700",
     dot: "bg-blue-500",
   },
@@ -103,7 +122,7 @@ const statusConfig: Record<
     dot: "bg-emerald-500",
   },
   DITOLAK: {
-    label: "Ditolak",
+    label: "Tidak lolos",
     badge: "bg-red-50 text-red-700",
     dot: "bg-red-500",
   },
@@ -111,11 +130,41 @@ const statusConfig: Record<
 
 const TAB_OPTIONS: { key: string; label: string }[] = [
   { key: "SEMUA", label: "Semua" },
-  { key: "DIPROSES", label: "Diproses" },
-  { key: "INTERVIEW", label: "Interview" },
+  { key: "BERJALAN", label: "Sedang berjalan" },
   { key: "LOLOS", label: "Lolos" },
-  { key: "DITOLAK", label: "Ditolak" },
+  { key: "DITOLAK", label: "Tidak lolos" },
 ];
+
+const kunciHariWib = (date: Date) => {
+  return date.toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+};
+
+const selisihHari = (iso: string) => {
+  const target = new Date(kunciHariWib(new Date(iso)) + "T00:00:00Z").getTime();
+  const hariIni = new Date(kunciHariWib(new Date()) + "T00:00:00Z").getTime();
+
+  return Math.round((target - hariIni) / 86400000);
+};
+
+const labelSisaHari = (selisih: number) => {
+  if (selisih <= 0) return "Hari ini";
+  if (selisih === 1) return "Besok";
+  return selisih + " hari lagi";
+};
+
+const tanggalAngka = (iso: string) => {
+  return new Date(iso).toLocaleDateString("id-ID", {
+    day: "numeric",
+    timeZone: "Asia/Jakarta",
+  });
+};
+
+const bulanSingkat = (iso: string) => {
+  return new Date(iso).toLocaleDateString("id-ID", {
+    month: "short",
+    timeZone: "Asia/Jakarta",
+  });
+};
 
 export default function LamaranPage() {
   const router = useRouter();
@@ -181,48 +230,89 @@ export default function LamaranPage() {
     getLamaran();
   }, [user]);
 
-  const formatTanggal = (date: string) => {
-    return new Date(date).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  };
+  const jumlahBerjalan = lamaran.filter(
+    (item) => item.status === "DIPROSES" || item.status === "INTERVIEW"
+  ).length;
 
-  const jumlah = (status: StatusLamaran) =>
-    lamaran.filter((item) => item.status === status).length;
+  const jumlahLolos = lamaran.filter((item) => item.status === "LOLOS").length;
+
+  const jumlahDitolak = lamaran.filter(
+    (item) => item.status === "DITOLAK"
+  ).length;
 
   const filteredLamaran = useMemo(() => {
     if (activeTab === "SEMUA") return lamaran;
+
+    if (activeTab === "BERJALAN") {
+      return lamaran.filter(
+        (item) => item.status === "DIPROSES" || item.status === "INTERVIEW"
+      );
+    }
+
     return lamaran.filter((item) => item.status === activeTab);
   }, [lamaran, activeTab]);
 
+  const daftarJadwal = useMemo(() => {
+    const hasil: JadwalItem[] = [];
+
+    for (const item of lamaran) {
+      if (item.status === "DITOLAK" || item.status === "LOLOS") continue;
+
+      const berjalan = [...item.tahapanProgress]
+        .sort((a, b) => a.urutan - b.urutan)
+        .find((t) => t.selesaiPada === null);
+
+      if (!berjalan || !berjalan.jadwalTanggal) continue;
+      if (selisihHari(berjalan.jadwalTanggal) < 0) continue;
+
+      hasil.push({
+        lamaranId: item.id,
+        posisi: item.lowongan.posisi,
+        tahapan: berjalan.tahapan,
+        jadwal: berjalan.jadwalTanggal,
+        lokasi: berjalan.jadwalLokasi,
+        catatan: berjalan.jadwalCatatan,
+      });
+    }
+
+    hasil.sort(
+      (a, b) => new Date(a.jadwal).getTime() - new Date(b.jadwal).getTime()
+    );
+
+    return hasil;
+  }, [lamaran]);
+
   if (!user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f7faf8]">
+      <div className="flex min-h-screen items-center justify-center bg-[#f6faf8]">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#dceee5] border-t-[#4da477]" />
-          <p className="text-sm text-[#81938a]">Memuat halaman...</p>
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-emerald-600" />
+          <p className="text-sm text-slate-500">Memuat halaman...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f7faf8]">
-      <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
+    <div className="min-h-screen bg-[#f6faf8] text-slate-900">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
 
-        {/* HEADER */}
+        {/* =====================================================
+            HEADER
+        ====================================================== */}
 
-        <div className="mb-7">
-          <p className="text-xs font-extrabold uppercase tracking-[1.5px] text-[#4da477]">
+        <div className="mb-6">
+          <p className="mb-1 text-sm font-medium text-slate-500">
             Riwayat Lamaran
           </p>
-          <h1 className="mt-1.5 text-2xl font-black tracking-tight text-[#193d2e]">
-            Lamaran Saya
+
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            Lamaran <span className="text-emerald-700">Saya</span>
           </h1>
-          <p className="mt-1.5 text-sm text-[#71877b]">
-            Pantau seluruh proses lamaran pekerjaan kamu di PT Pupuk Kujang.
+
+          <p className="mt-2 max-w-2xl text-sm text-slate-500">
+            Pantau seluruh proses lamaran pekerjaan kamu di PT Pupuk Kujang,
+            mulai dari tahapan seleksi hingga jadwal panggilan.
           </p>
         </div>
 
@@ -232,281 +322,508 @@ export default function LamaranPage() {
           </div>
         )}
 
-        {/* RINGKASAN */}
+        {/* =====================================================
+            STATISTIK
+        ====================================================== */}
 
         {!loadingLamaran && lamaran.length > 0 && (
-          <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
 
-            <div className="rounded-2xl border border-[#e1eee7] bg-white px-4 py-4">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-[#9aa9a1]">
-                Total Lamaran
-              </p>
-              <p className="mt-1.5 text-2xl font-black text-[#193d2e]">
-                {lamaran.length}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Total Lamaran
+                  </p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900">
+                    {lamaran.length}
+                  </p>
+                </div>
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                  <FileText size={20} />
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs text-slate-400">
+                Semua lamaran yang dikirim
               </p>
             </div>
 
-            <div className="rounded-2xl border border-[#f3e2ba] bg-[#fffaf0] px-4 py-4">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-[#a16207]">
-                Diproses
-              </p>
-              <p className="mt-1.5 text-2xl font-black text-[#a16207]">
-                {jumlah("DIPROSES")}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Sedang Berjalan
+                  </p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900">
+                    {jumlahBerjalan}
+                  </p>
+                </div>
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                  <Clock size={20} />
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs text-slate-400">
+                Belum ada keputusan akhir
               </p>
             </div>
 
-            <div className="rounded-2xl border border-[#c7dcf5] bg-[#f2f7fe] px-4 py-4">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-[#2c5aa0]">
-                Interview
-              </p>
-              <p className="mt-1.5 text-2xl font-black text-[#2c5aa0]">
-                {jumlah("INTERVIEW")}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Lolos</p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900">
+                    {jumlahLolos}
+                  </p>
+                </div>
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                  <CheckCircle2 size={20} />
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs text-slate-400">
+                Seluruh tahapan selesai
               </p>
             </div>
 
-            <div className="rounded-2xl border border-[#bfe3cd] bg-[#f0faf4] px-4 py-4">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-[#35865d]">
-                Lolos
-              </p>
-              <p className="mt-1.5 text-2xl font-black text-[#35865d]">
-                {jumlah("LOLOS")}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Tidak Lolos
+                  </p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900">
+                    {jumlahDitolak}
+                  </p>
+                </div>
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                  <XCircle size={20} />
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs text-slate-400">
+                Belum dapat dilanjutkan
               </p>
             </div>
 
           </div>
         )}
 
-        {/* TAB FILTER */}
+        {/* =====================================================
+            JADWAL MENDATANG
+        ====================================================== */}
 
-        {!loadingLamaran && lamaran.length > 0 && (
-          <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
-            {TAB_OPTIONS.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition ${activeTab === tab.key
-                  ? "bg-[#315c4a] text-white"
-                  : "border border-[#e1eee7] bg-white text-[#71877b] hover:border-[#b9ddc9]"
-                  }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {!loadingLamaran && daftarJadwal.length > 0 && (
+          <section className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-        {/* LIST LAMARAN */}
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Jadwal Mendatang
+                </h2>
 
-        {loadingLamaran ? (
+                <p className="mt-1 text-xs text-slate-500">
+                  Panggilan tahapan seleksi yang akan kamu ikuti
+                </p>
+              </div>
 
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#e1eee7] bg-white px-6 py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#dceee5] border-t-[#4da477]" />
-            <p className="text-sm text-[#81938a]">Memuat lamaran...</p>
-          </div>
-
-        ) : lamaran.length === 0 ? (
-
-          <div className="rounded-2xl border border-[#e1eee7] bg-white px-5 py-16 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#eef6f1] text-3xl">
-              <Inbox className="h-7 w-7 text-[#71877b]" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <CalendarClock size={18} />
+              </div>
             </div>
-            <h3 className="mt-5 text-lg font-black text-[#315c4a]">
-              Belum ada lamaran
-            </h3>
-            <p className="mt-2 text-sm text-[#81938a]">
-              Yuk jelajahi lowongan yang tersedia dan mulai melamar posisi
-              yang sesuai denganmu.
-            </p>
-            <button
-              type="button"
-              onClick={() => router.push("/kandidat/lowongan")}
-              className="mt-5 rounded-xl bg-[#315c4a] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#234236]"
-            >
-              Lihat Lowongan →
-            </button>
-          </div>
 
-        ) : filteredLamaran.length === 0 ? (
-
-          <div className="rounded-2xl border border-[#e1eee7] bg-white px-5 py-12 text-center text-sm text-[#81938a]">
-            Tidak ada lamaran dengan status ini.
-          </div>
-
-        ) : (
-
-          <div className="space-y-3">
-
-            {filteredLamaran.map((item) => {
-              const config = statusConfig[item.status];
-
-              const ditolak = item.status === "DITOLAK";
-
-              const kolomTahapan =
-                item.lowongan.tahapanSeleksi &&
-                  item.lowongan.tahapanSeleksi.length > 0
-                  ? [...item.lowongan.tahapanSeleksi].sort(
-                    (a, b) => TAHAPAN_URUTAN[a] - TAHAPAN_URUTAN[b]
-                  )
-                  : [];
-
-              const belumSelesai = [...item.tahapanProgress]
-                .sort((a, b) => a.urutan - b.urutan)
-                .find((t) => t.selesaiPada === null);
-
-              const displayLabel = ditolak
-                ? "Ditolak"
-                : item.status === "LOLOS"
-                  ? "Lolos"
-                  : belumSelesai
-                    ? TAHAPAN_LABEL[belumSelesai.tahapan]
-                    : config.label;
-
-              const displayBadge = ditolak
-                ? statusConfig.DITOLAK.badge
-                : item.status === "LOLOS"
-                  ? statusConfig.LOLOS.badge
-                  : belumSelesai
-                    ? TAHAPAN_BADGE[belumSelesai.tahapan]
-                    : statusConfig[item.status].badge;
-
-              const displayDot = ditolak
-                ? statusConfig.DITOLAK.dot
-                : item.status === "LOLOS"
-                  ? statusConfig.LOLOS.dot
-                  : belumSelesai
-                    ? TAHAPAN_DOT[belumSelesai.tahapan]
-                    : statusConfig[item.status].dot;
-
-              return (
-                <article
-                  key={item.id}
-                  className="rounded-2xl border border-[#e1eee7] bg-white p-5 transition hover:border-[#b9ddc9] hover:shadow-[0_10px_25px_rgba(49,92,74,0.06)]"
+            <div className="divide-y divide-slate-100">
+              {daftarJadwal.slice(0, 3).map((j, index) => (
+                <div
+                  key={j.lamaranId}
+                  className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
                 >
 
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex items-start gap-4">
 
-                    <div className="flex gap-4">
-
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e8f6ee] text-lg font-black text-[#4da477]">
-                        {item.lowongan.posisi.substring(0, 2).toUpperCase()}
-                      </div>
-
-                      <div>
-                        <h3 className="text-base font-black text-[#193d2e]">
-                          {item.lowongan.posisi}
-                        </h3>
-
-                        <p className="mt-0.5 text-xs font-semibold text-[#4da477]">
-                          {item.lowongan.departemen}
-                        </p>
-
-                        <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#81938a]">
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {item.lowongan.lokasi}
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            <Briefcase className="h-3 w-3" />
-                            {item.lowongan.tipe}
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            Dilamar {formatTanggal(item.createdAt)}
-                          </span>
-                        </div>
-
-                        {item.lowongan.deskripsi && (
-                          <p className="mt-3 max-w-xl text-xs leading-6 text-[#71877b]">
-                            {item.lowongan.deskripsi.length > 140
-                              ? item.lowongan.deskripsi.slice(0, 140) + "..."
-                              : item.lowongan.deskripsi}
-                          </p>
-                        )}
-
-                      </div>
-
+                    <div
+                      className={
+                        "flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl " +
+                        (index === 0
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-100 text-slate-600")
+                      }
+                    >
+                      <span className="text-lg font-bold leading-none">
+                        {tanggalAngka(j.jadwal)}
+                      </span>
+                      <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                        {bulanSingkat(j.jadwal)}
+                      </span>
                     </div>
 
-                    <span
-                      className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${displayBadge}`}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${displayDot}`} />
-                      {displayLabel}
-                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900">
+                        Panggilan {TAHAPAN_LABEL[j.tahapan]}
+                      </p>
+
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {j.posisi}
+                      </p>
+
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+                        <span className="inline-flex items-center gap-1">
+                          <Clock size={12} />
+                          {formatJamWib(j.jadwal)}
+                        </span>
+
+                        {j.lokasi && (
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin size={12} />
+                            {j.lokasi}
+                          </span>
+                        )}
+                      </div>
+
+                      {j.catatan && (
+                        <p className="mt-2 max-w-xl text-xs leading-5 text-slate-500">
+                          {j.catatan}
+                        </p>
+                      )}
+                    </div>
 
                   </div>
 
-                  {/* STEPPER TAHAPAN SELEKSI */}
+                  <span
+                    className={
+                      "w-fit shrink-0 rounded-full px-3 py-1 text-xs font-bold " +
+                      (index === 0
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-slate-100 text-slate-600")
+                    }
+                  >
+                    {labelSisaHari(selisihHari(j.jadwal))}
+                  </span>
 
-                  {kolomTahapan.length > 0 && (
-                    <div className="mt-5 overflow-x-auto border-t border-[#eef5f1] pt-4">
-                      <div className="flex min-w-[420px] items-start">
-                        {kolomTahapan.map((tahapan, index) => {
-                          const progress = item.tahapanProgress.find(
-                            (t) => t.tahapan === tahapan
-                          );
-                          const selesai = progress?.selesaiPada;
-                          const isSekarang =
-                            !ditolak && belumSelesai?.tahapan === tahapan;
-                          const isTitikTolak =
-                            ditolak && belumSelesai?.tahapan === tahapan;
-                          const isLast = index === kolomTahapan.length - 1;
+                </div>
+              ))}
+            </div>
 
-                          return (
-                            <div key={tahapan} className="flex flex-1 items-start">
-                              <div className="flex flex-col items-center gap-1.5">
-                                <div
-                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${selesai
-                                    ? "bg-[#4da477] text-white"
-                                    : isTitikTolak
-                                      ? "bg-red-500 text-white"
-                                      : isSekarang
-                                        ? "border-2 border-[#4da477] text-[#4da477]"
-                                        : "bg-[#eef5f1] text-[#a0afa7]"
-                                    }`}
-                                >
-                                  {selesai ? (
-                                    <CheckCircle2 className="h-3.5 w-3.5" />
-                                  ) : isTitikTolak ? (
-                                    <XCircle className="h-3.5 w-3.5" />
-                                  ) : (
-                                    <Circle className="h-2.5 w-2.5 fill-current" />
-                                  )}
-                                </div>
+            {daftarJadwal.length > 3 && (
+              <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-400 sm:px-6">
+                +{daftarJadwal.length - 3} jadwal lainnya
+              </p>
+            )}
 
-                                <span
-                                  className={`text-center text-[10px] font-medium leading-tight ${selesai || isSekarang
-                                    ? "text-[#315c4a]"
-                                    : "text-[#a0afa7]"
-                                    }`}
-                                >
-                                  {TAHAPAN_LABEL[tahapan]}
-                                </span>
-                              </div>
+          </section>
+        )}
 
-                              {!isLast && (
-                                <div
-                                  className={`mt-3.5 h-0.5 flex-1 ${selesai ? "bg-[#4da477]" : "bg-[#eef5f1]"
-                                    }`}
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+        {/* =====================================================
+            DAFTAR LAMARAN
+        ====================================================== */}
 
-                </article>
-              );
-            })}
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+          <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                Daftar Lamaran
+              </h2>
+
+              <p className="mt-1 text-xs text-slate-500">
+                {lamaran.length > 0
+                  ? "Menampilkan " +
+                  filteredLamaran.length +
+                  " dari " +
+                  lamaran.length +
+                  " lamaran"
+                  : "Riwayat lamaran kamu akan muncul di sini"}
+              </p>
+            </div>
+
+            {!loadingLamaran && lamaran.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
+                {TAB_OPTIONS.map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveTab(tab.key)}
+                    className={
+                      "whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold transition " +
+                      (activeTab === tab.key
+                        ? "bg-emerald-600 text-white"
+                        : "border border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:text-emerald-700")
+                    }
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
           </div>
 
-        )}
+          {loadingLamaran ? (
 
-      </div>
+            <div className="flex flex-col items-center gap-3 px-6 py-16">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-emerald-600" />
+              <p className="text-sm text-slate-500">Memuat lamaran...</p>
+            </div>
+
+          ) : lamaran.length === 0 ? (
+
+            <div className="px-5 py-16 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                <Inbox className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 text-base font-bold text-slate-900">
+                Belum ada lamaran
+              </h3>
+              <p className="mt-1.5 text-sm text-slate-500">
+                Yuk jelajahi lowongan yang tersedia dan mulai melamar posisi
+                yang sesuai denganmu.
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push("/kandidat/lowongan")}
+                className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700"
+              >
+                Lihat Lowongan →
+              </button>
+            </div>
+
+          ) : filteredLamaran.length === 0 ? (
+
+            <div className="px-5 py-12 text-center text-sm text-slate-500">
+              Tidak ada lamaran dengan status ini.
+            </div>
+
+          ) : (
+
+            <div className="divide-y divide-slate-100">
+
+              {filteredLamaran.map((item) => {
+                const config = statusConfig[item.status];
+
+                const ditolak = item.status === "DITOLAK";
+                const lolos = item.status === "LOLOS";
+
+                const kolomTahapan =
+                  item.lowongan.tahapanSeleksi &&
+                    item.lowongan.tahapanSeleksi.length > 0
+                    ? [...item.lowongan.tahapanSeleksi].sort(
+                      (a, b) => TAHAPAN_URUTAN[a] - TAHAPAN_URUTAN[b]
+                    )
+                    : [];
+
+                const belumSelesai = [...item.tahapanProgress]
+                  .sort((a, b) => a.urutan - b.urutan)
+                  .find((t) => t.selesaiPada === null);
+
+                const total = kolomTahapan.length;
+
+                const selesaiCount = kolomTahapan.filter(
+                  (t) =>
+                    item.tahapanProgress.find((p) => p.tahapan === t)
+                      ?.selesaiPada
+                ).length;
+
+                const persen =
+                  total > 0 ? Math.round((selesaiCount / total) * 100) : 0;
+
+                const nomorTahap = Math.min(selesaiCount + 1, total);
+
+                const labelTahapBerjalan = belumSelesai
+                  ? TAHAPAN_LABEL[belumSelesai.tahapan]
+                  : "";
+
+                let teksProgres = "";
+
+                if (lolos) {
+                  teksProgres = "Seluruh tahapan selesai";
+                } else if (ditolak) {
+                  teksProgres = labelTahapBerjalan
+                    ? "Berhenti di tahap " + labelTahapBerjalan
+                    : "Proses dihentikan";
+                } else {
+                  teksProgres =
+                    "Tahap " +
+                    nomorTahap +
+                    " dari " +
+                    total +
+                    (labelTahapBerjalan ? " · " + labelTahapBerjalan : "");
+                }
+
+                const displayLabel = ditolak
+                  ? config.label
+                  : lolos
+                    ? config.label
+                    : belumSelesai
+                      ? TAHAPAN_LABEL[belumSelesai.tahapan]
+                      : config.label;
+
+                const displayBadge = ditolak
+                  ? statusConfig.DITOLAK.badge
+                  : lolos
+                    ? statusConfig.LOLOS.badge
+                    : belumSelesai
+                      ? TAHAPAN_BADGE[belumSelesai.tahapan]
+                      : config.badge;
+
+                const displayDot = ditolak
+                  ? statusConfig.DITOLAK.dot
+                  : lolos
+                    ? statusConfig.LOLOS.dot
+                    : belumSelesai
+                      ? TAHAPAN_DOT[belumSelesai.tahapan]
+                      : config.dot;
+
+                return (
+                  <article key={item.id} className="px-5 py-6 sm:px-6">
+
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+
+                      <div className="flex items-start gap-3">
+
+                        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                          <Briefcase size={19} />
+                        </div>
+
+                        <div className="min-w-0">
+                          <h3 className="text-base font-bold text-slate-900">
+                            {item.lowongan.posisi}
+                          </h3>
+
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {item.lowongan.departemen}
+                          </p>
+
+                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                            <span className="flex items-center gap-1">
+                              <MapPin size={13} />
+                              {item.lowongan.lokasi}
+                            </span>
+
+                            <span className="flex items-center gap-1">
+                              <Briefcase size={13} />
+                              {item.lowongan.tipe}
+                            </span>
+
+                            <span className="flex items-center gap-1">
+                              <Calendar size={13} />
+                              Dilamar {formatTanggalWib(item.createdAt)}
+                            </span>
+                          </div>
+
+                          {item.lowongan.deskripsi && (
+                            <p className="mt-3 line-clamp-2 max-w-2xl text-xs leading-6 text-slate-500">
+                              {item.lowongan.deskripsi}
+                            </p>
+                          )}
+                        </div>
+
+                      </div>
+
+                      <span
+                        className={
+                          "inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold " +
+                          displayBadge
+                        }
+                      >
+                        <span
+                          className={"h-1.5 w-1.5 rounded-full " + displayDot}
+                        />
+                        {displayLabel}
+                      </span>
+
+                    </div>
+
+                    {/* PROGRES */}
+
+                    {total > 0 && (
+                      <div className="mt-5">
+                        <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold">
+                          <span className="text-slate-700">{teksProgres}</span>
+                          <span className="text-slate-400">{persen}%</span>
+                        </div>
+
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className={
+                              "h-full rounded-full transition-all " +
+                              (ditolak ? "bg-red-400" : "bg-emerald-500")
+                            }
+                            style={{ width: persen + "%" }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* STEPPER TAHAPAN SELEKSI */}
+
+                    {total > 0 && (
+                      <div className="mt-6 rounded-xl bg-slate-50/70 px-4 py-5">
+                        <TahapanStepperKandidat
+                          tahapanList={kolomTahapan}
+                          progressList={item.tahapanProgress}
+                          ditolak={ditolak}
+                        />
+                      </div>
+                    )}
+
+                    {/* PESAN LOLOS */}
+
+                    {lolos && (
+                      <div className="mt-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3.5">
+                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                        <p className="text-xs leading-6 text-emerald-800">
+                          <strong className="font-bold">Selamat!</strong> Kamu
+                          telah menyelesaikan seluruh tahapan seleksi. Tim HR
+                          akan menghubungimu untuk proses selanjutnya.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* PESAN TIDAK LOLOS */}
+
+                    {ditolak && (
+                      <div className="mt-5 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-start gap-3">
+                          <Info className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+                          <p className="text-xs leading-6 text-slate-600">
+                            Terima kasih sudah mengikuti proses seleksi. Mohon
+                            maaf, lamaranmu belum dapat dilanjutkan
+                            {labelTahapBerjalan
+                              ? " pada tahap " + labelTahapBerjalan
+                              : ""}{" "}
+                            (diputuskan {formatTanggalWib(item.updatedAt)}).
+                            Tetap semangat, masih banyak lowongan lain yang
+                            bisa kamu coba.
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => router.push("/kandidat/lowongan")}
+                          className="w-fit shrink-0 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50"
+                        >
+                          Lihat lowongan lain
+                        </button>
+                      </div>
+                    )}
+
+                  </article>
+                );
+              })}
+
+            </div>
+
+          )}
+
+        </section>
+
+      </main>
     </div>
   );
 }

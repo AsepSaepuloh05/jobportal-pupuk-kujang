@@ -30,6 +30,7 @@ import {
     Send,
     History
 } from "lucide-react";
+import { toast } from "@/app/components/Toast";
 
 interface HRUser {
     id: number;
@@ -292,7 +293,7 @@ export default function PelamarLowonganPage() {
             );
         } catch (error) {
             console.error("SELESAIKAN TAHAPAN ERROR:", error);
-            alert(
+            toast.error(
                 error instanceof Error ? error.message : "Gagal memperbarui tahapan"
             );
         } finally {
@@ -325,7 +326,7 @@ export default function PelamarLowonganPage() {
             );
         } catch (error) {
             console.error("TOLAK LAMARAN ERROR:", error);
-            alert(error instanceof Error ? error.message : "Gagal menolak lamaran");
+            toast.error(error instanceof Error ? error.message : "Gagal menolak lamaran");
         } finally {
             setProcessingId(null);
         }
@@ -352,7 +353,7 @@ export default function PelamarLowonganPage() {
             }
         } catch (error) {
             console.error("BATALKAN LAMARAN ERROR:", error);
-            alert(
+            toast.error(
                 error instanceof Error ? error.message : "Gagal membatalkan lamaran"
             );
         } finally {
@@ -435,7 +436,7 @@ export default function PelamarLowonganPage() {
             setJadwalTarget(null);
         } catch (error) {
             console.error("SET JADWAL ERROR:", error);
-            alert(error instanceof Error ? error.message : "Gagal mengatur jadwal");
+            toast.error(error instanceof Error ? error.message : "Gagal mengatur jadwal");
         } finally {
             setSavingJadwal(false);
         }
@@ -465,11 +466,11 @@ export default function PelamarLowonganPage() {
                 throw new Error(data.message || "Gagal mengirim email");
             }
 
-            alert("Email berhasil dikirim");
+            toast.success("Email berhasil dikirim");
             setEmailTarget(null);
         } catch (error) {
             console.error("KIRIM EMAIL ERROR:", error);
-            alert(error instanceof Error ? error.message : "Gagal mengirim email");
+            toast.error(error instanceof Error ? error.message : "Gagal mengirim email");
         } finally {
             setSendingEmail(false);
         }
@@ -489,7 +490,7 @@ export default function PelamarLowonganPage() {
             setDetailKandidat(data);
         } catch (error) {
             console.error("GET DETAIL ERROR:", error);
-            alert("Gagal mengambil detail kandidat");
+            toast.error("Gagal mengambil detail kandidat");
         } finally {
             setLoadingDetail(false);
         }

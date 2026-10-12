@@ -23,6 +23,7 @@ import {
   Building2,
 } from "lucide-react";
 import { formatGajiRange } from "@/lib/format";
+import { toast } from "@/app/components/Toast";
 
 const TAHAPAN_LABEL: Record<string, string> = {
   SCREENING: "Screening",
@@ -152,7 +153,7 @@ export default function KelolaLowonganPage() {
       setLowongan(data);
     } catch (error) {
       console.error("GET LOWONGAN ERROR:", error);
-      alert("Gagal mengambil data lowongan");
+      toast.error("Gagal mengambil data lowongan");
     } finally {
       setLoadingLowongan(false);
     }
@@ -187,9 +188,9 @@ export default function KelolaLowonganPage() {
       console.error("GET DETAIL LOWONGAN ERROR:", error);
 
       if (error instanceof Error) {
-        alert(error.message);
+        toast.error(error.message);
       } else {
-        alert("Gagal mengambil detail lowongan");
+        toast.error("Gagal mengambil detail lowongan");
       }
     } finally {
       setLoadingDetail(false);
@@ -239,9 +240,9 @@ export default function KelolaLowonganPage() {
       console.error("DELETE LOWONGAN ERROR:", error);
 
       if (error instanceof Error) {
-        alert(error.message);
+        toast.error(error.message);
       } else {
-        alert("Gagal menghapus lowongan");
+        toast.error("Gagal menghapus lowongan");
       }
     } finally {
       setDeletingId(null);

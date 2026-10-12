@@ -12,6 +12,7 @@ import {
   MapPin,
   Inbox,
 } from "lucide-react";
+import { toast } from "@/app/components/Toast";
 
 interface Kandidat {
   id: number;
@@ -98,7 +99,7 @@ export default function KandidatPage() {
       );
     } catch (error) {
       console.error("UBAH STATUS ERROR:", error);
-      alert(
+      toast.error(
         error instanceof Error ? error.message : "Gagal mengubah status akun"
       );
     } finally {

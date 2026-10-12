@@ -20,6 +20,7 @@ import {
     HeartPulse,
     Handshake,
 } from "lucide-react";
+import { toast } from "@/app/components/Toast";
 
 const PENDIDIKAN_OPTIONS = [
     "SMA / SMK",
@@ -162,7 +163,7 @@ export default function EditLowonganPage() {
                 );
             } catch (err) {
                 console.error("GET LOWONGAN ERROR:", err);
-                alert("Gagal mengambil data lowongan");
+                toast.error("Gagal mengambil data lowongan");
             } finally {
                 setLoading(false);
             }

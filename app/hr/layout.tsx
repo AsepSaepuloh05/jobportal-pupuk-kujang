@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-
 import {
   LayoutDashboard,
   BriefcaseBusiness,
@@ -16,6 +15,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import ToastViewport from "@/app/components/Toast";
 
 interface User {
   id: number;
@@ -218,11 +218,6 @@ export default function HRLayout({
       label: "Data Kandidat",
       path: "/hr/daftarkandidat",
       icon: Users,
-    },
-    {
-      label: "Proses Seleksi",
-      path: "/hr/seleksi",
-      icon: ClipboardCheck,
     },
   ];
 
@@ -517,6 +512,8 @@ export default function HRLayout({
         {children}
 
       </section>
+
+      <ToastViewport />
 
     </main>
   );
