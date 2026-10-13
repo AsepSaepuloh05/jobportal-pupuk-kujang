@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import {
@@ -21,9 +21,13 @@ import {
   Users,
   CalendarDays,
   Building2,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react";
 import { formatGajiRange } from "@/lib/format";
 import { toast } from "@/app/components/Toast";
+import Pagination from "@/app/components/Pagination";
 
 const TAHAPAN_LABEL: Record<string, string> = {
   SCREENING: "Screening",
@@ -73,6 +77,60 @@ const statusLabel: Record<StatusLowongan, string> = {
   DITUTUP: "Ditutup",
 };
 
+type KunciUrut = "posisi" | "departemen" | "pelamar" | "status" | "createdAt";
+
+const urutanStatus: Record<StatusLowongan, number> = {
+  AKTIF: 1,
+  DRAFT: 2,
+  DITUTUP: 3,
+};
+
+interface KepalaUrutProps {
+  label: string;
+  kunci: KunciUrut;
+  aktif: KunciUrut;
+  arah: "asc" | "desc";
+  onSort: (kunci: KunciUrut) => void;
+}
+
+function KepalaUrut({ label, kunci, aktif, arah, onSort }: KepalaUrutProps) {
+  const sedangAktif = aktif === kunci;
+
+  return (
+    <th
+      aria-sort={
+        sedangAktif
+          ? arah === "asc"
+            ? "ascending"
+            : "descending"
+          : "none"
+      }
+      className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500"
+    >
+      <button
+        type="button"
+        onClick={() => onSort(kunci)}
+        className={
+          "inline-flex items-center gap-1.5 uppercase tracking-wide transition hover:text-slate-800 " +
+          (sedangAktif ? "text-slate-800" : "")
+        }
+      >
+        {label}
+
+        {sedangAktif ? (
+          arah === "asc" ? (
+            <ArrowUp className="h-3.5 w-3.5" />
+          ) : (
+            <ArrowDown className="h-3.5 w-3.5" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 text-slate-300" />
+        )}
+      </button>
+    </th>
+  );
+}
+
 export default function KelolaLowonganPage() {
   const router = useRouter();
 
@@ -84,6 +142,11 @@ export default function KelolaLowonganPage() {
 
   const [keyword, setKeyword] = useState("");
   const [filterStatus, setFilterStatus] = useState("Semua");
+
+  const [sortKey, setSortKey] = useState<KunciUrut>("createdAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // =====================================================
   // DETAIL MODAL
@@ -254,20 +317,66 @@ export default function KelolaLowonganPage() {
   // FILTER
   // =====================================================
 
-  const filteredLowongan = lowongan.filter((item) => {
+  const filteredLowongan = useMemo(() => {
     const search = keyword.toLowerCase();
 
-    const cocokKeyword =
-      item.posisi.toLowerCase().includes(search) ||
-      item.departemen.toLowerCase().includes(search) ||
-      item.lokasi.toLowerCase().includes(search);
+    const hasil = lowongan.filter((item) => {
+      const cocokKeyword =
+        item.posisi.toLowerCase().includes(search) ||
+        item.departemen.toLowerCase().includes(search) ||
+        item.lokasi.toLowerCase().includes(search);
 
-    const cocokStatus =
-      filterStatus === "Semua" ||
-      statusLabel[item.status] === filterStatus;
+      const cocokStatus =
+        filterStatus === "Semua" ||
+        statusLabel[item.status] === filterStatus;
 
-    return cocokKeyword && cocokStatus;
-  });
+      return cocokKeyword && cocokStatus;
+    });
+
+    const arah = sortDir === "asc" ? 1 : -1;
+
+    return [...hasil].sort((a, b) => {
+      let selisih = 0;
+
+      if (sortKey === "posisi") {
+        selisih = a.posisi.localeCompare(b.posisi, "id");
+      } else if (sortKey === "departemen") {
+        selisih = a.departemen.localeCompare(b.departemen, "id");
+      } else if (sortKey === "pelamar") {
+        selisih = a.pelamar - b.pelamar;
+      } else if (sortKey === "status") {
+        selisih = urutanStatus[a.status] - urutanStatus[b.status];
+      } else {
+        selisih =
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+
+      return selisih * arah;
+    });
+  }, [lowongan, keyword, filterStatus, sortKey, sortDir]);
+
+  const totalHalaman = Math.max(
+    1,
+    Math.ceil(filteredLowongan.length / pageSize)
+  );
+
+  const halamanAktif = Math.min(page, totalHalaman);
+
+  const dataHalaman = filteredLowongan.slice(
+    (halamanAktif - 1) * pageSize,
+    halamanAktif * pageSize
+  );
+
+  const handleSort = (kunci: KunciUrut) => {
+    if (sortKey === kunci) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(kunci);
+      setSortDir(kunci === "pelamar" || kunci === "createdAt" ? "desc" : "asc");
+    }
+
+    setPage(1);
+  };
 
   // =====================================================
   // LOADING LOGIN
@@ -519,7 +628,10 @@ export default function KelolaLowonganPage() {
                 type="text"
                 placeholder="Cari posisi, departemen..."
                 value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
+                onChange={(e) => {
+                  setKeyword(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
               />
 
@@ -529,7 +641,10 @@ export default function KelolaLowonganPage() {
 
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              onChange={(e) => {
+                setFilterStatus(e.target.value);
+                setPage(1);
+              }}
               className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 sm:w-48"
             >
               <option value="Semua">
@@ -561,13 +676,9 @@ export default function KelolaLowonganPage() {
 
                 <tr>
 
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Posisi
-                  </th>
+                  <KepalaUrut label="Posisi" kunci="posisi" aktif={sortKey} arah={sortDir} onSort={handleSort} />
 
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Departemen
-                  </th>
+                  <KepalaUrut label="Departemen" kunci="departemen" aktif={sortKey} arah={sortDir} onSort={handleSort} />
 
                   <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Lokasi
@@ -577,17 +688,11 @@ export default function KelolaLowonganPage() {
                     Tipe
                   </th>
 
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Pelamar
-                  </th>
+                  <KepalaUrut label="Pelamar" kunci="pelamar" aktif={sortKey} arah={sortDir} onSort={handleSort} />
 
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Status
-                  </th>
+                  <KepalaUrut label="Status" kunci="status" aktif={sortKey} arah={sortDir} onSort={handleSort} />
 
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Dibuat
-                  </th>
+                  <KepalaUrut label="Dibuat" kunci="createdAt" aktif={sortKey} arah={sortDir} onSort={handleSort} />
 
                   <th className="px-5 py-4 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Aksi
@@ -622,7 +727,7 @@ export default function KelolaLowonganPage() {
 
                 ) : filteredLowongan.length > 0 ? (
 
-                  filteredLowongan.map((item) => (
+                  dataHalaman.map((item) => (
 
                     <tr
                       key={item.id}
@@ -851,6 +956,19 @@ export default function KelolaLowonganPage() {
             </table>
 
           </div>
+
+          {!loadingLowongan && filteredLowongan.length > 0 && (
+            <Pagination
+              total={filteredLowongan.length}
+              page={halamanAktif}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
+          )}
 
         </div>
 

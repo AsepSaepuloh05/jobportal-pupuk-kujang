@@ -31,6 +31,7 @@ import {
     History
 } from "lucide-react";
 import { toast } from "@/app/components/Toast";
+import Pagination from "@/app/components/Pagination";
 
 interface HRUser {
     id: number;
@@ -166,7 +167,9 @@ export default function PelamarLowonganPage() {
 
     const [keyword, setKeyword] = useState("");
     const [filterStatus, setFilterStatus] = useState("Semua");
-    const [urutan, setUrutan] = useState<"terbaru" | "terlama">("terbaru");
+    const [urutan, setUrutan] = useState<"terbaru" | "terlama" | "nama-asc" | "nama-desc">("terbaru");
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [processingId, setProcessingId] = useState<number | null>(null);
@@ -524,13 +527,35 @@ export default function PelamarLowonganPage() {
         });
 
         hasil = hasil.sort((a, b) => {
+            if (urutan === "nama-asc") {
+                return a.user.nama.localeCompare(b.user.nama, "id");
+            }
+
+            if (urutan === "nama-desc") {
+                return b.user.nama.localeCompare(a.user.nama, "id");
+            }
+
             const dateA = new Date(a.createdAt).getTime();
             const dateB = new Date(b.createdAt).getTime();
-            return urutan === "terbaru" ? dateB - dateA : dateA - dateB;
+
+            return urutan === "terlama" ? dateA - dateB : dateB - dateA;
         });
 
         return hasil;
     }, [pelamar, keyword, filterStatus, urutan]);
+
+
+    const totalHalaman = Math.max(
+        1,
+        Math.ceil(filteredPelamar.length / pageSize)
+    );
+
+    const halamanAktif = Math.min(page, totalHalaman);
+
+    const dataHalaman = filteredPelamar.slice(
+        (halamanAktif - 1) * pageSize,
+        halamanAktif * pageSize
+    );
 
     const formatTanggal = (date: string) => {
         return new Date(date).toLocaleDateString("id-ID", {
@@ -619,7 +644,10 @@ export default function PelamarLowonganPage() {
                             type="text"
                             placeholder="Cari nama atau email kandidat..."
                             value={keyword}
-                            onChange={(e) => setKeyword(e.target.value)}
+                            onChange={(e) => {
+                                setKeyword(e.target.value);
+                                setPage(1);
+                            }}
                             className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                         />
                     </div>
@@ -627,7 +655,10 @@ export default function PelamarLowonganPage() {
                     <div className="flex flex-col gap-3 sm:flex-row">
                         <select
                             value={filterStatus}
-                            onChange={(e) => setFilterStatus(e.target.value)}
+                            onChange={(e) => {
+                                setFilterStatus(e.target.value);
+                                setPage(1);
+                            }}
                             className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                         >
                             <option value="Semua">Semua Status</option>
@@ -637,18 +668,29 @@ export default function PelamarLowonganPage() {
                             <option value="Ditolak">Ditolak</option>
                         </select>
 
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setUrutan((prev) =>
-                                    prev === "terbaru" ? "terlama" : "terbaru"
-                                )
-                            }
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                        >
-                            <ArrowUpDown className="h-4 w-4" />
-                            {urutan === "terbaru" ? "Terbaru" : "Terlama"}
-                        </button>
+                        <div className="relative">
+                            <ArrowUpDown className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                            <select
+                                value={urutan}
+                                onChange={(e) => {
+                                    setUrutan(
+                                        e.target.value as
+                                        | "terbaru"
+                                        | "terlama"
+                                        | "nama-asc"
+                                        | "nama-desc"
+                                    );
+                                    setPage(1);
+                                }}
+                                className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-9 pr-4 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                            >
+                                <option value="terbaru">Terbaru</option>
+                                <option value="terlama">Terlama</option>
+                                <option value="nama-asc">Nama (A-Z)</option>
+                                <option value="nama-desc">Nama (Z-A)</option>
+                            </select>
+                        </div>
                     </div>
 
                 </div>
@@ -680,7 +722,7 @@ export default function PelamarLowonganPage() {
 
                         <div className="divide-y divide-slate-100">
 
-                            {filteredPelamar.map((item) => {
+                            {dataHalaman.map((item) => {
                                 const isExpanded = expandedId === item.id;
                                 const ditolak = item.status === "DITOLAK";
 
@@ -889,6 +931,19 @@ export default function PelamarLowonganPage() {
 
                         </div>
 
+                    )}
+
+                    {!loadingData && filteredPelamar.length > 0 && (
+                        <Pagination
+                            total={filteredPelamar.length}
+                            page={halamanAktif}
+                            pageSize={pageSize}
+                            onPageChange={setPage}
+                            onPageSizeChange={(size) => {
+                                setPageSize(size);
+                                setPage(1);
+                            }}
+                        />
                     )}
 
                 </div>

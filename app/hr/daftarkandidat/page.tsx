@@ -13,6 +13,8 @@ import {
   Inbox,
 } from "lucide-react";
 import { toast } from "@/app/components/Toast";
+import Pagination from "@/app/components/Pagination";
+import KepalaUrut from "@/app/components/KepalaUrut";
 
 interface Kandidat {
   id: number;
@@ -26,12 +28,18 @@ interface Kandidat {
   createdAt: string;
 }
 
+type KunciUrut = "nama" | "createdAt" | "status";
+
 export default function KandidatPage() {
   const [kandidat, setKandidat] = useState<Kandidat[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("Semua");
+  const [sortKey, setSortKey] = useState<KunciUrut>("createdAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const [konfirmasi, setKonfirmasi] = useState<{
     id: number;
@@ -108,7 +116,7 @@ export default function KandidatPage() {
     }
   };
 
-  const filteredKandidat = kandidat.filter((item) => {
+  const hasilFilter = kandidat.filter((item) => {
     const keyword = search.toLowerCase();
 
     const cocokKeyword =
@@ -123,6 +131,46 @@ export default function KandidatPage() {
 
     return cocokKeyword && cocokStatus;
   });
+
+  const arahUrut = sortDir === "asc" ? 1 : -1;
+
+  const filteredKandidat = [...hasilFilter].sort((a, b) => {
+    let selisih = 0;
+
+    if (sortKey === "nama") {
+      selisih = a.nama.localeCompare(b.nama, "id");
+    } else if (sortKey === "status") {
+      selisih = Number(b.isActive) - Number(a.isActive);
+    } else {
+      selisih =
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    }
+
+    return selisih * arahUrut;
+  });
+
+  const totalHalaman = Math.max(
+    1,
+    Math.ceil(filteredKandidat.length / pageSize)
+  );
+
+  const halamanAktif = Math.min(page, totalHalaman);
+
+  const dataHalaman = filteredKandidat.slice(
+    (halamanAktif - 1) * pageSize,
+    halamanAktif * pageSize
+  );
+
+  const handleSort = (kunci: KunciUrut) => {
+    if (sortKey === kunci) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(kunci);
+      setSortDir(kunci === "createdAt" ? "desc" : "asc");
+    }
+
+    setPage(1);
+  };
 
   const totalAktif = kandidat.filter((k) => k.isActive).length;
   const totalNonaktif = kandidat.filter((k) => !k.isActive).length;
@@ -207,14 +255,20 @@ export default function KandidatPage() {
               type="text"
               placeholder="Cari nama, email, atau NIK..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
             />
           </div>
 
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => {
+              setFilterStatus(e.target.value);
+              setPage(1);
+            }}
             className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 sm:w-48"
           >
             <option value="Semua">Semua Status</option>
@@ -257,21 +311,20 @@ export default function KandidatPage() {
 
                 <thead className="border-b border-slate-200 bg-slate-50">
                   <tr>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Kandidat
-                    </th>
+                    <KepalaUrut label="Kandidat" kunci="nama" aktif={sortKey} arah={sortDir} onSort={handleSort} />
+
                     <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Kontak
                     </th>
+
                     <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Domisili
                     </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Terdaftar
-                    </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Status
-                    </th>
+
+                    <KepalaUrut label="Terdaftar" kunci="createdAt" aktif={sortKey} arah={sortDir} onSort={handleSort} />
+
+                    <KepalaUrut label="Status" kunci="status" aktif={sortKey} arah={sortDir} onSort={handleSort} />
+
                     <th className="px-5 py-4 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Aksi
                     </th>
@@ -280,7 +333,7 @@ export default function KandidatPage() {
 
                 <tbody className="divide-y divide-slate-100">
 
-                  {filteredKandidat.map((item) => (
+                  {dataHalaman.map((item) => (
 
                     <tr
                       key={item.id}
@@ -391,6 +444,19 @@ export default function KandidatPage() {
               </table>
             </div>
 
+          )}
+
+          {!loading && filteredKandidat.length > 0 && (
+            <Pagination
+              total={filteredKandidat.length}
+              page={halamanAktif}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
           )}
 
         </div>
