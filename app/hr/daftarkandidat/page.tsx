@@ -34,8 +34,19 @@ interface Kandidat {
   isActive: boolean;
   createdAt: string;
 }
-
 type KunciUrut = "nama" | "createdAt" | "status";
+
+interface BarisMasalah {
+  nama: string;
+  alasan: string;
+}
+
+interface HasilMassal {
+  judul: string;
+  berhasil: number;
+  dilewati: number;
+  gagal: BarisMasalah[];
+}
 
 export default function KandidatPage() {
   const [kandidat, setKandidat] = useState<Kandidat[]>([]);
@@ -48,6 +59,11 @@ export default function KandidatPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [exporting, setExporting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [bulkAction, setBulkAction] = useState<"nonaktif" | "aktif" | null>(null);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ selesai: number; total: number } | null>(null);
+  const [bulkHasil, setBulkHasil] = useState<HasilMassal | null>(null);
 
   const [konfirmasi, setKonfirmasi] = useState<{
     id: number;
@@ -178,6 +194,122 @@ export default function KandidatPage() {
     }
 
     setPage(1);
+  };
+
+  const selectedSet = new Set(selectedIds);
+
+  const selectedKandidat = filteredKandidat.filter((k) => selectedSet.has(k.id));
+
+  const jumlahTerpilih = selectedKandidat.length;
+
+  const bisaDinonaktifkan = selectedKandidat.filter((k) => k.isActive);
+
+  const bisaDiaktifkan = selectedKandidat.filter((k) => !k.isActive);
+
+  const targetMassal =
+    bulkAction === "aktif" ? bisaDiaktifkan : bisaDinonaktifkan;
+
+  const semuaHalamanTerpilih =
+    dataHalaman.length > 0 && dataHalaman.every((k) => selectedSet.has(k.id));
+
+  const sebagianHalamanTerpilih =
+    !semuaHalamanTerpilih && dataHalaman.some((k) => selectedSet.has(k.id));
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const togglePilihHalaman = () => {
+    const idHalaman = dataHalaman.map((k) => k.id);
+
+    if (semuaHalamanTerpilih) {
+      setSelectedIds((prev) => prev.filter((x) => !idHalaman.includes(x)));
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...idHalaman])));
+    }
+  };
+
+  const pilihSemuaHasil = () => {
+    setSelectedIds(filteredKandidat.map((k) => k.id));
+  };
+
+  const ringkasNama = (daftar: Kandidat[]) => {
+    const nama = daftar.slice(0, 4).map((k) => k.nama);
+    const sisa = daftar.length - nama.length;
+
+    return nama.join(", ") + (sisa > 0 ? ", dan " + sisa + " lainnya" : "");
+  };
+
+  const konfirmasiMassal = async () => {
+    const aksi = bulkAction;
+
+    if (!aksi) return;
+
+    const statusBaru = aksi === "aktif";
+    const daftar = statusBaru ? bisaDiaktifkan : bisaDinonaktifkan;
+    const dilewati = jumlahTerpilih - daftar.length;
+
+    const hasil: HasilMassal = {
+      judul: statusBaru ? "Aktifkan akun" : "Nonaktifkan akun",
+      berhasil: 0,
+      dilewati,
+      gagal: [],
+    };
+
+    setBulkAction(null);
+    setBulkRunning(true);
+    setBulkProgress({ selesai: 0, total: daftar.length });
+
+    for (let i = 0; i < daftar.length; i++) {
+      const item = daftar[i];
+
+      try {
+        const response = await fetch(`/api/users/${item.id}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: statusBaru }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Gagal mengubah status akun");
+        }
+
+        setKandidat((prev) =>
+          prev.map((k) =>
+            k.id === item.id ? { ...k, isActive: statusBaru } : k
+          )
+        );
+
+        hasil.berhasil += 1;
+      } catch (error) {
+        hasil.gagal.push({
+          nama: item.nama,
+          alasan: error instanceof Error ? error.message : "Terjadi kesalahan",
+        });
+      }
+
+      setBulkProgress({ selesai: i + 1, total: daftar.length });
+    }
+
+    setBulkRunning(false);
+    setBulkProgress(null);
+    setSelectedIds([]);
+
+    if (hasil.gagal.length === 0) {
+      toast.success(
+        hasil.judul +
+        ": " +
+        hasil.berhasil +
+        " berhasil" +
+        (dilewati > 0 ? ", " + dilewati + " dilewati" : "")
+      );
+    } else {
+      setBulkHasil(hasil);
+    }
   };
 
   const handleEkspor = async () => {
@@ -355,6 +487,60 @@ export default function KandidatPage() {
 
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
 
+          {!loading && filteredKandidat.length > 0 && jumlahTerpilih > 0 && (
+            <div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/70 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs font-medium text-slate-600">
+                  {jumlahTerpilih} dipilih
+                </span>
+
+                {jumlahTerpilih < filteredKandidat.length && (
+                  <button
+                    type="button"
+                    onClick={pilihSemuaHasil}
+                    className="text-xs font-semibold text-emerald-700 hover:underline"
+                  >
+                    Pilih semua {filteredKandidat.length} hasil
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds([])}
+                  className="text-xs font-medium text-slate-500 hover:underline"
+                >
+                  Batal pilihan
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBulkAction("aktif")}
+                  disabled={bulkRunning || bisaDiaktifkan.length === 0}
+                  title={bisaDiaktifkan.length === 0 ? "Tidak ada akun nonaktif di antara yang dipilih" : undefined}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <UserCheck className="h-3.5 w-3.5" />
+                  Aktifkan ({bisaDiaktifkan.length})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBulkAction("nonaktif")}
+                  disabled={bulkRunning || bisaDinonaktifkan.length === 0}
+                  title={bisaDinonaktifkan.length === 0 ? "Tidak ada akun aktif di antara yang dipilih" : undefined}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <UserX className="h-3.5 w-3.5" />
+                  Nonaktifkan ({bisaDinonaktifkan.length})
+                </button>
+              </div>
+
+            </div>
+          )}
+
           {loading ? (
 
             <div className="flex flex-col items-center gap-3 px-6 py-16">
@@ -384,6 +570,19 @@ export default function KandidatPage() {
 
                 <thead className="border-b border-slate-200 bg-slate-50">
                   <tr>
+                    <th className="w-12 px-5 py-4">
+                      <input
+                        type="checkbox"
+                        aria-label="Pilih semua di halaman ini"
+                        checked={semuaHalamanTerpilih}
+                        ref={(el) => {
+                          if (el) el.indeterminate = sebagianHalamanTerpilih;
+                        }}
+                        onChange={togglePilihHalaman}
+                        className="h-4 w-4 cursor-pointer rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      />
+                    </th>
+
                     <KepalaUrut label="Kandidat" kunci="nama" aktif={sortKey} arah={sortDir} onSort={handleSort} />
 
                     <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -413,6 +612,16 @@ export default function KandidatPage() {
                       className={`transition hover:bg-slate-50 ${!item.isActive ? "bg-red-50/30" : ""
                         }`}
                     >
+
+                      <td className="w-12 px-5 py-4">
+                        <input
+                          type="checkbox"
+                          aria-label={"Pilih " + item.nama}
+                          checked={selectedSet.has(item.id)}
+                          onChange={() => toggleSelect(item.id)}
+                          className="h-4 w-4 cursor-pointer rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                      </td>
 
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
@@ -556,6 +765,103 @@ export default function KandidatPage() {
         onConfirm={eksekusiUbahStatus}
         onCancel={() => setKonfirmasi(null)}
       />
+
+      <ConfirmDialog
+        open={bulkAction !== null}
+        title={
+          bulkAction === "aktif"
+            ? "Aktifkan " + targetMassal.length + " akun?"
+            : "Nonaktifkan " + targetMassal.length + " akun?"
+        }
+        description={
+          (bulkAction === "aktif"
+            ? "Akun " + ringkasNama(targetMassal) + " akan bisa login kembali seperti biasa."
+            : "Akun " + ringkasNama(targetMassal) + " tidak akan bisa login sampai diaktifkan kembali. Data dan riwayat lamaran tetap tersimpan aman.") +
+          (jumlahTerpilih - targetMassal.length > 0
+            ? " " + (jumlahTerpilih - targetMassal.length) + " akun dilewati karena statusnya sudah sesuai."
+            : "")
+        }
+        confirmText={bulkAction === "aktif" ? "Ya, Aktifkan" : "Ya, Nonaktifkan"}
+        variant={bulkAction === "aktif" ? "default" : "danger"}
+        loading={bulkRunning}
+        onConfirm={konfirmasiMassal}
+        onCancel={() => setBulkAction(null)}
+      />
+
+      {bulkProgress && (
+        <div className="fixed bottom-6 right-6 z-[250] w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+          <p className="text-sm font-semibold text-slate-800">
+            Memproses {bulkProgress.selesai} dari {bulkProgress.total}
+          </p>
+
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-all"
+              style={{
+                width:
+                  Math.round((bulkProgress.selesai / bulkProgress.total) * 100) +
+                  "%",
+              }}
+            />
+          </div>
+
+          <p className="mt-2 text-[11px] text-slate-400">
+            Jangan tutup halaman ini sampai selesai.
+          </p>
+        </div>
+      )}
+
+      {bulkHasil && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setBulkHasil(null);
+          }}
+        >
+          <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+
+            <h3 className="text-base font-bold text-slate-800">
+              Hasil: {bulkHasil.judul}
+            </h3>
+
+            <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+                {bulkHasil.berhasil} berhasil
+              </span>
+
+              <span className="rounded-full bg-red-50 px-3 py-1 text-red-700">
+                {bulkHasil.gagal.length} gagal
+              </span>
+
+              {bulkHasil.dilewati > 0 && (
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">
+                  {bulkHasil.dilewati} dilewati
+                </span>
+              )}
+            </div>
+
+            <ul className="mt-4 space-y-2">
+              {bulkHasil.gagal.map((g, index) => (
+                <li
+                  key={"gagal-" + index}
+                  className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                >
+                  <strong className="font-semibold">{g.nama}</strong>: {g.alasan}
+                </li>
+              ))}
+            </ul>
+
+            <button
+              type="button"
+              onClick={() => setBulkHasil(null)}
+              className="mt-5 w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+            >
+              Tutup
+            </button>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

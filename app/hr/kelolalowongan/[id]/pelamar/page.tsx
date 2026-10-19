@@ -30,6 +30,8 @@ import {
     Send,
     History,
     Download,
+    Check,
+    Minus,
 } from "lucide-react";
 import { toast } from "@/app/components/Toast";
 import Pagination from "@/app/components/Pagination";
@@ -156,6 +158,22 @@ const TAHAPAN_BADGE: Record<string, string> = {
     OFFERING: "bg-pink-100 text-pink-700",
 };
 
+interface BarisMasalah {
+    nama: string;
+    alasan: string;
+}
+
+interface RingkasanMassal {
+    berhasil: number;
+    gagal: BarisMasalah[];
+    peringatan: BarisMasalah[];
+}
+
+interface HasilMassal extends RingkasanMassal {
+    judul: string;
+    dilewati: number;
+}
+
 
 export default function PelamarLowonganPage() {
     const router = useRouter();
@@ -175,6 +193,13 @@ export default function PelamarLowonganPage() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [exporting, setExporting] = useState(false);
+
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [bulkAction, setBulkAction] = useState<"tolak" | "email" | null>(null);
+    const [bulkEmail, setBulkEmail] = useState(true);
+    const [bulkRunning, setBulkRunning] = useState(false);
+    const [bulkProgress, setBulkProgress] = useState<{ selesai: number; total: number } | null>(null);
+    const [bulkHasil, setBulkHasil] = useState<HasilMassal | null>(null);
 
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [processingId, setProcessingId] = useState<number | null>(null);
@@ -651,6 +676,193 @@ export default function PelamarLowonganPage() {
         halamanAktif * pageSize
     );
 
+    const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+
+    const selectedPelamar = filteredPelamar.filter((p) => selectedSet.has(p.id));
+
+    const jumlahTerpilih = selectedPelamar.length;
+
+    const bisaDitolak = selectedPelamar.filter(
+        (p) => p.status === "DIPROSES" || p.status === "INTERVIEW"
+    );
+
+    const semuaHalamanTerpilih =
+        dataHalaman.length > 0 && dataHalaman.every((p) => selectedSet.has(p.id));
+
+    const sebagianHalamanTerpilih =
+        !semuaHalamanTerpilih && dataHalaman.some((p) => selectedSet.has(p.id));
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+        );
+    };
+
+    const togglePilihHalaman = () => {
+        const idHalaman = dataHalaman.map((p) => p.id);
+
+        if (semuaHalamanTerpilih) {
+            setSelectedIds((prev) => prev.filter((x) => !idHalaman.includes(x)));
+        } else {
+            setSelectedIds((prev) => Array.from(new Set([...prev, ...idHalaman])));
+        }
+    };
+
+    const pilihSemuaHasil = () => {
+        setSelectedIds(filteredPelamar.map((p) => p.id));
+    };
+
+    const ringkasNama = (daftar: Pelamar[]) => {
+        const nama = daftar.slice(0, 4).map((p) => p.user.nama);
+        const sisa = daftar.length - nama.length;
+
+        return nama.join(", ") + (sisa > 0 ? ", dan " + sisa + " lainnya" : "");
+    };
+
+    const jalankanMassal = async (
+        daftar: Pelamar[],
+        kerja: (item: Pelamar) => Promise<string | null>,
+        jeda: number
+    ) => {
+        const hasil: RingkasanMassal = { berhasil: 0, gagal: [], peringatan: [] };
+
+        setBulkRunning(true);
+        setBulkProgress({ selesai: 0, total: daftar.length });
+
+        for (let i = 0; i < daftar.length; i++) {
+            const item = daftar[i];
+
+            try {
+                const catatan = await kerja(item);
+
+                hasil.berhasil += 1;
+
+                if (catatan) {
+                    hasil.peringatan.push({ nama: item.user.nama, alasan: catatan });
+                }
+            } catch (error) {
+                hasil.gagal.push({
+                    nama: item.user.nama,
+                    alasan: error instanceof Error ? error.message : "Terjadi kesalahan",
+                });
+            }
+
+            setBulkProgress({ selesai: i + 1, total: daftar.length });
+
+            if (jeda > 0 && i < daftar.length - 1) {
+                await new Promise((resolve) => setTimeout(resolve, jeda));
+            }
+        }
+
+        setBulkRunning(false);
+        setBulkProgress(null);
+
+        return hasil;
+    };
+
+    const selesaikanMassal = (
+        judul: string,
+        hasil: RingkasanMassal,
+        dilewati: number
+    ) => {
+        setSelectedIds([]);
+
+        if (hasil.gagal.length === 0 && hasil.peringatan.length === 0) {
+            toast.success(
+                judul +
+                ": " +
+                hasil.berhasil +
+                " berhasil" +
+                (dilewati > 0 ? ", " + dilewati + " dilewati" : "")
+            );
+            return;
+        }
+
+        setBulkHasil({ judul, dilewati, ...hasil });
+    };
+
+    const bukaTolakMassal = () => {
+        setBulkEmail(true);
+        setBulkAction("tolak");
+    };
+
+    const konfirmasiTolakMassal = async () => {
+        const daftar = bisaDitolak;
+        const dilewati = jumlahTerpilih - daftar.length;
+        const kirimEmail = bulkEmail;
+
+        setBulkAction(null);
+
+        const hasil = await jalankanMassal(
+            daftar,
+            async (item) => {
+                const response = await fetch(`/api/lamaran/${item.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ status: "DITOLAK", kirimEmail }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Gagal menolak lamaran");
+                }
+
+                setPelamar((prev) =>
+                    prev.map((p) =>
+                        p.id === item.id
+                            ? { ...p, status: "DITOLAK" as StatusLamaran }
+                            : p
+                    )
+                );
+
+                if (
+                    kirimEmail &&
+                    data.emailResult &&
+                    data.emailResult.success === false
+                ) {
+                    return "Lamaran ditolak, tetapi email gagal terkirim";
+                }
+
+                return null;
+            },
+            kirimEmail ? 700 : 0
+        );
+
+        selesaikanMassal("Tolak lamaran", hasil, dilewati);
+    };
+
+    const handleSubmitEmailMassal = async (formData: {
+        subjek: string;
+        isi: string;
+    }) => {
+        const daftar = selectedPelamar;
+
+        setBulkAction(null);
+
+        const hasil = await jalankanMassal(
+            daftar,
+            async (item) => {
+                const response = await fetch(`/api/lamaran/${item.id}/email`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Gagal mengirim email");
+                }
+
+                return null;
+            },
+            700
+        );
+
+        selesaikanMassal("Kirim email", hasil, 0);
+    };
+
     const formatTanggal = (date: string) => {
         return new Date(date).toLocaleDateString("id-ID", {
             day: "2-digit",
@@ -802,6 +1014,88 @@ export default function PelamarLowonganPage() {
 
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
 
+                    {!loadingData && filteredPelamar.length > 0 && (
+                        <div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/70 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div
+                                    role="checkbox"
+                                    aria-checked={semuaHalamanTerpilih ? true : sebagianHalamanTerpilih ? "mixed" : false}
+                                    aria-label="Pilih semua di halaman ini"
+                                    tabIndex={0}
+                                    onClick={togglePilihHalaman}
+                                    onKeyDown={(e) => {
+                                        if (e.key === " " || e.key === "Enter") {
+                                            e.preventDefault();
+                                            togglePilihHalaman();
+                                        }
+                                    }}
+                                    className={
+                                        "flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded border transition " +
+                                        (semuaHalamanTerpilih || sebagianHalamanTerpilih
+                                            ? "border-emerald-600 bg-emerald-600 text-white"
+                                            : "border-slate-300 bg-white hover:border-emerald-500")
+                                    }
+                                >
+                                    {semuaHalamanTerpilih && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                                    {sebagianHalamanTerpilih && <Minus className="h-3.5 w-3.5" strokeWidth={3} />}
+                                </div>
+
+                                <span className="text-xs font-medium text-slate-600">
+                                    {jumlahTerpilih > 0
+                                        ? jumlahTerpilih + " dipilih"
+                                        : "Pilih semua di halaman ini"}
+                                </span>
+
+                                {jumlahTerpilih > 0 && jumlahTerpilih < filteredPelamar.length && (
+                                    <button
+                                        type="button"
+                                        onClick={pilihSemuaHasil}
+                                        className="text-xs font-semibold text-emerald-700 hover:underline"
+                                    >
+                                        Pilih semua {filteredPelamar.length} hasil
+                                    </button>
+                                )}
+
+                                {jumlahTerpilih > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedIds([])}
+                                        className="text-xs font-medium text-slate-500 hover:underline"
+                                    >
+                                        Batal pilihan
+                                    </button>
+                                )}
+                            </div>
+
+                            {jumlahTerpilih > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setBulkAction("email")}
+                                        disabled={bulkRunning}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <Send className="h-3.5 w-3.5" />
+                                        Kirim Email
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={bukaTolakMassal}
+                                        disabled={bulkRunning || bisaDitolak.length === 0}
+                                        title={bisaDitolak.length === 0 ? "Tidak ada lamaran terpilih yang bisa ditolak" : undefined}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <X className="h-3.5 w-3.5" />
+                                        Tolak Terpilih
+                                    </button>
+                                </div>
+                            )}
+
+                        </div>
+                    )}
+
                     {loadingData ? (
 
                         <div className="flex flex-col items-center gap-3 px-6 py-16">
@@ -846,6 +1140,33 @@ export default function PelamarLowonganPage() {
                                         >
 
                                             <div className="flex items-center gap-3">
+                                                <div
+                                                    role="checkbox"
+                                                    aria-checked={selectedSet.has(item.id)}
+                                                    aria-label={"Pilih " + item.user.nama}
+                                                    tabIndex={0}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleSelect(item.id);
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === " " || e.key === "Enter") {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            toggleSelect(item.id);
+                                                        }
+                                                    }}
+                                                    className={
+                                                        "flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded border transition " +
+                                                        (selectedSet.has(item.id)
+                                                            ? "border-emerald-600 bg-emerald-600 text-white"
+                                                            : "border-slate-300 bg-white hover:border-emerald-500")
+                                                    }
+                                                >
+                                                    {selectedSet.has(item.id) && (
+                                                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                                                    )}
+                                                </div>
                                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
                                                     {item.user.nama.charAt(0).toUpperCase()}
                                                 </div>
@@ -872,7 +1193,7 @@ export default function PelamarLowonganPage() {
 
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className="text-xs text-slate-400">
-                                                    {formatTanggal(item.updatedAt)}
+                                                    {formatTanggal(item.createdAt)}
                                                 </span>
 
                                                 <div className="flex flex-col items-end gap-0.5">
@@ -897,7 +1218,7 @@ export default function PelamarLowonganPage() {
 
                                                     {item.status === "DITOLAK" && (
                                                         <span className="text-[10px] text-red-500">
-                                                            {formatTanggal(item.createdAt)}
+                                                            {formatTanggal(item.updatedAt)}
                                                         </span>
                                                     )}
                                                 </div>
@@ -1286,6 +1607,135 @@ export default function PelamarLowonganPage() {
                 namaKandidat={historyTarget?.nama || ""}
                 onClose={() => setHistoryTarget(null)}
             />
+
+            <ConfirmDialog
+                open={bulkAction === "tolak"}
+                title={"Tolak " + bisaDitolak.length + " lamaran?"}
+                description={
+                    "Lamaran dari " +
+                    ringkasNama(bisaDitolak) +
+                    " akan ditandai Ditolak. Tindakan ini tidak bisa dibatalkan." +
+                    (jumlahTerpilih - bisaDitolak.length > 0
+                        ? " " +
+                        (jumlahTerpilih - bisaDitolak.length) +
+                        " lamaran dilewati karena sudah Lolos atau Ditolak."
+                        : "")
+                }
+                confirmText={"Ya, Tolak " + bisaDitolak.length + " Lamaran"}
+                variant="danger"
+                loading={bulkRunning}
+                showEmailOption
+                emailChecked={bulkEmail}
+                onEmailCheckedChange={setBulkEmail}
+                emailLabel="Kirim email pemberitahuan penolakan ke tiap kandidat"
+                onConfirm={konfirmasiTolakMassal}
+                onCancel={() => setBulkAction(null)}
+            />
+
+            <EmailBebasModal
+                open={bulkAction === "email"}
+                namaKandidat={jumlahTerpilih + " kandidat terpilih"}
+                loading={bulkRunning}
+                onClose={() => setBulkAction(null)}
+                onSubmit={handleSubmitEmailMassal}
+            />
+
+            {bulkProgress && (
+                <div className="fixed bottom-6 right-6 z-[250] w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+                    <p className="text-sm font-semibold text-slate-800">
+                        Memproses {bulkProgress.selesai} dari {bulkProgress.total}
+                    </p>
+
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div
+                            className="h-full rounded-full bg-emerald-500 transition-all"
+                            style={{
+                                width:
+                                    Math.round(
+                                        (bulkProgress.selesai / bulkProgress.total) * 100
+                                    ) + "%",
+                            }}
+                        />
+                    </div>
+
+                    <p className="mt-2 text-[11px] text-slate-400">
+                        Jangan tutup halaman ini sampai selesai.
+                    </p>
+                </div>
+            )}
+
+            {bulkHasil && (
+                <div
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+                    onMouseDown={(e) => {
+                        if (e.target === e.currentTarget) setBulkHasil(null);
+                    }}
+                >
+                    <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+
+                        <h3 className="text-base font-bold text-slate-800">
+                            Hasil: {bulkHasil.judul}
+                        </h3>
+
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                            <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+                                {bulkHasil.berhasil} berhasil
+                            </span>
+
+                            {bulkHasil.gagal.length > 0 && (
+                                <span className="rounded-full bg-red-50 px-3 py-1 text-red-700">
+                                    {bulkHasil.gagal.length} gagal
+                                </span>
+                            )}
+
+                            {bulkHasil.dilewati > 0 && (
+                                <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">
+                                    {bulkHasil.dilewati} dilewati
+                                </span>
+                            )}
+                        </div>
+
+                        {bulkHasil.gagal.length > 0 && (
+                            <div className="mt-4">
+                                <p className="text-xs font-bold uppercase tracking-wide text-red-600">
+                                    Gagal
+                                </p>
+                                <ul className="mt-2 space-y-2">
+                                    {bulkHasil.gagal.map((g, index) => (
+                                        <li key={"gagal-" + index} className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+                                            <strong className="font-semibold">{g.nama}</strong>: {g.alasan}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {bulkHasil.peringatan.length > 0 && (
+                            <div className="mt-4">
+                                <p className="text-xs font-bold uppercase tracking-wide text-amber-600">
+                                    Perlu dicek
+                                </p>
+                                <ul className="mt-2 space-y-2">
+                                    {bulkHasil.peringatan.map((g, index) => (
+                                        <li key={"peringatan-" + index} className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                            <strong className="font-semibold">{g.nama}</strong>: {g.alasan}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={() => setBulkHasil(null)}
+                            className="mt-5 w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                        >
+                            Tutup
+                        </button>
+
+                    </div>
+                </div>
+            )}
 
         </div>
     );
