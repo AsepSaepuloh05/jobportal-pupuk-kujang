@@ -28,10 +28,13 @@ import {
     ArrowUpDown,
     CalendarClock,
     Send,
-    History
+    History,
+    Download,
 } from "lucide-react";
 import { toast } from "@/app/components/Toast";
 import Pagination from "@/app/components/Pagination";
+import { eksporExcel, tanggalExcel, teksTanggalJam, stempelFile } from "@/lib/export-excel";
+import type { KolomExcel, BarisExcel } from "@/lib/export-excel";
 
 interface HRUser {
     id: number;
@@ -56,6 +59,7 @@ interface Pelamar {
     id: number;
     status: StatusLamaran;
     createdAt: string;
+    updatedAt: string;
     user: {
         id: number;
         nama: string;
@@ -170,6 +174,7 @@ export default function PelamarLowonganPage() {
     const [urutan, setUrutan] = useState<"terbaru" | "terlama" | "nama-asc" | "nama-desc">("terbaru");
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [exporting, setExporting] = useState(false);
 
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [processingId, setProcessingId] = useState<number | null>(null);
@@ -505,6 +510,95 @@ export default function PelamarLowonganPage() {
         window.open(`/api/hr/kandidat/${userId}/pdf-gabungan`, "_blank");
     };
 
+    const handleEksporPelamar = async () => {
+        if (exporting || filteredPelamar.length === 0 || !lowongan) return;
+
+        try {
+            setExporting(true);
+
+            const kolom: KolomExcel[] = [
+                { header: "No", key: "no", lebar: 6 },
+                { header: "Nama", key: "nama", lebar: 28 },
+                { header: "Email", key: "email", lebar: 30 },
+                { header: "No. Telepon", key: "telepon", lebar: 16 },
+                { header: "NIK", key: "nik", lebar: 20 },
+                { header: "Domisili", key: "domisili", lebar: 34 },
+                { header: "Tanggal Melamar", key: "tanggalMelamar", lebar: 18, format: "dd/mm/yyyy" },
+                { header: "Status", key: "status", lebar: 16 },
+                { header: "Tahap Saat Ini", key: "tahapSaatIni", lebar: 18 },
+                { header: "Jadwal Tahap Saat Ini", key: "jadwal", lebar: 40 },
+                ...kolomTahapan.map((tahapan) => ({
+                    header: "Selesai " + TAHAPAN_LABEL[tahapan],
+                    key: "selesai-" + tahapan,
+                    lebar: 18,
+                    format: "dd/mm/yyyy",
+                })),
+                { header: "Tanggal Ditolak", key: "tanggalDitolak", lebar: 18, format: "dd/mm/yyyy" },
+            ];
+
+            const baris: BarisExcel[] = filteredPelamar.map((item, index) => {
+                const berjalan = [...item.tahapanProgress]
+                    .sort((a, b) => a.urutan - b.urutan)
+                    .find((t) => t.selesaiPada === null);
+
+                const ditolak = item.status === "DITOLAK";
+                const lolos = item.status === "LOLOS";
+
+                let jadwal = "";
+
+                if (!ditolak && !lolos && berjalan?.jadwalTanggal) {
+                    jadwal = teksTanggalJam(berjalan.jadwalTanggal);
+
+                    if (berjalan.jadwalLokasi) {
+                        jadwal = jadwal + " - " + berjalan.jadwalLokasi;
+                    }
+                }
+
+                const row: BarisExcel = {
+                    no: index + 1,
+                    nama: item.user.nama,
+                    email: item.user.email,
+                    telepon: item.user.noTelepon,
+                    nik: item.user.nik,
+                    domisili: item.user.alamat,
+                    tanggalMelamar: tanggalExcel(item.createdAt),
+                    status: ditolak ? "Ditolak" : lolos ? "Lolos" : "Sedang Berjalan",
+                    tahapSaatIni: lolos
+                        ? "Selesai"
+                        : berjalan
+                            ? TAHAPAN_LABEL[berjalan.tahapan]
+                            : "-",
+                    jadwal,
+                    tanggalDitolak: ditolak ? tanggalExcel(item.updatedAt) : null,
+                };
+
+                for (const tahapan of kolomTahapan) {
+                    const progress = item.tahapanProgress.find(
+                        (t) => t.tahapan === tahapan
+                    );
+
+                    row["selesai-" + tahapan] = tanggalExcel(progress?.selesaiPada);
+                }
+
+                return row;
+            });
+
+            await eksporExcel({
+                namaFile: "Pelamar-" + lowongan.posisi + "-" + stempelFile(),
+                namaSheet: "Pelamar",
+                kolom,
+                baris,
+            });
+
+            toast.success(baris.length + " pelamar berhasil diekspor");
+        } catch (error) {
+            console.error("EKSPOR PELAMAR ERROR:", error);
+            toast.error("Gagal mengekspor data pelamar");
+        } finally {
+            setExporting(false);
+        }
+    };
+
     const kolomTahapan = useMemo(() => {
         if (!lowongan) return [];
         return [...lowongan.tahapanSeleksi].sort(
@@ -691,6 +785,16 @@ export default function PelamarLowonganPage() {
                                 <option value="nama-desc">Nama (Z-A)</option>
                             </select>
                         </div>
+                        <button
+                            type="button"
+                            onClick={handleEksporPelamar}
+                            disabled={exporting || filteredPelamar.length === 0}
+                            title="Unduh daftar pelamar yang sedang tampil (sesuai pencarian dan filter)"
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <Download className="h-4 w-4" />
+                            {exporting ? "Mengekspor..." : "Ekspor Excel"}
+                        </button>
                     </div>
 
                 </div>
@@ -768,7 +872,7 @@ export default function PelamarLowonganPage() {
 
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className="text-xs text-slate-400">
-                                                    {formatTanggal(item.createdAt)}
+                                                    {formatTanggal(item.updatedAt)}
                                                 </span>
 
                                                 <div className="flex flex-col items-end gap-0.5">

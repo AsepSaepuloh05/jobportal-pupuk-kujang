@@ -11,10 +11,13 @@ import {
   Phone,
   MapPin,
   Inbox,
+  Download
 } from "lucide-react";
 import { toast } from "@/app/components/Toast";
 import Pagination from "@/app/components/Pagination";
 import KepalaUrut from "@/app/components/KepalaUrut";
+import { eksporExcel, tanggalExcel, stempelFile } from "@/lib/export-excel";
+import type { KolomExcel, BarisExcel } from "@/lib/export-excel";
 
 interface Kandidat {
   id: number;
@@ -23,6 +26,10 @@ interface Kandidat {
   nik: string;
   noTelepon: string | null;
   alamat: string | null;
+  desa?: string | null;
+  kecamatan?: string | null;
+  kabupaten?: string | null;
+  provinsi?: string | null;
   role: string;
   isActive: boolean;
   createdAt: string;
@@ -40,6 +47,7 @@ export default function KandidatPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [exporting, setExporting] = useState(false);
 
   const [konfirmasi, setKonfirmasi] = useState<{
     id: number;
@@ -172,6 +180,58 @@ export default function KandidatPage() {
     setPage(1);
   };
 
+  const handleEkspor = async () => {
+    if (exporting || filteredKandidat.length === 0) return;
+
+    try {
+      setExporting(true);
+
+      const kolom: KolomExcel[] = [
+        { header: "No", key: "no", lebar: 6 },
+        { header: "Nama", key: "nama", lebar: 28 },
+        { header: "Email", key: "email", lebar: 30 },
+        { header: "NIK", key: "nik", lebar: 20 },
+        { header: "No. Telepon", key: "telepon", lebar: 16 },
+        { header: "Alamat", key: "alamat", lebar: 34 },
+        { header: "Desa", key: "desa", lebar: 20 },
+        { header: "Kecamatan", key: "kecamatan", lebar: 20 },
+        { header: "Kabupaten", key: "kabupaten", lebar: 22 },
+        { header: "Provinsi", key: "provinsi", lebar: 18 },
+        { header: "Status Akun", key: "statusAkun", lebar: 14 },
+        { header: "Terdaftar", key: "terdaftar", lebar: 16, format: "dd/mm/yyyy" },
+      ];
+
+      const baris: BarisExcel[] = filteredKandidat.map((item, index) => ({
+        no: index + 1,
+        nama: item.nama,
+        email: item.email,
+        nik: item.nik,
+        telepon: item.noTelepon,
+        alamat: item.alamat,
+        desa: item.desa ?? null,
+        kecamatan: item.kecamatan ?? null,
+        kabupaten: item.kabupaten ?? null,
+        provinsi: item.provinsi ?? null,
+        statusAkun: item.isActive ? "Aktif" : "Nonaktif",
+        terdaftar: tanggalExcel(item.createdAt),
+      }));
+
+      await eksporExcel({
+        namaFile: "Data-Kandidat-" + stempelFile(),
+        namaSheet: "Kandidat",
+        kolom,
+        baris,
+      });
+
+      toast.success(baris.length + " kandidat berhasil diekspor");
+    } catch (error) {
+      console.error("EKSPOR KANDIDAT ERROR:", error);
+      toast.error("Gagal mengekspor data kandidat");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const totalAktif = kandidat.filter((k) => k.isActive).length;
   const totalNonaktif = kandidat.filter((k) => !k.isActive).length;
 
@@ -263,18 +323,31 @@ export default function KandidatPage() {
             />
           </div>
 
-          <select
-            value={filterStatus}
-            onChange={(e) => {
-              setFilterStatus(e.target.value);
-              setPage(1);
-            }}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 sm:w-48"
-          >
-            <option value="Semua">Semua Status</option>
-            <option value="Aktif">Aktif</option>
-            <option value="Nonaktif">Nonaktif</option>
-          </select>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <select
+              value={filterStatus}
+              onChange={(e) => {
+                setFilterStatus(e.target.value);
+                setPage(1);
+              }}
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 sm:w-48"
+            >
+              <option value="Semua">Semua Status</option>
+              <option value="Aktif">Aktif</option>
+              <option value="Nonaktif">Nonaktif</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={handleEkspor}
+              disabled={exporting || filteredKandidat.length === 0}
+              title="Unduh daftar kandidat yang sedang tampil (sesuai pencarian dan filter)"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" />
+              {exporting ? "Mengekspor..." : "Ekspor Excel"}
+            </button>
+          </div>
 
         </div>
 
