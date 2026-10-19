@@ -4,6 +4,7 @@ import {
   BadgeCheck,
   Camera,
   CreditCard,
+  KeyRound,
   Mail,
   MapPin,
   Pencil,
@@ -20,6 +21,7 @@ export function ProfileHero({
   fotoInputRef,
   onFotoChange,
   onEditProfile,
+  onChangePassword,
 }: {
   user: UserData;
   displayFoto: string | null;
@@ -27,6 +29,7 @@ export function ProfileHero({
   fotoInputRef: React.RefObject<HTMLInputElement | null>;
   onFotoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onEditProfile: () => void;
+  onChangePassword: () => void;
 }) {
   const initial = user.nama?.charAt(0).toUpperCase() || "K";
 
@@ -193,15 +196,28 @@ export function ProfileHero({
             </div>
           </div>
 
-          {/* EDIT PROFILE */}
-          <button
-            type="button"
-            onClick={onEditProfile}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 sm:w-auto"
-          >
-            <Pencil className="h-4 w-4" />
-            Edit Profil
-          </button>
+          {/* ACTIONS */}
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            {/* GANTI PASSWORD */}
+            <button
+              type="button"
+              onClick={onChangePassword}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 sm:w-auto"
+            >
+              <KeyRound className="h-4 w-4" />
+              Ganti Password
+            </button>
+
+            {/* EDIT PROFILE */}
+            <button
+              type="button"
+              onClick={onEditProfile}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 sm:w-auto"
+            >
+              <Pencil className="h-4 w-4" />
+              Edit Profil
+            </button>
+          </div>
         </div>
       </div>
     </section>

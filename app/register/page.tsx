@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
+import { Check, Eye, EyeOff, X } from "lucide-react";
+
+import { PASSWORD_RULES, validatePassword } from "@/lib/password";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,6 +21,9 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const confirmMismatch =
+    confirmPassword.length > 0 && password !== confirmPassword;
+
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -26,13 +31,15 @@ export default function RegisterPage() {
 
     setError("");
 
-    if (password !== confirmPassword) {
-      setError("Password dan konfirmasi password tidak cocok");
+    const passwordError = validatePassword(password);
+
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password minimal 6 karakter");
+    if (password !== confirmPassword) {
+      setError("Password dan konfirmasi password tidak cocok");
       return;
     }
 
@@ -217,6 +224,7 @@ export default function RegisterPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       disabled={loading}
+                      autoComplete="new-password"
                       className="w-full rounded-xl border border-[#dce9e1] bg-[#f9fcfa] px-4 py-3 pr-12 text-sm text-[#234236] outline-none transition placeholder:text-[#a2b2aa] focus:border-[#4c9b70] focus:bg-white focus:ring-4 focus:ring-[#4c9b70]/10 disabled:cursor-not-allowed disabled:opacity-60"
                     />
 
@@ -238,6 +246,34 @@ export default function RegisterPage() {
                       )}
                     </button>
                   </div>
+
+                  {/* Checklist syarat password */}
+                  <ul className="mt-3 space-y-1.5 rounded-xl bg-[#f4faf6] px-4 py-3">
+                    {PASSWORD_RULES.map((rule) => {
+                      const passed = rule.test(password);
+                      const touched = password.length > 0;
+
+                      return (
+                        <li
+                          key={rule.id}
+                          className={`flex items-center gap-2 text-xs transition-colors ${
+                            passed
+                              ? "text-[#236b4c]"
+                              : touched
+                                ? "text-red-500"
+                                : "text-[#7b8e83]"
+                          }`}
+                        >
+                          {passed ? (
+                            <Check size={14} strokeWidth={3} />
+                          ) : (
+                            <X size={14} strokeWidth={3} />
+                          )}
+                          {rule.label}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
 
                 {/* Konfirmasi Password */}
@@ -260,6 +296,7 @@ export default function RegisterPage() {
                       }
                       required
                       disabled={loading}
+                      autoComplete="new-password"
                       className="w-full rounded-xl border border-[#dce9e1] bg-[#f9fcfa] px-4 py-3 pr-12 text-sm text-[#234236] outline-none transition placeholder:text-[#a2b2aa] focus:border-[#4c9b70] focus:bg-white focus:ring-4 focus:ring-[#4c9b70]/10 disabled:cursor-not-allowed disabled:opacity-60"
                     />
 
@@ -283,6 +320,12 @@ export default function RegisterPage() {
                       )}
                     </button>
                   </div>
+
+                  {confirmMismatch && (
+                    <p className="mt-2 text-xs text-red-500">
+                      Konfirmasi password tidak cocok
+                    </p>
+                  )}
                 </div>
 
                 {/* Error */}

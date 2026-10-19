@@ -182,6 +182,16 @@ export default function LoginPage() {
                       )}
                     </button>
                   </div>
+
+                  {/* ================= LUPA PASSWORD ================= */}
+                  <div className="mt-2 flex justify-end">
+                    <a
+                      href="/forgot-password"
+                      className="text-sm font-semibold text-[#236b4c] transition hover:text-[#1b5b40]"
+                    >
+                      Lupa password?
+                    </a>
+                  </div>
                 </div>
 
                 {/* ================= ERROR ================= */}

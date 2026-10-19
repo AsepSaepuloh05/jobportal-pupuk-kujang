@@ -2,6 +2,7 @@
 
 import { documents } from "./types";
 import { useProfilKandidat } from "./hooks/useProfilKandidat";
+import { useGantiPassword } from "./hooks/useGantiPassword";
 
 import { ProfileHero } from "./components/ProfileHero";
 import { PengalamanSection } from "./components/PengalamanSection";
@@ -10,9 +11,11 @@ import { SertifikasiSection } from "./components/SertifikasiSection";
 import { DocumentsSection } from "./components/DocumentsSection";
 import { EditProfileModal } from "./components/EditProfileModal";
 import { DocumentPreviewModal } from "./components/Documentpreviewmodal";
+import { GantiPasswordModal } from "./components/GantiPasswordModal";
 
 export default function ProfilKandidatPage() {
   const p = useProfilKandidat();
+  const pw = useGantiPassword();
 
   if (p.loading) {
     return (
@@ -47,6 +50,7 @@ export default function ProfilKandidatPage() {
           fotoInputRef={p.fotoInputRef}
           onFotoChange={p.handleFotoChange}
           onEditProfile={() => p.setEditingProfile(true)}
+          onChangePassword={pw.openPasswordModal}
         />
 
         <div className="mt-6 grid grid-cols-1 gap-5">
@@ -140,6 +144,16 @@ export default function ProfilKandidatPage() {
           onSave={p.saveProfile}
         />
       )}
+
+      <GantiPasswordModal
+        open={pw.showPasswordModal}
+        form={pw.passwordForm}
+        setForm={pw.setPasswordForm}
+        saving={pw.savingPassword}
+        error={pw.passwordError}
+        onClose={pw.closePasswordModal}
+        onSubmit={pw.savePassword}
+      />
     </div>
   );
 }

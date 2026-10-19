@@ -369,3 +369,14 @@ model EmailVerification {
 
   @@map("email_verification")
 }
+
+model PasswordReset {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  otpHash    String
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  lastSentAt DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
