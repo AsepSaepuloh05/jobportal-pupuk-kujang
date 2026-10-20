@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { validatePassword } from "@/lib/password";
 
 export async function PUT(request: Request) {
     try {
@@ -27,11 +28,10 @@ export async function PUT(request: Request) {
             );
         }
 
-        if (passwordBaru.length < 8) {
-            return NextResponse.json(
-                { message: "Password baru minimal 8 karakter" },
-                { status: 400 }
-            );
+        const passwordError = validatePassword(passwordBaru);
+
+        if (passwordError) {
+            return NextResponse.json({ message: passwordError }, { status: 400 });
         }
 
         if (passwordBaru === passwordLama) {

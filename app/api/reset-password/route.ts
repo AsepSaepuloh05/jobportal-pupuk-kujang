@@ -1,4 +1,3 @@
-// Letakkan di: app/api/reset-password/route.ts
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createHash, timingSafeEqual } from "crypto";
@@ -103,8 +102,6 @@ export async function POST(request: Request) {
       }),
       prisma.passwordReset.delete({ where: { email } }),
     ]);
-
-    console.log("RESET PASSWORD:", email, "akun diperbarui =", updated.count);
 
     if (updated.count === 0) {
       return NextResponse.json(

@@ -3,11 +3,44 @@ import bcrypt from "bcryptjs";
 import { createHash, randomInt } from "crypto";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
+import { validatePassword } from "@/lib/password";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 function hashOtp(otp: string) {
   return createHash("sha256").update(otp).digest("hex");
+}
+
+function escapeHtml(teks: string) {
+  return teks
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function buatEmailOtp(nama: string, otp: string) {
+  const namaAman = escapeHtml(nama);
+
+  return (
+    '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; color: #333;">' +
+    '<h2 style="color: #3e9d70; margin-bottom: 20px;">Verifikasi Email SIO Karir</h2>' +
+    "<p>Halo <strong>" +
+    namaAman +
+    "</strong>,</p>" +
+    "<p>Terima kasih telah melakukan registrasi pada Sistem Informasi Outsourcing Karir.</p>" +
+    "<p>Gunakan kode OTP berikut untuk memverifikasi alamat email kamu:</p>" +
+    '<div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; text-align: center; padding: 20px; margin: 25px 0; background-color: #f0fdf4; border-radius: 10px; color: #3e9d70;">' +
+    otp +
+    "</div>" +
+    "<p>Kode OTP ini berlaku selama <strong>5 menit</strong>.</p>" +
+    "<p>Jangan berikan kode ini kepada orang lain.</p>" +
+    "<p>Jika kamu tidak merasa melakukan registrasi, silakan abaikan email ini.</p>" +
+    "<br />" +
+    "<p>Terima kasih,<br /><strong>SIO Karir</strong></p>" +
+    "</div>"
+  );
 }
 
 export async function POST(request: Request) {
@@ -33,11 +66,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if (password.length < 6) {
+    const passwordError = validatePassword(password);
+
+    if (passwordError) {
       return NextResponse.json(
         {
           success: false,
-          message: "Password minimal 6 karakter",
+          message: passwordError,
         },
         { status: 400 }
       );
@@ -172,12 +207,6 @@ export async function POST(request: Request) {
       process.env.EMAIL_FROM ||
       "SIO Karir <onboarding@resend.dev>";
 
-    console.log("====================================");
-    console.log("MENGIRIM OTP");
-    console.log("Email tujuan :", email);
-    console.log("Email pengirim:", emailFrom);
-    console.log("====================================");
-
     // ==========================================
     // KIRIM EMAIL OTP
     // ==========================================
@@ -187,89 +216,12 @@ export async function POST(request: Request) {
         from: emailFrom,
         to: email,
         subject: "Kode Verifikasi Email - SIO Karir",
-
-        html: `
-          <div
-            style="
-              font-family: Arial, sans-serif;
-              max-width: 600px;
-              margin: 0 auto;
-              padding: 30px;
-              color: #333;
-            "
-          >
-
-            <h2
-              style="
-                color: #3e9d70;
-                margin-bottom: 20px;
-              "
-            >
-              Verifikasi Email SIO Karir
-            </h2>
-
-            <p>
-              Halo <strong>${nama}</strong>,
-            </p>
-
-            <p>
-              Terima kasih telah melakukan registrasi
-              pada Sistem Informasi Outsourcing Karir.
-            </p>
-
-            <p>
-              Gunakan kode OTP berikut untuk
-              memverifikasi alamat email kamu:
-            </p>
-
-            <div
-              style="
-                font-size: 32px;
-                font-weight: bold;
-                letter-spacing: 8px;
-                text-align: center;
-                padding: 20px;
-                margin: 25px 0;
-                background-color: #f0fdf4;
-                border-radius: 10px;
-                color: #3e9d70;
-              "
-            >
-              ${otp}
-            </div>
-
-            <p>
-              Kode OTP ini berlaku selama
-              <strong>5 menit</strong>.
-            </p>
-
-            <p>
-              Jangan berikan kode ini kepada orang lain.
-            </p>
-
-            <p>
-              Jika kamu tidak merasa melakukan registrasi,
-              silakan abaikan email ini.
-            </p>
-
-            <br />
-
-            <p>
-              Terima kasih,
-              <br />
-              <strong>SIO Karir</strong>
-            </p>
-
-          </div>
-        `,
+        html: buatEmailOtp(nama, otp),
       });
 
     // ==========================================
     // CEK HASIL RESEND
     // ==========================================
-
-    console.log("RESEND DATA:", data);
-    console.log("RESEND ERROR:", error);
 
     if (error) {
       console.error(
@@ -290,11 +242,6 @@ export async function POST(request: Request) {
     // ==========================================
     // BERHASIL
     // ==========================================
-
-    console.log(
-      "OTP berhasil dikirim ke:",
-      email
-    );
 
     return NextResponse.json(
       {

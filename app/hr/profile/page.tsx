@@ -487,7 +487,7 @@ export default function ProfilHRPage() {
                                         Ganti Password
                                     </h3>
                                     <p className="mt-0.5 text-xs text-slate-500">
-                                        Gunakan password yang kuat, minimal 8 karakter.
+                                        Minimal 8 karakter dengan huruf besar, huruf kecil, angka, dan karakter unik.
                                     </p>
                                 </div>
 
