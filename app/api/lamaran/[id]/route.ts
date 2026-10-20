@@ -45,6 +45,16 @@ export async function PUT(
             );
         }
 
+        if (
+            status === "DITOLAK" &&
+            (existing.status === "LOLOS" || existing.status === "DITOLAK")
+        ) {
+            return NextResponse.json(
+                { message: "Lamaran ini sudah final (Lolos atau Ditolak)" },
+                { status: 400 }
+            );
+        }
+
         const lamaran = await prisma.lamaran.update({
             where: { id: Number(id) },
             data: { status },

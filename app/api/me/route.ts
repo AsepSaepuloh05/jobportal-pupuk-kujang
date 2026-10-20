@@ -8,8 +8,6 @@ export async function GET() {
 
     const userIdValue = cookieStore.get("user_id")?.value;
 
-    console.log("USER ID DARI COOKIE:", userIdValue);
-
     // =====================================================
     // CEK SESSION
     // =====================================================
@@ -59,6 +57,7 @@ export async function GET() {
         email: true,
         nik: true,
         role: true,
+        isActive: true,
 
         // =================================================
         // NOMOR TELEPON
@@ -148,47 +147,21 @@ export async function GET() {
       );
     }
 
+    if (!user.isActive) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Akun dinonaktifkan",
+        },
+        { status: 403 }
+      );
+    }
+
     // =====================================================
     // FOTO PROFIL
     // =====================================================
 
     const fotoProfil = user.dokumenProfil ?? null;
-
-    // =====================================================
-    // DEBUG
-    // =====================================================
-
-    console.log("========================================");
-    console.log("DATA USER:", user);
-
-    console.log("NO TELEPON:", user.noTelepon);
-
-    console.log("ALAMAT:", user.alamat);
-
-    console.log("RT:", user.rt);
-    console.log("RW:", user.rw);
-
-    console.log("PROVINSI ID:", user.provinsiId);
-    console.log("PROVINSI:", user.provinsi);
-
-    console.log("KABUPATEN ID:", user.kabupatenId);
-    console.log("KABUPATEN:", user.kabupaten);
-
-    console.log("KECAMATAN ID:", user.kecamatanId);
-    console.log("KECAMATAN:", user.kecamatan);
-
-    console.log("DESA ID:", user.desaId);
-    console.log("DESA:", user.desa);
-
-    console.log("KODE POS:", user.kodePos);
-
-    console.log("DATA DOKUMEN:", user.dokumenProfil);
-
-    console.log("FOTO PROFIL:", fotoProfil);
-
-    console.log("PATH FOTO:", fotoProfil?.pathFile);
-
-    console.log("========================================");
 
     // =====================================================
     // RESPONSE
@@ -253,12 +226,12 @@ export async function GET() {
 
         fotoProfil: fotoProfil
           ? {
-              id: fotoProfil.id,
-              namaFile: fotoProfil.namaFile,
-              namaAsli: fotoProfil.namaAsli,
-              pathFile: fotoProfil.pathFile,
-              tipeFile: fotoProfil.tipeFile,
-            }
+            id: fotoProfil.id,
+            namaFile: fotoProfil.namaFile,
+            namaAsli: fotoProfil.namaAsli,
+            pathFile: fotoProfil.pathFile,
+            tipeFile: fotoProfil.tipeFile,
+          }
           : null,
 
         // =================================================
