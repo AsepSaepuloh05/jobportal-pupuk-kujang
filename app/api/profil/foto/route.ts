@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
+import { deteksiBerkas } from "@/lib/file-signature";
 
 const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
 
@@ -46,17 +47,11 @@ export async function POST(request: Request) {
   let newFilePath: string | null = null;
 
   try {
-    console.log("=================================");
-    console.log("UPLOAD FOTO PROFIL");
-    console.log("=================================");
-
     // =====================================================
     // 1. CEK USER LOGIN
     // =====================================================
 
     const userId = await getUserId();
-
-    console.log("USER ID:", userId);
 
     if (!userId) {
       return NextResponse.json(
@@ -78,12 +73,8 @@ export async function POST(request: Request) {
       },
       select: {
         id: true,
-        nama: true,
-        email: true,
       },
     });
-
-    console.log("USER DATABASE:", user);
 
     if (!user) {
       return NextResponse.json(
@@ -103,8 +94,6 @@ export async function POST(request: Request) {
 
     const foto = formData.get("foto");
 
-    console.log("FORM FOTO:", foto);
-
     if (!(foto instanceof File)) {
       return NextResponse.json(
         {
@@ -114,10 +103,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
-    console.log("NAMA FILE:", foto.name);
-    console.log("TYPE:", foto.type);
-    console.log("SIZE:", foto.size);
 
     // =====================================================
     // 4. VALIDASI TYPE
@@ -191,8 +176,6 @@ export async function POST(request: Request) {
       recursive: true,
     });
 
-    console.log("UPLOAD DIRECTORY:", uploadDir);
-
     // =====================================================
     // 8. CEK FOTO LAMA
     // =====================================================
@@ -202,8 +185,6 @@ export async function POST(request: Request) {
         userId: userId,
       },
     });
-
-    console.log("FOTO LAMA:", fotoLama);
 
     // =====================================================
     // 9. BUAT NAMA FILE BARU
@@ -218,10 +199,6 @@ export async function POST(request: Request) {
 
     const publicPath = `/uploads/profil/${namaFile}`;
 
-    console.log("NAMA FILE BARU:", namaFile);
-    console.log("PATH FILE:", newFilePath);
-    console.log("PUBLIC PATH:", publicPath);
-
     // =====================================================
     // 10. SIMPAN FILE
     // =====================================================
@@ -230,12 +207,23 @@ export async function POST(request: Request) {
 
     const buffer = Buffer.from(arrayBuffer);
 
+    const tipeAsli = deteksiBerkas(buffer);
+    const tipeKlaim = foto.type === "image/png" ? "png" : "jpeg";
+
+    if (tipeAsli !== tipeKlaim) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Isi file tidak sesuai dengan format foto yang dipilih",
+        },
+        { status: 400 }
+      );
+    }
+
     await writeFile(
       newFilePath,
       buffer
     );
-
-    console.log("FILE BERHASIL DISIMPAN");
 
     // =====================================================
     // 11. SIMPAN KE DATABASE
@@ -265,11 +253,6 @@ export async function POST(request: Request) {
         },
       });
 
-    console.log(
-      "DATABASE BERHASIL DIUPDATE:",
-      dokumenProfil
-    );
-
     // =====================================================
     // 12. HAPUS FOTO LAMA
     // =====================================================
@@ -290,13 +273,8 @@ export async function POST(request: Request) {
         );
 
         await unlink(oldFilePath);
-
-        console.log(
-          "FOTO LAMA BERHASIL DIHAPUS:",
-          oldFilePath
-        );
       } catch (error) {
-        console.log(
+        console.error(
           "FOTO LAMA TIDAK DAPAT DIHAPUS:",
           error
         );
@@ -326,19 +304,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error(
-      "================================="
-    );
-
-    console.error(
-      "UPLOAD FOTO PROFIL ERROR:"
-    );
-
-    console.error(error);
-
-    console.error(
-      "================================="
-    );
+    console.error("UPLOAD FOTO PROFIL ERROR:", error);
 
     // =====================================================
     // HAPUS FILE BARU JIKA DATABASE GAGAL
@@ -347,10 +313,6 @@ export async function POST(request: Request) {
     if (newFilePath) {
       try {
         await unlink(newFilePath);
-
-        console.log(
-          "FILE BARU DIHAPUS KARENA PROSES GAGAL"
-        );
       } catch {
         // abaikan
       }
