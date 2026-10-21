@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { bacaSesi } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
+    const sesi = await bacaSesi();
 
-    const userIdValue = cookieStore.get("user_id")?.value;
+    const userIdValue = sesi ? String(sesi.userId) : undefined;
 
     // =====================================================
     // CEK SESSION

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import {
+  buatTokenSesi,
+  NAMA_COOKIE_SESI,
+  opsiCookieSesi,
+} from "@/lib/session";
 
 export async function POST(request: Request) {
   try {
@@ -98,6 +103,15 @@ export async function POST(request: Request) {
     }
 
     // ==========================================
+    // BUAT SESI BERTANDA TANGAN
+    // ==========================================
+
+    const token = await buatTokenSesi({
+      userId: user.id,
+      role: user.role,
+    });
+
+    // ==========================================
     // RESPONSE LOGIN
     // ==========================================
 
@@ -114,7 +128,14 @@ export async function POST(request: Request) {
     });
 
     // ==========================================
-    // SIMPAN USER ID KE COOKIE
+    // COOKIE SESI BARU (BERTANDA TANGAN)
+    // ==========================================
+
+    response.cookies.set(NAMA_COOKIE_SESI, token, opsiCookieSesi());
+
+    // ==========================================
+    // COOKIE LAMA (SEMENTARA, UNTUK ROUTE YANG
+    // BELUM DIALIHKAN). HAPUS DI TAHAP 3.
     // ==========================================
 
     response.cookies.set("user_id", String(user.id), {
@@ -124,10 +145,6 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: 60 * 60 * 24,
     });
-
-    // ==========================================
-    // SIMPAN ROLE KE COOKIE
-    // ==========================================
 
     response.cookies.set("user_role", user.role, {
       httpOnly: true,
