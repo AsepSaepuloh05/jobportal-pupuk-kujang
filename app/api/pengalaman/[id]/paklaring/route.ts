@@ -8,8 +8,10 @@ type Params = {
   params: Promise<{ id: string }>;
 };
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "paklaring");
-const PUBLIC_PREFIX = "/uploads/paklaring";
+// Simpan di folder private (di luar public/)
+const UPLOAD_DIR = path.join(process.cwd(), "uploads", "paklaring");
+// Path diakses melalui API berkas yang terautentikasi
+const PUBLIC_PREFIX = "/api/berkas/paklaring";
 const MAX_SIZE = 5 * 1024 * 1024;
 
 const ALLOWED: Record<string, string> = {

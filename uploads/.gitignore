@@ -1,0 +1,20 @@
+# Folder ini berisi berkas kandidat yang bersifat PRIVATE dan sensitif.
+# File di dalam folder ini TIDAK boleh diakses langsung via URL.
+# Akses hanya melalui API /api/berkas/[...path] yang memerlukan autentikasi.
+
+# Abaikan semua file upload di sini (jangan commit file kandidat)
+*
+!.gitignore
+!.gitkeep
+!dokumen/
+!pendidikan/
+!paklaring/
+!sertifikasi/
+dokumen/*
+!dokumen/.gitkeep
+pendidikan/*
+!pendidikan/.gitkeep
+paklaring/*
+!paklaring/.gitkeep
+sertifikasi/*
+!sertifikasi/.gitkeep

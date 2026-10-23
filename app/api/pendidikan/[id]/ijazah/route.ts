@@ -146,9 +146,9 @@ export async function POST(
     // BUAT FOLDER UPLOAD
     // =================================================
 
+    // Simpan di folder private (di luar public/)
     const uploadDir = path.join(
       process.cwd(),
-      "public",
       "uploads",
       "pendidikan"
     );
@@ -216,8 +216,9 @@ export async function POST(
     // PATH UNTUK DATABASE
     // =================================================
 
+    // Path diakses melalui API berkas yang terautentikasi
     const publicPath =
-      `/uploads/pendidikan/${fileName}`;
+      `/api/berkas/pendidikan/${fileName}`;
 
     // =================================================
     // UPDATE DATABASE
@@ -468,21 +469,31 @@ function getExtensionFromMime(
 
 // =====================================================
 // PATH DATABASE -> PATH FISIK
+// Mendukung format lama (/uploads/) dan baru (/api/berkas/)
 // =====================================================
 
 function getPhysicalPath(
   publicPath: string
 ): string | null {
-  if (!publicPath.startsWith("/uploads/")) {
-    return null;
+  // Format baru: /api/berkas/pendidikan/namafile
+  if (publicPath.startsWith("/api/berkas/")) {
+    const relativePath = publicPath.replace(/^\/api\/berkas\//, "");
+    return path.join(
+      process.cwd(),
+      "uploads",
+      relativePath
+    );
   }
 
-  const relativePath =
-    publicPath.replace(/^\/+/, "");
+  // Format lama: /uploads/pendidikan/namafile
+  if (publicPath.startsWith("/uploads/")) {
+    const relativePath = publicPath.replace(/^\/+/, "");
+    return path.join(
+      process.cwd(),
+      "public",
+      relativePath
+    );
+  }
 
-  return path.join(
-    process.cwd(),
-    "public",
-    relativePath
-  );
+  return null;
 }

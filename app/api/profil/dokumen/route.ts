@@ -109,9 +109,9 @@ export async function POST(request: Request) {
     const ext = path.extname(file.name) || "";
     const namaFile = `${userId}-${jenisDokumen}-${Date.now()}${ext}`;
 
+    // Simpan di folder private (di luar public/)
     const uploadDir = path.join(
       process.cwd(),
-      "public",
       "uploads",
       "dokumen"
     );
@@ -121,7 +121,8 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(filePath, buffer);
 
-    const pathFile = `/uploads/dokumen/${namaFile}`;
+    // Path diakses melalui API berkas yang terautentikasi
+    const pathFile = `/api/berkas/dokumen/${namaFile}`;
 
     const dokumen = await prisma.dokumenKandidat.upsert({
       where: {

@@ -52,7 +52,12 @@ export async function POST(request: Request) {
 
     // Hapus file fisik (abaikan error jika file sudah tidak ada)
     try {
-      const filePath = path.join(process.cwd(), "public", dokumen.pathFile);
+      // Path di DB: /api/berkas/dokumen/namafile.pdf
+      // Path fisik: uploads/dokumen/namafile.pdf
+      const relativePath = dokumen.pathFile
+        .replace(/^\/api\/berkas\//, "")  // strip /api/berkas/
+        .replace(/^\/uploads\//, "");      // strip /uploads/ (format lama)
+      const filePath = path.join(process.cwd(), "uploads", path.basename(relativePath));
       await unlink(filePath);
     } catch (e) {
       console.warn("File fisik tidak ditemukan saat dihapus:", e);

@@ -76,6 +76,17 @@ async function sisipkanFile(
     });
 }
 
+// Resolve path fisik dari nilai pathFile di database
+// Mendukung format lama (/uploads/) dan baru (/api/berkas/)
+function resolveFilePath(pathFile: string): string {
+    if (pathFile.startsWith("/api/berkas/")) {
+        const relativePath = pathFile.replace(/^\/api\/berkas\//, "");
+        return path.join(process.cwd(), "uploads", relativePath);
+    }
+    // Format lama: /uploads/...
+    return path.join(process.cwd(), "public", pathFile);
+}
+
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ userId: string }> }
@@ -176,11 +187,7 @@ export async function GET(
                     JENIS_LABEL[dok.jenisDokumen] || dok.jenisDokumen
                 );
 
-                const absPath = path.join(
-                    process.cwd(),
-                    "public",
-                    dok.pathFile
-                );
+                const absPath = resolveFilePath(dok.pathFile);
 
                 await sisipkanFile(pdf, absPath, dok.tipeFile);
             } catch (err) {
@@ -198,11 +205,7 @@ export async function GET(
                     `Ijazah ${p.jenjang} - ${p.institusi}`
                 );
 
-                const absPath = path.join(
-                    process.cwd(),
-                    "public",
-                    p.ijazahPathFile
-                );
+                const absPath = resolveFilePath(p.ijazahPathFile);
 
                 await sisipkanFile(pdf, absPath, p.ijazahTipeFile);
             } catch (err) {

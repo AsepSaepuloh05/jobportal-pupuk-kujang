@@ -572,9 +572,9 @@ function validateFile(file: File) {
 ============================================================ */
 
 async function saveFile(file: File) {
+  // Simpan di folder private (di luar public/)
   const uploadDir = path.join(
     process.cwd(),
-    "public",
     "uploads",
     "sertifikasi"
   );
@@ -607,7 +607,8 @@ async function saveFile(file: File) {
 
     namaAsli: originalName,
 
-    pathFile: `/uploads/sertifikasi/${randomName}`,
+    // Path diakses melalui API berkas yang terautentikasi
+    pathFile: `/api/berkas/sertifikasi/${randomName}`,
 
     tipeFile: file.type,
 
@@ -623,14 +624,17 @@ async function deleteFile(
   filePath: string
 ) {
   try {
-    const relativePath =
-      filePath.replace(/^[/\\]+/, "");
+    let absolutePath: string;
 
-    const absolutePath = path.join(
-      process.cwd(),
-      "public",
-      relativePath
-    );
+    if (filePath.startsWith("/api/berkas/")) {
+      // Format baru: /api/berkas/sertifikasi/namafile
+      const relativePath = filePath.replace(/^\/api\/berkas\//, "");
+      absolutePath = path.join(process.cwd(), "uploads", relativePath);
+    } else {
+      // Format lama: /uploads/sertifikasi/namafile
+      const relativePath = filePath.replace(/^[/\\]+/, "");
+      absolutePath = path.join(process.cwd(), "public", relativePath);
+    }
 
     await fs.unlink(absolutePath);
   } catch (error: unknown) {
