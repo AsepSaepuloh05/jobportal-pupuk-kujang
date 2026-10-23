@@ -28,6 +28,10 @@ interface Lowongan {
   createdAt?: string;
 }
 
+// Lowongan dengan syarat pendidikan SMA/SMK tidak ditampilkan
+const isPendidikanSmaSmk = (pendidikan?: string | null) =>
+  !!pendidikan && /\b(sma|smk|smu|slta)\b/i.test(pendidikan);
+
 export default function LowonganPage() {
   const searchParams = useSearchParams();
 
@@ -77,7 +81,11 @@ export default function LowonganPage() {
 
         const data = await response.json();
 
-        setJobs(data);
+        const list: Lowongan[] = Array.isArray(data) ? data : [];
+
+        setJobs(
+          list.filter((job) => !isPendidikanSmaSmk(job.pendidikan))
+        );
       } catch (error) {
         console.error(
           "GET LOWONGAN ERROR:",
