@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { validatePassword } from "@/lib/password";
+import { toast } from "../components/Toast";
 
 export const initialPasswordForm = {
   passwordLama: "",
@@ -85,7 +86,8 @@ export function useGantiPassword() {
 
       setShowPasswordModal(false);
       setPasswordForm({ ...initialPasswordForm });
-      alert("Password berhasil diubah.");
+
+      toast.success("Password berhasil diubah.");
     } catch (error) {
       console.error("CHANGE PASSWORD ERROR:", error);
       setPasswordError("Terjadi kesalahan saat mengubah password.");

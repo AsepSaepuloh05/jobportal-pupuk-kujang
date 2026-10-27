@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { toast } from "@/app/kandidat/profil/components/Toast";
+import { confirmDialog } from "@/app/kandidat/profil/components/ConfirmDialog";
+
 interface User {
   id: number;
   nama: string;
@@ -72,6 +75,7 @@ export default function NavbarKandidat() {
   const [user, setUser] = useState<User | null>(null);
   const [checkingLogin, setCheckingLogin] = useState(true);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -145,18 +149,44 @@ export default function NavbarKandidat() {
   // =====================================================
 
   const handleLogout = async () => {
+    if (loggingOut) return;
+
+    // Tutup dropdown dulu supaya dialog tampil bersih
+    setProfileMenuOpen(false);
+
+    const ok = await confirmDialog({
+      title: "Keluar dari Akun",
+      message: "Apakah Anda yakin ingin keluar?",
+      detail: "Anda perlu masuk kembali untuk mengakses akun.",
+      confirmText: "Ya, Keluar",
+      cancelText: "Batal",
+      variant: "warning",
+    });
+
+    if (!ok) return;
+
+    setLoggingOut(true);
+
     try {
-      await fetch("/api/logout", {
+      const res = await fetch("/api/logout", {
         method: "POST",
       });
 
+      if (!res.ok) {
+        throw new Error(`Logout gagal (${res.status})`);
+      }
+
       setUser(null);
-      setProfileMenuOpen(false);
+
+      toast.success("Anda berhasil keluar.");
 
       router.replace("/login");
       router.refresh();
     } catch (error) {
       console.error("LOGOUT ERROR:", error);
+      toast.error("Gagal keluar dari akun. Silakan coba lagi.");
+    } finally {
+      setLoggingOut(false);
     }
   };
 
@@ -447,6 +477,7 @@ export default function NavbarKandidat() {
                     <button
                       type="button"
                       onClick={handleLogout}
+                      disabled={loggingOut}
                       className="flex w-full items-center gap-3.5 rounded-2xl px-3.5 py-3 text-left text-red-600 transition hover:bg-red-50"
                     >
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">

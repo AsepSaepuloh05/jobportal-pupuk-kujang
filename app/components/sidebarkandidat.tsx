@@ -14,6 +14,9 @@ import {
   X,
 } from "lucide-react";
 
+import { toast } from "@/app/kandidat/profil/components/Toast";
+import { confirmDialog } from "@/app/kandidat/profil/components/ConfirmDialog";
+
 type User = {
   id: number;
   nama: string;
@@ -48,6 +51,7 @@ export default function SidebarKandidat({
   const [loading, setLoading] = useState(true);
   const [fotoError, setFotoError] = useState(false);
   const [fotoVersion, setFotoVersion] = useState(Date.now());
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // ============================================================
   // GET DATA USER
@@ -95,15 +99,42 @@ export default function SidebarKandidat({
   // LOGOUT
   // ============================================================
   const handleLogout = async () => {
+    if (loggingOut) return;
+
+    // Tutup sidebar di layar kecil supaya dialog tampil bersih
+    onCloseMobile();
+
+    const ok = await confirmDialog({
+      title: "Keluar dari Akun",
+      message: "Apakah Anda yakin ingin keluar?",
+      detail: "Anda perlu masuk kembali untuk mengakses akun.",
+      confirmText: "Ya, Keluar",
+      cancelText: "Batal",
+      variant: "warning",
+    });
+
+    if (!ok) return;
+
+    setLoggingOut(true);
+
     try {
-      await fetch("/api/logout", {
+      const res = await fetch("/api/logout", {
         method: "POST",
       });
-    } catch (error) {
-      console.error("LOGOUT ERROR:", error);
-    } finally {
+
+      if (!res.ok) {
+        throw new Error(`Logout gagal (${res.status})`);
+      }
+
+      toast.success("Anda berhasil keluar.");
+
       router.replace("/login");
       router.refresh();
+    } catch (error) {
+      console.error("LOGOUT ERROR:", error);
+      toast.error("Gagal keluar dari akun. Silakan coba lagi.");
+    } finally {
+      setLoggingOut(false);
     }
   };
 
@@ -397,9 +428,10 @@ export default function SidebarKandidat({
         <button
           type="button"
           onClick={handleLogout}
+          disabled={loggingOut}
           title={collapsed ? "Keluar" : undefined}
           className={
-            "mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-500 transition-all hover:bg-red-50 hover:text-red-600 " +
+            "mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-500 transition-all hover:bg-red-50 hover:text-red-600 disabled:opacity-60 " +
             (collapsed ? "lg:justify-center lg:px-0" : "")
           }
         >
