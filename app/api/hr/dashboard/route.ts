@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -53,8 +53,7 @@ function ambilLowongan(dari: Date | null) {
 
 export async function GET() {
     try {
-        const cookieStore = await cookies();
-        const userRole = cookieStore.get("user_role")?.value;
+        const { userRole } = await bacaIdentitas();
 
         if (userRole !== "HR") {
             return NextResponse.json(

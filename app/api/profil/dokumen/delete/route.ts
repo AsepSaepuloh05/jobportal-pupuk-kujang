@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { JenisDokumen } from "@/app/generated/prisma/client";
 import { unlink } from "fs/promises";
 import path from "path";
 
 async function getUserId() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("user_id")?.value;
+  const { userId } = await bacaIdentitas();
   return userId ? Number(userId) : null;
 }
 

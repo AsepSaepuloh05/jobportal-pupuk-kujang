@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { kirimEmailHasil } from "@/lib/email";
 
@@ -10,8 +10,7 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const cookieStore = await cookies();
-        const userRole = cookieStore.get("user_role")?.value;
+        const { userRole } = await bacaIdentitas();
 
         if (userRole !== "HR") {
             return NextResponse.json(
@@ -100,8 +99,7 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const cookieStore = await cookies();
-        const userRole = cookieStore.get("user_role")?.value;
+        const { userRole } = await bacaIdentitas();
 
         if (userRole !== "HR") {
             return NextResponse.json(

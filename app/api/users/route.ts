@@ -1,9 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { bacaIdentitas } from "@/lib/auth";
 
 export async function GET() {
   try {
+    const { userRole } = await bacaIdentitas();
+
+    if (userRole !== "HR") {
+      return NextResponse.json(
+        { message: "Hanya HR yang bisa melihat data user" },
+        { status: 403 }
+      );
+    }
+
     const users = await prisma.user.findMany({
+      // Jangan pernah kirim hash password ke klien
+      omit: { password: true },
       orderBy: {
         id: "desc",
       },
@@ -24,6 +36,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const { userRole } = await bacaIdentitas();
+
+    if (userRole !== "HR") {
+      return NextResponse.json(
+        { message: "Hanya HR yang bisa menambah user" },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
 
     const name = body.name?.trim();

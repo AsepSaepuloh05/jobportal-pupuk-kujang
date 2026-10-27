@@ -1,8 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { bacaIdentitas } from "@/lib/auth";
 
 export async function GET() {
   try {
+    const { userRole } = await bacaIdentitas();
+
+    if (userRole !== "HR") {
+      return NextResponse.json(
+        { message: "Hanya HR yang bisa melihat daftar kandidat" },
+        { status: 403 }
+      );
+    }
+
     const kandidat = await prisma.user.findMany({
       where: {
         role: "KANDIDAT",

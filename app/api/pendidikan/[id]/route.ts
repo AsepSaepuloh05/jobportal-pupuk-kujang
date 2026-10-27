@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 
 type Params = {
   params: Promise<{
@@ -275,9 +275,7 @@ export async function DELETE(
 
 async function getUserId(): Promise<number | null> {
   try {
-    const cookieStore = await cookies();
-
-    const userIdCookie = cookieStore.get("user_id")?.value;
+    const { userId: userIdCookie } = await bacaIdentitas();
 
     if (!userIdCookie) return null;
 

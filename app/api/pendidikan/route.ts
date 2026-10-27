@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 
 // =====================================================
 // HELPER
@@ -526,12 +526,10 @@ export async function DELETE(request: NextRequest) {
 
 async function getUserId(): Promise<number | null> {
   try {
-    const cookieStore = await cookies();
-
-    const userIdCookie = cookieStore.get("user_id")?.value;
+    const { userId: userIdCookie } = await bacaIdentitas();
 
     if (!userIdCookie) {
-      console.error("COOKIE user_id TIDAK DITEMUKAN");
+      console.error("SESI TIDAK DITEMUKAN");
       return null;
     }
 
@@ -539,7 +537,7 @@ async function getUserId(): Promise<number | null> {
 
     if (!Number.isInteger(userId) || userId <= 0) {
       console.error(
-        "COOKIE user_id TIDAK VALID:",
+        "ID SESI TIDAK VALID:",
         userIdCookie
       );
 

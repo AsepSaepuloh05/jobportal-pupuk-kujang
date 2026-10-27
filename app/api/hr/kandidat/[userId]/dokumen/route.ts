@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
@@ -7,8 +7,7 @@ export async function GET(
     { params }: { params: Promise<{ userId: string }> }
 ) {
     try {
-        const cookieStore = await cookies();
-        const userRole = cookieStore.get("user_role")?.value;
+        const { userRole } = await bacaIdentitas();
 
         if (userRole !== "HR") {
             return NextResponse.json(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 
@@ -27,8 +27,7 @@ function fail(message: string, status: number) {
 
 async function getUserId(): Promise<number | null> {
   try {
-    const cookieStore = await cookies();
-    const value = cookieStore.get("user_id")?.value;
+    const { userId: value } = await bacaIdentitas();
     const userId = Number(value);
 
     if (!value || !Number.isInteger(userId) || userId <= 0) return null;

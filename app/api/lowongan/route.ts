@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -9,9 +9,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const status = searchParams.get("status");
 
-        const cookieStore = await cookies();
-        const userId = cookieStore.get("user_id")?.value;
-        const userRole = cookieStore.get("user_role")?.value;
+        const { userId, userRole } = await bacaIdentitas();
 
         let kandidatDesa: string | null = null;
 
@@ -63,6 +61,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        const { userRole } = await bacaIdentitas();
+
+        if (userRole !== "HR") {
+            return NextResponse.json(
+                { message: "Hanya HR yang bisa membuat lowongan" },
+                { status: 403 }
+            );
+        }
+
         const body = await request.json();
 
         const posisi = body.posisi?.trim();

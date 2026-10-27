@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 async function getHrUserId() {
-    const cookieStore = await cookies();
-    const userId = Number(cookieStore.get("user_id")?.value);
-    const role = cookieStore.get("user_role")?.value;
+    const { userId: userIdSesi, userRole: role } = await bacaIdentitas();
+    const userId = Number(userIdSesi);
 
     if (!Number.isInteger(userId) || userId <= 0 || role !== "HR") {
         return null;

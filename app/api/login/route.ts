@@ -128,31 +128,12 @@ export async function POST(request: Request) {
     });
 
     // ==========================================
-    // COOKIE SESI BARU (BERTANDA TANGAN)
+    // COOKIE SESI (BERTANDA TANGAN)
+    // Satu-satunya sumber identitas. Cookie lama
+    // user_id / user_role tidak dibuat lagi.
     // ==========================================
 
     response.cookies.set(NAMA_COOKIE_SESI, token, opsiCookieSesi());
-
-    // ==========================================
-    // COOKIE LAMA (SEMENTARA, UNTUK ROUTE YANG
-    // BELUM DIALIHKAN). HAPUS DI TAHAP 3.
-    // ==========================================
-
-    response.cookies.set("user_id", String(user.id), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24,
-    });
-
-    response.cookies.set("user_role", user.role, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24,
-    });
 
     return response;
   } catch (error) {

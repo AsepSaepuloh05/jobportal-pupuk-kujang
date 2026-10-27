@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic"
@@ -9,10 +9,7 @@ const STATUS_AKTIF = ["DIPROSES", "INTERVIEW"] as const;
 
 export async function GET(request: Request) {
     try {
-        const cookieStore = await cookies();
-
-        const userId = cookieStore.get("user_id")?.value;
-        const userRole = cookieStore.get("user_role")?.value;
+        const { userId, userRole } = await bacaIdentitas();
 
         if (!userId) {
             return NextResponse.json(
@@ -126,10 +123,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
-        const cookieStore = await cookies();
-
-        const userId = cookieStore.get("user_id")?.value;
-        const userRole = cookieStore.get("user_role")?.value;
+        const { userId, userRole } = await bacaIdentitas();
 
         if (!userId) {
             return NextResponse.json(

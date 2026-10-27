@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
@@ -26,15 +26,13 @@ function getExtension(type: string, fileName: string) {
 }
 
 async function getUserId() {
-  const cookieStore = await cookies();
+  const { userId: userIdValue } = await bacaIdentitas();
 
-  const userIdCookie = cookieStore.get("user_id");
-
-  if (!userIdCookie?.value) {
+  if (!userIdValue) {
     return null;
   }
 
-  const userId = Number(userIdCookie.value);
+  const userId = Number(userIdValue);
 
   if (!Number.isInteger(userId) || userId <= 0) {
     return null;
@@ -57,7 +55,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "User belum login atau cookie user_id tidak ditemukan",
+          message: "User belum login atau sesi tidak valid",
         },
         { status: 401 }
       );

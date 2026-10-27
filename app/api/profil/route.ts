@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 
 import { prisma } from "@/lib/prisma";
 
@@ -10,6 +10,15 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
 try {
+const identitas = await bacaIdentitas();
+
+if (!identitas.userId) {
+  return NextResponse.json(
+    { success: false, message: "Belum login" },
+    { status: 401 }
+  );
+}
+
 const userIdValue = request.nextUrl.searchParams.get("userId");
 
 if (!userIdValue) {
@@ -31,6 +40,14 @@ if (!Number.isInteger(userId) || userId <= 0) {
       message: "userId tidak valid",
     },
     { status: 400 }
+  );
+}
+
+// Hanya pemilik akun atau HR yang boleh melihat data profil
+if (identitas.userRole !== "HR" && String(userId) !== identitas.userId) {
+  return NextResponse.json(
+    { success: false, message: "Akses ditolak" },
+    { status: 403 }
   );
 }
 
@@ -141,9 +158,7 @@ return NextResponse.json(
 // ============================================================
 
 async function getUserId() {
-const cookieStore = await cookies();
-
-const userIdValue = cookieStore.get("user_id")?.value;
+const { userId: userIdValue } = await bacaIdentitas();
 
 if (!userIdValue) {
 return null;

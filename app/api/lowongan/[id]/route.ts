@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { bacaIdentitas } from "@/lib/auth";
 
 export async function GET(
     request: Request,
@@ -41,6 +42,15 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { userRole } = await bacaIdentitas();
+
+        if (userRole !== "HR") {
+            return NextResponse.json(
+                { message: "Hanya HR yang bisa mengubah lowongan" },
+                { status: 403 }
+            );
+        }
+
         const { id } = await params;
         const body = await request.json();
 
@@ -268,6 +278,15 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { userRole } = await bacaIdentitas();
+
+        if (userRole !== "HR") {
+            return NextResponse.json(
+                { message: "Hanya HR yang bisa menghapus lowongan" },
+                { status: 403 }
+            );
+        }
+
         const { id } = await params;
 
         const existing = await prisma.lowongan.findUnique({

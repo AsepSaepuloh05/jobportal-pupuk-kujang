@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +15,7 @@ const TAHAPAN_LABEL: Record<string, string> = {
 
 export async function GET(request: Request) {
     try {
-        const cookieStore = await cookies();
-        const userRole = cookieStore.get("user_role")?.value;
+        const { userRole } = await bacaIdentitas();
 
         if (userRole !== "HR") {
             return NextResponse.json(

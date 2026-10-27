@@ -3,16 +3,15 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
 // SESUAIKAN dengan project Anda:
-import { cookies } from "next/headers";
+import { bacaIdentitas } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const MIN_LENGTH = 8;
 
 export async function PUT(req: Request) {
   try {
-    // Sesi dibaca dari cookie user_id, sama seperti /api/me
-    const cookieStore = await cookies();
-    const userIdValue = cookieStore.get("user_id")?.value;
+    // Sesi dibaca dari token bertanda tangan (bukan cookie biasa)
+    const { userId: userIdValue } = await bacaIdentitas();
 
     if (!userIdValue) {
       return NextResponse.json(
