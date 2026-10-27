@@ -20,7 +20,6 @@ export async function GET(request: Request) {
             });
             kandidatDesa = kandidat?.desa || null;
         }
-
         const whereClause = {
             ...(status
                 ? { status: status as "AKTIF" | "DRAFT" | "DITUTUP" }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { bacaSesi } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 import { readFile } from "fs/promises";
 import path from "path";
 
@@ -23,6 +24,42 @@ function getMimeType(filename: string): string {
     ".webp": "image/webp",
   };
   return map[ext] ?? "application/octet-stream";
+}
+
+// =====================================================
+// KEPEMILIKAN BERKAS
+// Jalur berkas disimpan di database dalam format
+// /api/berkas/<folder>/<namaFile>. Pemilik dicari dari
+// kolom jalur tersebut di semua tabel yang menyimpan berkas.
+// =====================================================
+
+async function userPemilikBerkas(urlPath: string): Promise<number | null> {
+  const [dokumen, pendidikan, pengalaman, sertifikasi] = await Promise.all([
+    prisma.dokumenKandidat.findFirst({
+      where: { pathFile: urlPath },
+      select: { userId: true },
+    }),
+    prisma.pendidikan.findFirst({
+      where: { ijazahPathFile: urlPath },
+      select: { userId: true },
+    }),
+    prisma.pengalaman.findFirst({
+      where: { paklaringPathFile: urlPath },
+      select: { userId: true },
+    }),
+    prisma.sertifikasi.findFirst({
+      where: { sertifikatPathFile: urlPath },
+      select: { userId: true },
+    }),
+  ]);
+
+  return (
+    dokumen?.userId ??
+    pendidikan?.userId ??
+    pengalaman?.userId ??
+    sertifikasi?.userId ??
+    null
+  );
 }
 
 // =====================================================
@@ -76,6 +113,21 @@ export async function GET(
       { success: false, message: "Path file tidak valid" },
       { status: 400 }
     );
+  }
+
+  // Otorisasi kepemilikan: HR boleh membuka semua berkas,
+  // kandidat hanya berkas miliknya sendiri.
+  if (sesi.role !== "HR") {
+    const urlPath = `/api/berkas/${pathSegments.join("/")}`;
+    const pemilik = await userPemilikBerkas(urlPath);
+
+    if (pemilik !== sesi.userId) {
+      // Sengaja 404 (bukan 403) agar keberadaan file tidak bisa ditebak
+      return NextResponse.json(
+        { success: false, message: "File tidak ditemukan" },
+        { status: 404 }
+      );
+    }
   }
 
   // Baca file
