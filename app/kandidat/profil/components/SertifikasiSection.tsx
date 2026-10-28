@@ -1,18 +1,23 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Award,
   CalendarDays,
+  CheckCircle2,
+  ExternalLink,
+  Eye,
   FileText,
+  Image as ImageIcon,
   Pencil,
   Trash2,
   Upload,
   X,
-  ExternalLink,
 } from "lucide-react";
 
 import { Sertifikasi } from "../types";
 import { formatDate } from "../utils";
+import { toast } from "./Toast";
 
 import {
   AddButton,
@@ -39,8 +44,10 @@ const ALLOWED_TYPES = [
 ];
 
 /* ============================================================
-   FORMAT UKURAN
+   HELPER FILE
 ============================================================ */
+
+type FileKind = "pdf" | "image" | "file";
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) {
@@ -52,6 +59,124 @@ function formatFileSize(bytes: number) {
   }
 
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileKind(
+  type?: string | null,
+  name?: string | null
+): FileKind {
+  const mime = (type || "").toLowerCase();
+  const fileName = (name || "").toLowerCase();
+
+  if (mime === "application/pdf" || fileName.endsWith(".pdf")) {
+    return "pdf";
+  }
+
+  if (
+    mime.startsWith("image/") ||
+    /\.(jpe?g|png)$/.test(fileName)
+  ) {
+    return "image";
+  }
+
+  return "file";
+}
+
+function getKindLabel(kind: FileKind) {
+  if (kind === "pdf") return "PDF";
+  if (kind === "image") return "Gambar";
+  return "File";
+}
+
+/* ============================================================
+   THUMBNAIL FILE
+   Gambar tampil sebagai pratinjau, PDF tampil sebagai ikon
+============================================================ */
+
+function FileThumb({
+  kind,
+  src,
+  size = "md",
+}: {
+  kind: FileKind;
+  src?: string | null;
+  size?: "md" | "lg";
+}) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  const box = size === "lg" ? "h-16 w-16" : "h-12 w-12";
+
+  if (kind === "image" && src && !failed) {
+    return (
+      <div
+        className={`${box} shrink-0 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200`}
+      >
+        <img
+          src={src}
+          alt="Pratinjau sertifikat"
+          onError={() => setFailed(true)}
+          className="h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
+
+  if (kind === "pdf") {
+    return (
+      <div
+        className={`${box} flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-red-50 text-red-600 ring-1 ring-red-100`}
+      >
+        <FileText className="h-5 w-5" />
+
+        <span className="text-[9px] font-black tracking-wide">
+          PDF
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`${box} flex shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 ring-1 ring-slate-200`}
+    >
+      {kind === "image" ? (
+        <ImageIcon className="h-5 w-5" />
+      ) : (
+        <FileText className="h-5 w-5" />
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   PRATINJAU FILE BARU (SEBELUM DIUNGGAH)
+============================================================ */
+
+function NewFileThumb({ file }: { file: File }) {
+  const kind = getFileKind(file.type, file.name);
+
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (kind !== "image") {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+
+    setPreviewUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file, kind]);
+
+  return <FileThumb kind={kind} src={previewUrl} size="lg" />;
 }
 
 /* ============================================================
@@ -69,6 +194,16 @@ function CertificationItem({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const hasFile = Boolean(item.sertifikatPathFile);
+
+  const fileName =
+    item.sertifikatNamaAsli || "Bukti sertifikat";
+
+  const kind = getFileKind(
+    item.sertifikatTipeFile,
+    item.sertifikatNamaAsli || item.sertifikatPathFile
+  );
+
   return (
     <div
       className={`relative py-5 ${
@@ -137,26 +272,61 @@ function CertificationItem({
           )}
         </div>
 
-        {/* FILE SERTIFIKAT */}
-        {item.sertifikatPathFile && (
-          <div className="mt-3">
-            <a
-              href={item.sertifikatPathFile}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
-            >
-              <FileText className="h-4 w-4" />
+        {/* BUKTI SERTIFIKAT */}
+        <div className="mt-4">
+          {hasFile ? (
+            <div className="group flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/60 to-white p-3 transition hover:border-emerald-200 hover:shadow-sm sm:flex-row sm:items-center sm:p-3.5">
+              <div className="flex min-w-0 flex-1 items-center gap-3.5">
+                <FileThumb
+                  kind={kind}
+                  src={item.sertifikatPathFile}
+                  size="lg"
+                />
 
-              <span>
-                {item.sertifikatNamaAsli ||
-                  "Lihat Sertifikat"}
-              </span>
+                <div className="min-w-0">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Bukti terlampir
+                  </span>
 
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          </div>
-        )}
+                  <p
+                    className="mt-1.5 truncate text-sm font-semibold text-slate-800"
+                    title={fileName}
+                  >
+                    {fileName}
+                  </p>
+
+                  <p className="mt-0.5 text-[11px] text-slate-400">
+                    {getKindLabel(kind)}
+                    {item.sertifikatUkuranFile
+                      ? ` • ${formatFileSize(
+                          item.sertifikatUkuranFile
+                        )}`
+                      : ""}
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href={item.sertifikatPathFile || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+              >
+                <Eye className="h-4 w-4" />
+                Lihat Sertifikat
+              </a>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3.5 py-3">
+              <FileText className="h-4 w-4 shrink-0 text-slate-300" />
+
+              <p className="text-xs text-slate-400">
+                Bukti sertifikat belum diunggah
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -187,7 +357,7 @@ function SertifikatUpload({
 
     /* Validasi tipe */
     if (!ALLOWED_TYPES.includes(file.type)) {
-      alert(
+      toast.error(
         "Format file harus PDF, JPG, JPEG, atau PNG."
       );
 
@@ -198,7 +368,7 @@ function SertifikatUpload({
 
     /* Validasi ukuran */
     if (file.size > MAX_FILE_SIZE) {
-      alert("Ukuran file maksimal 5 MB.");
+      toast.error("Ukuran file maksimal 5 MB.");
 
       event.target.value = "";
 
@@ -241,69 +411,117 @@ function SertifikatUpload({
     }));
   };
 
+  const hasExisting = Boolean(form.sertifikatPathFile);
+
+  const existingKind = getFileKind(
+    form.sertifikatTipeFile,
+    form.sertifikatNamaAsli || form.sertifikatPathFile
+  );
+
+  const newKind = form.file
+    ? getFileKind(form.file.type, form.file.name)
+    : "file";
+
   return (
     <div className="space-y-2">
       <label className="block text-sm font-semibold text-slate-700">
-        Sertifikat
+        Bukti Sertifikat
         <span className="ml-1 text-xs font-normal text-slate-400">
           (Opsional)
         </span>
       </label>
 
-      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50/30">
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3.5 transition hover:border-emerald-300 hover:bg-emerald-50/30">
         {/* FILE BARU */}
         {form.file ? (
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-white p-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                <FileText className="h-5 w-5" />
-              </div>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3.5 rounded-xl border border-emerald-200 bg-white p-3 shadow-sm">
+              <NewFileThumb file={form.file} />
 
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-700">
+              <div className="min-w-0 flex-1">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Siap diunggah
+                </span>
+
+                <p
+                  className="mt-1.5 truncate text-sm font-semibold text-slate-800"
+                  title={form.file.name}
+                >
                   {form.file.name}
                 </p>
 
-                <p className="mt-0.5 text-xs text-slate-400">
+                <p className="mt-0.5 text-[11px] text-slate-400">
+                  {getKindLabel(newKind)} •{" "}
                   {formatFileSize(form.file.size)}
                 </p>
-              </div>
-            </div>
 
-            <button
-              type="button"
-              onClick={handleRemoveNewFile}
-              className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
-              title="Hapus file"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        ) : form.sertifikatPathFile ? (
-          /* FILE LAMA */
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
-                <FileText className="h-5 w-5" />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-slate-700">
-                  {form.sertifikatNamaAsli ||
-                    "Sertifikat tersimpan"}
-                </p>
-
-                {form.sertifikatUkuranFile && (
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    {formatFileSize(
-                      form.sertifikatUkuranFile
-                    )}
+                {hasExisting && (
+                  <p className="mt-1 text-[11px] font-medium text-amber-600">
+                    Akan menggantikan file sebelumnya
                   </p>
                 )}
               </div>
 
+              <button
+                type="button"
+                onClick={handleRemoveNewFile}
+                className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                title="Batalkan file"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
+              <Upload className="h-4 w-4" />
+
+              Pilih File Lain
+
+              <input
+                type="file"
+                className="hidden"
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                onChange={handleFileChange}
+              />
+            </label>
+          </div>
+        ) : hasExisting ? (
+          /* FILE LAMA */
+          <div className="space-y-3">
+            <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+              <FileThumb
+                kind={existingKind}
+                src={form.sertifikatPathFile}
+                size="lg"
+              />
+
+              <div className="min-w-0 flex-1">
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Tersimpan
+                </span>
+
+                <p
+                  className="mt-1.5 truncate text-sm font-semibold text-slate-800"
+                  title={form.sertifikatNamaAsli || undefined}
+                >
+                  {form.sertifikatNamaAsli ||
+                    "Sertifikat tersimpan"}
+                </p>
+
+                <p className="mt-0.5 text-[11px] text-slate-400">
+                  {getKindLabel(existingKind)}
+                  {form.sertifikatUkuranFile
+                    ? ` • ${formatFileSize(
+                        form.sertifikatUkuranFile
+                      )}`
+                    : ""}
+                </p>
+              </div>
+
               <a
-                href={form.sertifikatPathFile}
+                href={form.sertifikatPathFile || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-600"
@@ -313,7 +531,7 @@ function SertifikatUpload({
               </a>
             </div>
 
-            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
               <Upload className="h-4 w-4" />
 
               Ganti Sertifikat

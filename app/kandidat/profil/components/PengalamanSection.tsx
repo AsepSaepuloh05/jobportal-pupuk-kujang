@@ -4,6 +4,7 @@ import {
   Building2,
   BriefcaseBusiness,
   CalendarDays,
+  CheckCircle2,
   Eye,
   FileCheck2,
   MapPin,
@@ -28,17 +29,13 @@ import {
   ModalInput,
 } from "./ModalPrimitives";
 
-function formatUkuran(bytes?: number | null) {
-  if (!bytes) return "";
-
-  if (bytes < 1024) return `${bytes} B`;
-
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(0)} KB`;
-  }
-
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+import {
+  FileThumb,
+  NewFileThumb,
+  formatFileSize,
+  getFileKind,
+  getKindLabel,
+} from "./FilePreview";
 
 /* ============================================================
    EXPERIENCE ITEM
@@ -61,6 +58,16 @@ function ExperienceItem({
   );
 
   const hasPaklaring = Boolean(item.paklaringPathFile);
+
+  const paklaringName =
+    item.paklaringNamaAsli ||
+    item.paklaringNamaFile ||
+    "Surat paklaring";
+
+  const paklaringKind = getFileKind(
+    item.paklaringTipeFile,
+    item.paklaringNamaAsli || item.paklaringPathFile
+  );
 
   return (
     <div
@@ -143,28 +150,35 @@ function ExperienceItem({
         )}
 
         {/* PAKLARING */}
-        <div className="mt-3.5">
+        <div className="mt-4">
           {hasPaklaring ? (
-            <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:flex-row sm:items-center">
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-600 ring-1 ring-slate-200">
-                  <FileCheck2 className="h-4 w-4" />
-                </div>
+            <div className="group flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/60 to-white p-3 transition hover:border-emerald-200 hover:shadow-sm sm:flex-row sm:items-center sm:p-3.5">
+              <div className="flex min-w-0 flex-1 items-center gap-3.5">
+                <FileThumb
+                  kind={paklaringKind}
+                  src={item.paklaringPathFile}
+                  size="lg"
+                />
 
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    Paklaring
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Paklaring terlampir
+                  </span>
+
+                  <p
+                    className="mt-1.5 truncate text-sm font-semibold text-slate-800"
+                    title={paklaringName}
+                  >
+                    {paklaringName}
                   </p>
 
-                  <p className="truncate text-xs font-medium text-slate-700">
-                    {item.paklaringNamaAsli || item.paklaringNamaFile}
+                  <p className="mt-0.5 text-[11px] text-slate-400">
+                    {getKindLabel(paklaringKind)}
+                    {item.paklaringUkuranFile
+                      ? ` • ${formatFileSize(item.paklaringUkuranFile)}`
+                      : ""}
                   </p>
-
-                  {item.paklaringUkuranFile ? (
-                    <p className="text-[10px] text-slate-400">
-                      {formatUkuran(item.paklaringUkuranFile)}
-                    </p>
-                  ) : null}
                 </div>
               </div>
 
@@ -172,17 +186,17 @@ function ExperienceItem({
                 href={item.paklaringPathFile || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
               >
-                <Eye className="h-3.5 w-3.5" />
-                Lihat
+                <Eye className="h-4 w-4" />
+                Lihat Paklaring
               </a>
             </div>
           ) : (
-            <div className="flex items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2.5">
-              <FileCheck2 className="h-4 w-4 text-slate-300" />
+            <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3.5 py-3">
+              <FileCheck2 className="h-4 w-4 shrink-0 text-slate-300" />
 
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-400">
                 Paklaring belum diunggah
               </p>
             </div>
@@ -334,99 +348,172 @@ function PengalamanModal({
         {/* ====================================================
             PAKLARING
         ==================================================== */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
           <div className="mb-3">
             <p className="text-sm font-semibold text-slate-800">
               Surat Paklaring
+              <span className="ml-1 text-xs font-normal text-slate-400">
+                (Opsional)
+              </span>
             </p>
 
             <p className="mt-1 text-xs text-slate-400">
-              Opsional. Format PDF, JPG, atau PNG. Maksimal 5 MB.
+              Format PDF, JPG, atau PNG. Maksimal 5 MB.
             </p>
           </div>
 
-          {/* EXISTING PAKLARING */}
-          {hasExistingPaklaring && (
-            <div className="mb-3 flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 ring-1 ring-slate-200">
-                <FileCheck2 className="h-4 w-4" />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold text-slate-700">
-                  {form.paklaringNamaAsli || form.paklaringNamaFile}
-                </p>
-
-                {form.paklaringUkuranFile ? (
-                  <p className="mt-0.5 text-[10px] text-slate-400">
-                    {formatUkuran(form.paklaringUkuranFile)}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="flex shrink-0 gap-1">
-                {form.paklaringPathFile && (
-                  <a
-                    href={form.paklaringPathFile}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-lg p-2 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
-                    title="Lihat paklaring"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </a>
-                )}
-
-                {isEdit && (
-                  <button
-                    type="button"
-                    disabled={uploadingPaklaring || saving}
-                    onClick={() => onDeletePaklaring(form.id)}
-                    className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
-                    title="Hapus paklaring"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* NEW FILE */}
           {paklaringFile ? (
-            <div className="flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50/60 p-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-blue-600 ring-1 ring-blue-100">
+            /* FILE BARU */
+            <div className="space-y-3">
+              <div className="flex items-center gap-3.5 rounded-xl border border-emerald-200 bg-white p-3 shadow-sm">
+                <NewFileThumb file={paklaringFile} />
+
+                <div className="min-w-0 flex-1">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Siap diunggah
+                  </span>
+
+                  <p
+                    className="mt-1.5 truncate text-sm font-semibold text-slate-800"
+                    title={paklaringFile.name}
+                  >
+                    {paklaringFile.name}
+                  </p>
+
+                  <p className="mt-0.5 text-[11px] text-slate-400">
+                    {getKindLabel(
+                      getFileKind(paklaringFile.type, paklaringFile.name)
+                    )}{" "}
+                    • {formatFileSize(paklaringFile.size)}
+                  </p>
+
+                  {hasExistingPaklaring && (
+                    <p className="mt-1 text-[11px] font-medium text-amber-600">
+                      Akan menggantikan paklaring sebelumnya
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onClearPaklaringFile}
+                  disabled={saving || uploadingPaklaring}
+                  className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                  title="Batalkan file"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
                 <Upload className="h-4 w-4" />
+                Pilih File Lain
+
+                <input
+                  type="file"
+                  hidden
+                  accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                  disabled={saving || uploadingPaklaring}
+                  onChange={onPaklaringFileChange}
+                />
+              </label>
+            </div>
+          ) : hasExistingPaklaring ? (
+            /* FILE LAMA */
+            <div className="space-y-3">
+              <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                <FileThumb
+                  kind={getFileKind(
+                    form.paklaringTipeFile,
+                    form.paklaringNamaAsli || form.paklaringPathFile
+                  )}
+                  src={form.paklaringPathFile}
+                  size="lg"
+                />
+
+                <div className="min-w-0 flex-1">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Tersimpan
+                  </span>
+
+                  <p
+                    className="mt-1.5 truncate text-sm font-semibold text-slate-800"
+                    title={form.paklaringNamaAsli || form.paklaringNamaFile || undefined}
+                  >
+                    {form.paklaringNamaAsli ||
+                      form.paklaringNamaFile ||
+                      "Paklaring tersimpan"}
+                  </p>
+
+                  <p className="mt-0.5 text-[11px] text-slate-400">
+                    {getKindLabel(
+                      getFileKind(
+                        form.paklaringTipeFile,
+                        form.paklaringNamaAsli || form.paklaringPathFile
+                      )
+                    )}
+                    {form.paklaringUkuranFile
+                      ? ` • ${formatFileSize(form.paklaringUkuranFile)}`
+                      : ""}
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 gap-1">
+                  {form.paklaringPathFile && (
+                    <a
+                      href={form.paklaringPathFile}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-600"
+                      title="Lihat paklaring"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </a>
+                  )}
+
+                  {isEdit && (
+                    <button
+                      type="button"
+                      disabled={uploadingPaklaring || saving}
+                      onClick={() => onDeletePaklaring(form.id)}
+                      className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                      title="Hapus paklaring"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold text-slate-700">
-                  {paklaringFile.name}
-                </p>
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
+                <Upload className="h-4 w-4" />
+                Ganti Paklaring
 
-                <p className="mt-0.5 text-[10px] text-slate-400">
-                  {hasExistingPaklaring
-                    ? "Akan menggantikan paklaring sebelumnya"
-                    : "File baru siap diunggah"}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={onClearPaklaringFile}
-                disabled={saving || uploadingPaklaring}
-                className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
-                title="Batalkan file"
-              >
-                <X className="h-4 w-4" />
-              </button>
+                <input
+                  type="file"
+                  hidden
+                  accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                  disabled={saving || uploadingPaklaring}
+                  onChange={onPaklaringFileChange}
+                />
+              </label>
             </div>
           ) : (
-            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white px-4 py-3 text-xs font-semibold text-slate-500 transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600">
-              <Upload className="h-4 w-4" />
-              {hasExistingPaklaring
-                ? "Ganti File Paklaring"
-                : "Pilih File Paklaring"}
+            /* UPLOAD BARU */
+            <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white py-5 text-center transition hover:border-emerald-300 hover:bg-emerald-50/30">
+              <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400">
+                <Upload className="h-5 w-5" />
+              </div>
+
+              <p className="text-sm font-semibold text-slate-600">
+                Pilih file paklaring
+              </p>
+
+              <p className="mt-1 text-xs text-slate-400">
+                PDF, JPG, atau PNG • Maksimal 5 MB
+              </p>
 
               <input
                 type="file"
@@ -440,8 +527,8 @@ function PengalamanModal({
 
           {/* UPLOAD STATUS */}
           {uploadingPaklaring && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-blue-600">
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
+            <div className="mt-3 flex items-center gap-2 text-xs text-emerald-700">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-600" />
               Mengunggah paklaring...
             </div>
           )}

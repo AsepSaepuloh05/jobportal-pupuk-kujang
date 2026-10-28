@@ -11,7 +11,6 @@ export default function KandidatLayout({
     <KandidatShell>
       {children}
 
-      {/* Notifikasi toast dan dialog konfirmasi untuk semua halaman kandidat */}
       <Toaster />
       <ConfirmDialog />
     </KandidatShell>

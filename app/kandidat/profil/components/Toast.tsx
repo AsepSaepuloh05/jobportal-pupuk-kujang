@@ -16,6 +16,7 @@ type ToastItem = {
   type: ToastType;
   message: string;
   duration: number;
+  createdAt: number;
 };
 
 type Listener = (items: ToastItem[]) => void;
@@ -32,7 +33,10 @@ function add(type: ToastType, message: string, duration = 4500) {
   const id = ++counter;
 
   // Maksimal 4 toast tampil bersamaan
-  toasts = [...toasts, { id, type, message, duration }].slice(-4);
+  toasts = [
+    ...toasts,
+    { id, type, message, duration, createdAt: Date.now() },
+  ].slice(-4);
   emit();
 
   return id;
@@ -190,6 +194,14 @@ export function Toaster() {
 
   useEffect(() => {
     const listener: Listener = (next) => setItems(next);
+
+    // Buang toast lama yang tertinggal dari halaman sebelumnya
+    // (misalnya toast logout yang dibuat saat Toaster belum terpasang)
+    const fresh = toasts.filter((item) => Date.now() - item.createdAt < 2000);
+
+    if (fresh.length !== toasts.length) {
+      toasts = fresh;
+    }
 
     listeners.add(listener);
     setItems(toasts);

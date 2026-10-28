@@ -97,7 +97,7 @@ function RecommendedJobCard({
   if (wide) {
     return (
       <Link
-        href={`/kandidat/lowongan/${job.id}`}
+        href="/kandidat/lowongan"
         className="group flex flex-col gap-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-5 transition duration-200 hover:border-emerald-200 hover:bg-white hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
       >
         <div className="flex min-w-0 flex-1 items-start gap-4">
@@ -157,7 +157,7 @@ function RecommendedJobCard({
 
   return (
     <Link
-      href={`/kandidat/lowongan/${job.id}`}
+      href="/kandidat/lowongan"
       className="group flex flex-col rounded-2xl border border-slate-200 bg-slate-50/60 p-5 transition duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-3">
