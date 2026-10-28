@@ -372,13 +372,15 @@ export default function KandidatPage() {
 
       {/* HEADER */}
 
-      <header className="border-b border-slate-200 bg-white px-6 py-5 md:px-8">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-800">
-          Data Kandidat
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Kelola dan lihat seluruh kandidat yang terdaftar.
-        </p>
+      <header className="border-b border-slate-200 bg-white px-4 py-5 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1600px]">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-800">
+            Data Kandidat
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Kelola dan lihat seluruh kandidat yang terdaftar.
+          </p>
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">

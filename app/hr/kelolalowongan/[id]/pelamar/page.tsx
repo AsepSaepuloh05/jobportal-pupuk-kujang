@@ -902,8 +902,8 @@ export default function PelamarLowonganPage() {
     return (
         <div className="min-h-screen bg-slate-50">
 
-            <header className="border-b border-slate-200 bg-white px-6 py-5 md:px-8">
-                <div className="flex items-center gap-4">
+            <header className="border-b border-slate-200 bg-white px-4 py-5 sm:px-6 lg:px-8">
+                <div className="mx-auto flex w-full max-w-[1600px] items-center gap-4">
                     <button
                         type="button"
                         onClick={() => router.push("/hr/kelolalowongan")}

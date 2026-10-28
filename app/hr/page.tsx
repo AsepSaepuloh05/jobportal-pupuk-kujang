@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   ArrowRight,
   BriefcaseBusiness,
+  Building2,
   ClipboardCheck,
   FilePlus2,
   FileText,
@@ -437,13 +438,28 @@ export default function HRDashboard() {
               )}
 
               <div className="min-w-0">
-                <p className="text-sm text-emerald-50">{sapaanWaktu()} 👋</p>
-                <h2 className="mt-0.5 truncate text-2xl font-semibold">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-emerald-50 backdrop-blur-sm ring-1 ring-white/20">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-200"></span>
+                  </span>
+                  <span>{sapaanWaktu()}, HR Administrator</span>
+                </div>
+
+                <h2 className="mt-2 truncate text-2xl font-bold tracking-tight text-white sm:text-3xl">
                   {user.nama}
                 </h2>
-                <p className="mt-1 text-sm text-emerald-100">
-                  Human Resources &middot; PT Pupuk Kujang
-                </p>
+
+                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-emerald-100">
+                  <span className="rounded bg-black/20 px-2 py-0.5 font-medium backdrop-blur-sm">
+                    Human Resources
+                  </span>
+                  <span className="text-emerald-300">&bull;</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Building2 className="h-3.5 w-3.5 text-emerald-200" />
+                    PT Pupuk Kujang Cikampek
+                  </span>
+                </div>
               </div>
 
             </div>
