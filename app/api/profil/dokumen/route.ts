@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { JenisDokumen } from "@/app/generated/prisma/client";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { deteksiBerkas } from "@/lib/file-signature";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
@@ -105,7 +106,31 @@ export async function POST(request: Request) {
       );
     }
 
-    const ext = path.extname(file.name) || "";
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const tipeAsli = deteksiBerkas(buffer);
+
+    if (!tipeAsli) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Format berkas tidak valid atau rusak. Hanya file PDF, JPG, dan PNG asli yang diperbolehkan.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (jenisDokumen === "CV" && tipeAsli !== "pdf") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Dokumen CV harus berupa berkas PDF asli.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const ext = path.extname(file.name) || (tipeAsli === "pdf" ? ".pdf" : tipeAsli === "png" ? ".png" : ".jpg");
     const namaFile = `${userId}-${jenisDokumen}-${Date.now()}${ext}`;
 
     // Simpan di folder private (di luar public/)
@@ -117,7 +142,6 @@ export async function POST(request: Request) {
     await mkdir(uploadDir, { recursive: true });
 
     const filePath = path.join(uploadDir, namaFile);
-    const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(filePath, buffer);
 
     // Path diakses melalui API berkas yang terautentikasi

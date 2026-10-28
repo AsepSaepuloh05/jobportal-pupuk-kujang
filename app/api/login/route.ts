@@ -6,9 +6,34 @@ import {
   NAMA_COOKIE_SESI,
   opsiCookieSesi,
 } from "@/lib/session";
+import {
+  checkRateLimit,
+  getClientIp,
+  resetRateLimit,
+} from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+
+    // ==========================================
+    // 1. RATE LIMIT BERBASIS IP (Mencegah serangan DoS / flooding)
+    // ==========================================
+    const ipLimit = checkRateLimit(`login:ip:${ip}`, 30, 15 * 60);
+    if (!ipLimit.allowed) {
+      const menit = Math.ceil(ipLimit.retryAfterSeconds / 60);
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Terlalu banyak percobaan dari perangkat ini. Silakan coba lagi dalam ${menit} menit.`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(ipLimit.retryAfterSeconds) },
+        }
+      );
+    }
+
     const body = await request.json();
 
     const email = body.email?.trim().toLowerCase();
@@ -25,6 +50,27 @@ export async function POST(request: Request) {
           message: "Email dan password wajib diisi",
         },
         { status: 400 }
+      );
+    }
+
+    // ==========================================
+    // 2. RATE LIMIT BERBASIS AKUN / EMAIL (Mencegah tebak password / credential stuffing)
+    // Maksimal 5 kali percobaan dalam 15 menit
+    // ==========================================
+    const emailKey = `login:email:${email}`;
+    const emailLimit = checkRateLimit(emailKey, 5, 15 * 60);
+
+    if (!emailLimit.allowed) {
+      const menit = Math.ceil(emailLimit.retryAfterSeconds / 60);
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Terlalu banyak percobaan login yang gagal untuk akun ini. Silakan coba lagi dalam ${menit} menit.`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(emailLimit.retryAfterSeconds) },
+        }
       );
     }
 
@@ -101,6 +147,11 @@ export async function POST(request: Request) {
         { status: 403 }
       );
     }
+
+    // ==========================================
+    // LOGIN BERHASIL: RESET PERCOBAAN GAGAL
+    // ==========================================
+    resetRateLimit(emailKey);
 
     // ==========================================
     // BUAT SESI BERTANDA TANGAN

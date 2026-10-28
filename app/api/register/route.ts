@@ -4,6 +4,7 @@ import { createHash, randomInt } from "crypto";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import { validatePassword } from "@/lib/password";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -45,6 +46,23 @@ function buatEmailOtp(nama: string, otp: string) {
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const ipLimit = checkRateLimit(`register:ip:${ip}`, 5, 10 * 60);
+
+    if (!ipLimit.allowed) {
+      const menit = Math.ceil(ipLimit.retryAfterSeconds / 60);
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Terlalu banyak permintaan pendaftaran dari perangkat ini. Silakan coba lagi dalam ${menit} menit.`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(ipLimit.retryAfterSeconds) },
+        }
+      );
+    }
+
     const body = await request.json();
 
     const nama = body.nama?.trim();

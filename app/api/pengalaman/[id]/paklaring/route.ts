@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { bacaIdentitas } from "@/lib/auth";
 import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
+import { deteksiBerkas } from "@/lib/file-signature";
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -81,11 +82,19 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     if (!ext) return fail("Format harus PDF, JPG, atau PNG", 400);
 
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const tipeAsli = deteksiBerkas(buffer);
+
+    if (!tipeAsli) {
+      return fail(
+        "Format berkas paklaring tidak valid atau rusak. Hanya file PDF, JPG, dan PNG asli yang diperbolehkan.",
+        400
+      );
+    }
+
     await mkdir(UPLOAD_DIR, { recursive: true });
 
     const namaFile = `paklaring-${userId}-${pengalamanId}-${Date.now()}${ext}`;
-    const buffer = Buffer.from(await file.arrayBuffer());
-
     await writeFile(path.join(UPLOAD_DIR, namaFile), buffer);
 
     // Hapus file lama setelah yang baru berhasil ditulis

@@ -4,6 +4,7 @@ import { bacaIdentitas } from "@/lib/auth";
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import { deteksiBerkas } from "@/lib/file-signature";
 
 /* ============================================================
    KONFIGURASI UPLOAD
@@ -599,6 +600,13 @@ async function saveFile(file: File) {
   const buffer = Buffer.from(
     await file.arrayBuffer()
   );
+
+  const tipeAsli = deteksiBerkas(buffer);
+  if (!tipeAsli) {
+    throw new Error(
+      "Format berkas sertifikat tidak valid atau rusak. Hanya file PDF, JPG, dan PNG asli yang diperbolehkan."
+    );
+  }
 
   await fs.writeFile(filePath, buffer);
 

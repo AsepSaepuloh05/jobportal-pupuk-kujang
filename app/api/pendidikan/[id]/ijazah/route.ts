@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { bacaIdentitas } from "@/lib/auth";
 import fs from "fs/promises";
 import path from "path";
+import { deteksiBerkas } from "@/lib/file-signature";
 
 type Params = {
   params: Promise<{
@@ -179,12 +180,24 @@ export async function POST(
     );
 
     // =================================================
-    // SIMPAN FILE
+    // SIMPAN FILE (VALIDASI MAGIC BYTES)
     // =================================================
 
     const buffer = Buffer.from(
       await file.arrayBuffer()
     );
+
+    const tipeAsli = deteksiBerkas(buffer);
+    if (!tipeAsli) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Format berkas ijazah tidak valid atau rusak. Hanya file PDF, JPG, dan PNG asli yang diperbolehkan.",
+        },
+        { status: 400 }
+      );
+    }
 
     await fs.writeFile(
       filePath,
