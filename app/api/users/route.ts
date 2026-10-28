@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: {
         email,
       },
@@ -74,10 +74,18 @@ export async function POST(request: Request) {
       );
     }
 
+    const nik = body.nik?.trim() || `NIK-${Date.now()}`;
+    const password = body.password || "default-hash";
+
     const user = await prisma.user.create({
       data: {
-        name,
+        nama: name,
         email,
+        nik,
+        password,
+      },
+      omit: {
+        password: true,
       },
     });
 

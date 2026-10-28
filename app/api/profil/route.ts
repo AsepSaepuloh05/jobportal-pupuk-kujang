@@ -113,10 +113,6 @@ const user = await prisma.user.findUnique({
         createdAt: true,
         updatedAt: true,
       },
-
-      orderBy: {
-        createdAt: "desc",
-      },
     },
   },
 });
