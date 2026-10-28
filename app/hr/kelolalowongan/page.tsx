@@ -418,51 +418,7 @@ export default function KelolaLowonganPage() {
             </h1>
 
             <p className="mt-1 text-sm text-slate-500">
-              Kelola dan pantau lowongan pekerjaan yang tersedia.
-            </p>
-          </div>
-
-          {/* PROFILE */}
-
-          <div className="flex items-center gap-3">
-
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
-              {user.nama.charAt(0).toUpperCase()}
-            </div>
-
-            <div className="leading-tight">
-              <p className="text-sm font-semibold text-slate-800">
-                {user.nama}
-              </p>
-
-              <p className="mt-1 text-xs text-slate-500">
-                Human Resources
-              </p>
-            </div>
-
-          </div>
-        </div>
-      </header>
-
-      {/* =====================================================
-          MAIN
-      ===================================================== */}
-
-      <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
-
-        {/* =====================================================
-            PAGE TOP
-        ===================================================== */}
-
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">
-              Daftar Lowongan
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Kelola seluruh lowongan pekerjaan perusahaan.
+              Kelola dan pantau seluruh lowongan pekerjaan perusahaan.
             </p>
           </div>
 
@@ -482,6 +438,13 @@ export default function KelolaLowonganPage() {
           </button>
 
         </div>
+      </header>
+
+      {/* =====================================================
+          MAIN
+      ===================================================== */}
+
+      <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
 
         {/* =====================================================
             STATISTICS
