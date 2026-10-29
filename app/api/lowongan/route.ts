@@ -11,6 +11,20 @@ export async function GET(request: Request) {
 
         const { userId, userRole } = await bacaIdentitas();
 
+        const hariIni = new Date();
+        hariIni.setHours(0, 0, 0, 0);
+
+        // Tutup otomatis lowongan AKTIF yang tanggalBerakhir-nya sudah lewat
+        await prisma.lowongan.updateMany({
+            where: {
+                status: "AKTIF",
+                tanggalBerakhir: { lt: hariIni },
+            },
+            data: {
+                status: "DITUTUP",
+            },
+        });
+
         let kandidatDesa: string | null = null;
 
         if (userId && userRole === "KANDIDAT") {
@@ -20,9 +34,6 @@ export async function GET(request: Request) {
             });
             kandidatDesa = kandidat?.desa || null;
         }
-
-        const hariIni = new Date();
-        hariIni.setHours(0, 0, 0, 0);
 
         const isHR = userRole === "HR";
 

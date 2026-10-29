@@ -614,7 +614,7 @@ export default function EditLowonganPage() {
                                 <input
                                     id="tanggalBerakhir"
                                     type="date"
-                                    min={getTodayString()}
+                                    min={status === "AKTIF" ? getTodayString() : undefined}
                                     value={tanggalBerakhir}
                                     onChange={(e) => setTanggalBerakhir(e.target.value)}
                                     disabled={saving}
@@ -626,8 +626,8 @@ export default function EditLowonganPage() {
                     </div>
 
                     <p className="border-t border-slate-100 bg-slate-50/60 px-6 py-3 text-xs text-slate-500">
-                        Kamu akan lihat pengingat kalau tanggal ini sudah
-                        lewat tapi lowongan masih Aktif.
+                        Lowongan akan otomatis berubah menjadi Ditutup ketika
+                        batas tanggal ini terlewati.
                     </p>
 
                 </div>

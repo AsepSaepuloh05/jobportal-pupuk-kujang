@@ -10,7 +10,7 @@ export async function GET(
         const { id } = await params;
         const { userRole } = await bacaIdentitas();
 
-        const lowongan = await prisma.lowongan.findUnique({
+        let lowongan = await prisma.lowongan.findUnique({
             where: {
                 id: Number(id),
             },
@@ -23,6 +23,21 @@ export async function GET(
                 },
                 { status: 404 }
             );
+        }
+
+        const hariIni = new Date();
+        hariIni.setHours(0, 0, 0, 0);
+
+        // Jika lowongan masih AKTIF tetapi tanggalBerakhir sudah lewat, tutup otomatis
+        if (
+            lowongan.status === "AKTIF" &&
+            lowongan.tanggalBerakhir &&
+            new Date(lowongan.tanggalBerakhir) < hariIni
+        ) {
+            lowongan = await prisma.lowongan.update({
+                where: { id: lowongan.id },
+                data: { status: "DITUTUP" },
+            });
         }
 
         // Lowongan berstatus DRAFT hanya boleh dilihat oleh HR
@@ -124,7 +139,9 @@ export async function PUT(
             ? new Date(body.tanggalBerakhir)
             : null;
 
-        if (tanggalBerakhir) {
+        // Validasi tanggalBerakhir >= hariIni hanya wajib jika lowongan berstatus AKTIF.
+        // Jika statusnya DITUTUP atau DRAFT, HR tetap bisa menyimpan perubahan tanpa harus mengubah tanggal lama.
+        if (tanggalBerakhir && status === "AKTIF") {
             const hariIni = new Date();
             hariIni.setHours(0, 0, 0, 0);
 
@@ -132,7 +149,7 @@ export async function PUT(
                 return NextResponse.json(
                     {
                         message:
-                            "Batas lowongan ditutup tidak boleh sebelum hari ini",
+                            "Untuk mengaktifkan lowongan, batas lowongan ditutup tidak boleh sebelum hari ini",
                     },
                     { status: 400 }
                 );

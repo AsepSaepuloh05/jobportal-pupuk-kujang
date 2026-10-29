@@ -64,6 +64,17 @@ export async function GET() {
 
         const awal = hitungAwalPeriode(new Date());
 
+        // Tutup otomatis semua lowongan AKTIF yang tanggalBerakhir-nya sudah lewat
+        await prisma.lowongan.updateMany({
+            where: {
+                status: "AKTIF",
+                tanggalBerakhir: { lt: awal.hari },
+            },
+            data: {
+                status: "DITUTUP",
+            },
+        });
+
         const [
             lowonganAktif,
             totalLowongan,
