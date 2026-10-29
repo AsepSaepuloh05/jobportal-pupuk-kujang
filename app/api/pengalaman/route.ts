@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { bacaIdentitas } from "@/lib/auth";
+import { unlink } from "fs/promises";
+import path from "path";
+
+function resolvePaklaringPath(pathFile: string): string {
+  if (pathFile.startsWith("/api/berkas/")) {
+    return path.join(
+      process.cwd(),
+      "uploads",
+      pathFile.replace(/^\/api\/berkas\//, "")
+    );
+  }
+  return path.join(process.cwd(), "public", pathFile.replace(/^\/+/, ""));
+}
 
 // =====================================================
 // HELPER VALIDASI TAHUN
@@ -396,6 +409,14 @@ export async function DELETE(request: NextRequest) {
         id: id,
       },
     });
+
+    if (existing.paklaringPathFile) {
+      try {
+        await unlink(resolvePaklaringPath(existing.paklaringPathFile));
+      } catch (e) {
+        console.warn("File paklaring tidak ditemukan saat pengalaman dihapus:", e);
+      }
+    }
 
     return NextResponse.json({
       success: true,

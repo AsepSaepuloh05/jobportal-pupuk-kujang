@@ -8,6 +8,7 @@ export async function GET(
 ) {
     try {
         const { id } = await params;
+        const { userRole } = await bacaIdentitas();
 
         const lowongan = await prisma.lowongan.findUnique({
             where: {
@@ -16,6 +17,16 @@ export async function GET(
         });
 
         if (!lowongan) {
+            return NextResponse.json(
+                {
+                    message: "Lowongan tidak ditemukan",
+                },
+                { status: 404 }
+            );
+        }
+
+        // Lowongan berstatus DRAFT hanya boleh dilihat oleh HR
+        if (userRole !== "HR" && lowongan.status === "DRAFT") {
             return NextResponse.json(
                 {
                     message: "Lowongan tidak ditemukan",

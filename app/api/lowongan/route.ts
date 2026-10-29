@@ -20,23 +20,46 @@ export async function GET(request: Request) {
             });
             kandidatDesa = kandidat?.desa || null;
         }
-        const whereClause = {
-            ...(status
-                ? { status: status as "AKTIF" | "DRAFT" | "DITUTUP" }
-                : {}),
-            ...(userRole === "KANDIDAT"
-                ? {
-                    OR: [
-                        { filterDomisiliAktif: false },
-                        {
-                            desaDiizinkan: {
-                                has: kandidatDesa || "___TIDAK_ADA_DESA___",
-                            },
-                        },
-                    ],
-                }
-                : {}),
-        };
+
+        const hariIni = new Date();
+        hariIni.setHours(0, 0, 0, 0);
+
+        const isHR = userRole === "HR";
+
+        const whereClause = isHR
+            ? {
+                  ...(status
+                      ? { status: status as "AKTIF" | "DRAFT" | "DITUTUP" }
+                      : {}),
+              }
+            : {
+                  // Publik & Kandidat hanya boleh melihat lowongan AKTIF yang belum kedaluwarsa
+                  status: "AKTIF" as const,
+                  AND: [
+                      {
+                          OR: [
+                              { tanggalBerakhir: null },
+                              { tanggalBerakhir: { gte: hariIni } },
+                          ],
+                      },
+                      ...(userRole === "KANDIDAT"
+                          ? [
+                                {
+                                    OR: [
+                                        { filterDomisiliAktif: false },
+                                        {
+                                            desaDiizinkan: {
+                                                has:
+                                                    kandidatDesa ||
+                                                    "___TIDAK_ADA_DESA___",
+                                            },
+                                        },
+                                    ],
+                                },
+                            ]
+                          : []),
+                  ],
+              };
 
         const lowongan = await prisma.lowongan.findMany({
             where: whereClause,

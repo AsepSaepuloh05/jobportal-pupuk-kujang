@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { bacaIdentitas } from "@/lib/auth";
+import { unlink } from "fs/promises";
+import path from "path";
 
 type Params = {
   params: Promise<{
@@ -11,6 +13,24 @@ type Params = {
 // =====================================================
 // HELPER
 // =====================================================
+
+function resolvePhysicalPath(publicPath: string): string | null {
+  if (publicPath.startsWith("/api/berkas/")) {
+    return path.join(
+      process.cwd(),
+      "uploads",
+      publicPath.replace(/^\/api\/berkas\//, "")
+    );
+  }
+  if (publicPath.startsWith("/uploads/")) {
+    return path.join(
+      process.cwd(),
+      "public",
+      publicPath.replace(/^\/+/, "")
+    );
+  }
+  return null;
+}
 
 // Kolom database: ipk (Float). Frontend memakai: nilai (string).
 function toClient<T extends { ipk?: number | null }>(item: T) {
@@ -247,6 +267,17 @@ export async function DELETE(
         id: pendidikanId,
       },
     });
+
+    if (existing.ijazahPathFile) {
+      try {
+        const physicalPath = resolvePhysicalPath(existing.ijazahPathFile);
+        if (physicalPath) {
+          await unlink(physicalPath);
+        }
+      } catch (e) {
+        console.warn("File ijazah tidak ditemukan saat pendidikan dihapus:", e);
+      }
+    }
 
     return NextResponse.json({
       success: true,

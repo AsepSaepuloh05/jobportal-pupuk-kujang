@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { bacaIdentitas } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { JenisDokumen } from "@/app/generated/prisma/client";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 import { deteksiBerkas } from "@/lib/file-signature";
 
@@ -15,6 +15,17 @@ const ALLOWED_TYPES: Record<string, string[]> = {
   TRANSKRIP: ["application/pdf", "image/jpeg", "image/png"],
   LAINNYA: ["application/pdf", "image/jpeg", "image/png"],
 };
+
+function resolvePhysicalPath(pathFile: string): string {
+  if (pathFile.startsWith("/api/berkas/")) {
+    return path.join(
+      process.cwd(),
+      "uploads",
+      pathFile.replace(/^\/api\/berkas\//, "")
+    );
+  }
+  return path.join(process.cwd(), "public", pathFile.replace(/^\/+/, ""));
+}
 
 async function getUserId() {
   const { userId } = await bacaIdentitas();
@@ -58,6 +69,8 @@ export async function GET() {
 
 // POST -> upload / replace dokumen
 export async function POST(request: Request) {
+  let newFilePath: string | null = null;
+
   try {
     const userId = await getUserId();
 
@@ -130,6 +143,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Cek dokumen lama sebelum ditimpa agar file fisiknya bisa dihapus
+    const dokumenLama = await prisma.dokumenKandidat.findUnique({
+      where: {
+        userId_jenisDokumen: {
+          userId,
+          jenisDokumen,
+        },
+      },
+      select: { pathFile: true },
+    });
+
     const ext = path.extname(file.name) || (tipeAsli === "pdf" ? ".pdf" : tipeAsli === "png" ? ".png" : ".jpg");
     const namaFile = `${userId}-${jenisDokumen}-${Date.now()}${ext}`;
 
@@ -143,6 +167,7 @@ export async function POST(request: Request) {
 
     const filePath = path.join(uploadDir, namaFile);
     await writeFile(filePath, buffer);
+    newFilePath = filePath;
 
     // Path diakses melalui API berkas yang terautentikasi
     const pathFile = `/api/berkas/dokumen/${namaFile}`;
@@ -172,6 +197,15 @@ export async function POST(request: Request) {
       },
     });
 
+    // Hapus file fisik lama jika ada dan berbeda dari file baru
+    if (dokumenLama?.pathFile && dokumenLama.pathFile !== pathFile) {
+      try {
+        await unlink(resolvePhysicalPath(dokumenLama.pathFile));
+      } catch (e) {
+        console.warn("File dokumen lama tidak ditemukan saat dihapus:", e);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: "Dokumen berhasil diunggah",
@@ -179,6 +213,15 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("UPLOAD DOKUMEN ERROR:", error);
+
+    if (newFilePath) {
+      try {
+        await unlink(newFilePath);
+      } catch {
+        // abaikan jika gagal bersih-bersih
+      }
+    }
+
     return NextResponse.json(
       { success: false, message: "Terjadi kesalahan pada server" },
       { status: 500 }

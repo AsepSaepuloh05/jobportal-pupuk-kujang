@@ -192,6 +192,21 @@ export async function POST(request: Request) {
             );
         }
 
+        if (lowongan.tanggalBerakhir) {
+            const hariIni = new Date();
+            hariIni.setHours(0, 0, 0, 0);
+
+            if (new Date(lowongan.tanggalBerakhir) < hariIni) {
+                return NextResponse.json(
+                    {
+                        message:
+                            "Batas waktu pendaftaran untuk lowongan ini sudah berakhir",
+                    },
+                    { status: 400 }
+                );
+            }
+        }
+
         if (lowongan.filterDomisiliAktif) {
             const kandidat = await prisma.user.findUnique({
                 where: { id: Number(userId) },
