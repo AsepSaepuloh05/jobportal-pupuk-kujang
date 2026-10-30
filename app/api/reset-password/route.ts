@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { createHash, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { validatePassword } from "@/lib/password";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const MAX_ATTEMPTS = 5;
 
@@ -24,6 +25,23 @@ const INVALID_OTP = {
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const ipLimit = checkRateLimit(`reset-password:ip:${ip}`, 15, 10 * 60);
+
+    if (!ipLimit.allowed) {
+      const menit = Math.ceil(ipLimit.retryAfterSeconds / 60);
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Terlalu banyak percobaan reset password dari perangkat ini. Silakan coba lagi dalam ${menit} menit.`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(ipLimit.retryAfterSeconds) },
+        }
+      );
+    }
+
     const body = await request.json();
 
     const email = body.email?.trim().toLowerCase();

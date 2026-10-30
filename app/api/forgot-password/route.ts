@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createHash, randomInt } from "crypto";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
+import { escapeHtml } from "@/lib/email";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -16,6 +18,23 @@ const OK_MESSAGE =
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const ipLimit = checkRateLimit(`forgot-password:ip:${ip}`, 5, 10 * 60);
+
+    if (!ipLimit.allowed) {
+      const menit = Math.ceil(ipLimit.retryAfterSeconds / 60);
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Terlalu banyak permintaan reset password dari perangkat ini. Silakan coba lagi dalam ${menit} menit.`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(ipLimit.retryAfterSeconds) },
+        }
+      );
+    }
+
     const body = await request.json();
 
     const email = body.email?.trim().toLowerCase();
@@ -78,6 +97,8 @@ export async function POST(request: Request) {
     const emailFrom =
       process.env.EMAIL_FROM || "SIO Karir <onboarding@resend.dev>";
 
+    const namaAman = escapeHtml(user.nama);
+
     const { error } = await resend.emails.send({
       from: emailFrom,
       to: email,
@@ -88,7 +109,7 @@ export async function POST(request: Request) {
             Reset Password SIO Karir
           </h2>
 
-          <p>Halo <strong>${user.nama}</strong>,</p>
+          <p>Halo <strong>${namaAman}</strong>,</p>
 
           <p>
             Kami menerima permintaan untuk mereset password akun Anda.

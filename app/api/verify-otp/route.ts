@@ -1,13 +1,38 @@
 import { NextResponse } from "next/server";
-import { createHash } from "crypto";
+import { createHash, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 function hashOtp(otp: string) {
   return createHash("sha256").update(otp).digest("hex");
 }
 
+function safeEqual(a: string, b: string) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+}
+
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const ipLimit = checkRateLimit(`verify-otp:ip:${ip}`, 15, 10 * 60);
+
+    if (!ipLimit.allowed) {
+      const menit = Math.ceil(ipLimit.retryAfterSeconds / 60);
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Terlalu banyak percobaan verifikasi dari perangkat ini. Silakan coba lagi dalam ${menit} menit.`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(ipLimit.retryAfterSeconds) },
+        }
+      );
+    }
+
     const body = await request.json();
 
     const email = body.email?.trim().toLowerCase();
@@ -94,7 +119,7 @@ export async function POST(request: Request) {
 
     const otpHash = hashOtp(otp);
 
-    if (otpHash !== verification.otpHash) {
+    if (!safeEqual(otpHash, verification.otpHash)) {
       await prisma.emailVerification.update({
         where: {
           email,

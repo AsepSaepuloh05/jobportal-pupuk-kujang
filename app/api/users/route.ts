@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { bacaIdentitas } from "@/lib/auth";
+import { validatePassword } from "@/lib/password";
 
 export async function GET() {
   try {
@@ -48,12 +50,24 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const name = body.name?.trim();
-    const email = body.email?.trim();
+    const email = body.email?.trim().toLowerCase();
+    const rawPassword = body.password;
 
-    if (!name || !email) {
+    if (!name || !email || !rawPassword) {
       return NextResponse.json(
         {
-          message: "Nama dan email wajib diisi",
+          message: "Nama, email, dan password wajib diisi",
+        },
+        { status: 400 }
+      );
+    }
+
+    const passwordError = validatePassword(rawPassword);
+
+    if (passwordError) {
+      return NextResponse.json(
+        {
+          message: passwordError,
         },
         { status: 400 }
       );
@@ -75,14 +89,14 @@ export async function POST(request: Request) {
     }
 
     const nik = body.nik?.trim() || `NIK-${Date.now()}`;
-    const password = body.password || "default-hash";
+    const passwordHash = await bcrypt.hash(rawPassword, 10);
 
     const user = await prisma.user.create({
       data: {
         nama: name,
         email,
         nik,
-        password,
+        password: passwordHash,
       },
       omit: {
         password: true,

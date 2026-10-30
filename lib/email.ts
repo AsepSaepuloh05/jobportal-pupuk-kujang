@@ -14,7 +14,18 @@ const TAHAPAN_LABEL: Record<string, string> = {
     OFFERING: "Offering",
 };
 
+export function escapeHtml(teks: string) {
+    return teks
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 function wrapTemplate(nama: string, bodyHtml: string) {
+    const namaAman = escapeHtml(nama);
+
     return `
     <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #1e293b;">
       <div style="text-align: center; margin-bottom: 24px;">
@@ -24,7 +35,7 @@ function wrapTemplate(nama: string, bodyHtml: string) {
       </div>
 
       <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 28px;">
-        <p style="margin: 0 0 16px; font-size: 15px;">Halo, <strong>${nama}</strong>,</p>
+        <p style="margin: 0 0 16px; font-size: 15px;">Halo, <strong>${namaAman}</strong>,</p>
         ${bodyHtml}
       </div>
 
@@ -131,12 +142,17 @@ export async function kirimEmailUndangan({
     jadwalLokasi?: string | null;
     jadwalCatatan?: string | null;
 }) {
-    const labelTahapan = TAHAPAN_LABEL[tahapan] || tahapan;
+    const labelTahapan = escapeHtml(TAHAPAN_LABEL[tahapan] || tahapan);
+    const posisiAman = escapeHtml(posisi);
+    const lokasiAman = jadwalLokasi ? escapeHtml(jadwalLokasi) : null;
+    const catatanAman = jadwalCatatan
+        ? escapeHtml(jadwalCatatan).replace(/\n/g, "<br/>")
+        : null;
 
     const bodyHtml = `
     <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.7;">
       Selamat! Kamu diundang untuk mengikuti tahap <strong>${labelTahapan}</strong>
-      pada proses seleksi posisi <strong>${posisi}</strong> di PT Pupuk Kujang.
+      pada proses seleksi posisi <strong>${posisiAman}</strong> di PT Pupuk Kujang.
     </p>
 
     <table style="width: 100%; border-collapse: collapse; margin: 0 0 16px;">
@@ -144,18 +160,18 @@ export async function kirimEmailUndangan({
         <td style="padding: 8px 0; font-size: 13px; color: #64748b; width: 100px;">Tanggal &amp; Jam</td>
         <td style="padding: 8px 0; font-size: 14px; font-weight: 600;">${formatTanggalJam(jadwalTanggal)}</td>
       </tr>
-      ${jadwalLokasi
+      ${lokasiAman
             ? `<tr>
               <td style="padding: 8px 0; font-size: 13px; color: #64748b;">Lokasi</td>
-              <td style="padding: 8px 0; font-size: 14px; font-weight: 600;">${jadwalLokasi}</td>
+              <td style="padding: 8px 0; font-size: 14px; font-weight: 600;">${lokasiAman}</td>
             </tr>`
             : ""
         }
     </table>
 
-    ${jadwalCatatan
+    ${catatanAman
             ? `<div style="background: #f8fafc; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
-            <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #475569;">${jadwalCatatan.replace(/\n/g, "<br/>")}</p>
+            <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #475569;">${catatanAman}</p>
           </div>`
             : ""
         }
@@ -171,7 +187,7 @@ export async function kirimEmailUndangan({
         nama,
         tipe: "UNDANGAN",
         tahapan,
-        subjek: `Undangan ${labelTahapan} - ${posisi} | PT Pupuk Kujang`,
+        subjek: `Undangan ${TAHAPAN_LABEL[tahapan] || tahapan} - ${posisi} | PT Pupuk Kujang`,
         bodyHtml,
     });
 }
@@ -191,7 +207,7 @@ export async function kirimEmailBebas({
 }) {
     const bodyHtml =
         "<div style=\"font-size: 14px; line-height: 1.7; white-space: pre-line;\">" +
-        isi +
+        escapeHtml(isi) +
         "</div>";
 
     return kirimDanCatat({
@@ -221,7 +237,9 @@ export async function kirimEmailHasil({
     lolos: boolean;
     tahapanSelanjutnya?: string | null;
 }) {
-    const labelTahapan = TAHAPAN_LABEL[tahapan] || tahapan;
+    const labelTahapanRaw = TAHAPAN_LABEL[tahapan] || tahapan;
+    const labelTahapan = escapeHtml(labelTahapanRaw);
+    const posisiAman = escapeHtml(posisi);
 
     let bodyHtml = "";
 
@@ -229,9 +247,12 @@ export async function kirimEmailHasil({
         let infoLanjutan = "";
 
         if (tahapanSelanjutnya) {
+            const labelSelanjutnya = escapeHtml(
+                TAHAPAN_LABEL[tahapanSelanjutnya] || tahapanSelanjutnya
+            );
             infoLanjutan =
                 "<p style=\"margin: 0; font-size: 14px; line-height: 1.7;\">Kamu akan lanjut ke tahap <strong>" +
-                (TAHAPAN_LABEL[tahapanSelanjutnya] || tahapanSelanjutnya) +
+                labelSelanjutnya +
                 "</strong>. Informasi jadwal akan dikirimkan menyusul.</p>";
         } else {
             infoLanjutan =
@@ -242,7 +263,7 @@ export async function kirimEmailHasil({
             "<p style=\"margin: 0 0 16px; font-size: 14px; line-height: 1.7;\">Selamat! Kamu <strong style=\"color: #16a34a;\">dinyatakan lolos</strong> tahap <strong>" +
             labelTahapan +
             "</strong> pada proses seleksi posisi <strong>" +
-            posisi +
+            posisiAman +
             "</strong> di PT Pupuk Kujang.</p>" +
             infoLanjutan;
     } else {
@@ -250,13 +271,13 @@ export async function kirimEmailHasil({
             "<p style=\"margin: 0; font-size: 14px; line-height: 1.7;\">Terima kasih telah mengikuti proses seleksi tahap <strong>" +
             labelTahapan +
             "</strong> untuk posisi <strong>" +
-            posisi +
+            posisiAman +
             "</strong> di PT Pupuk Kujang. Mohon maaf, saat ini kami <strong style=\"color: #dc2626;\">belum dapat melanjutkan</strong> proses lamaranmu ke tahap berikutnya.</p>" +
             "<p style=\"margin: 16px 0 0; font-size: 14px; line-height: 1.7;\">Kami menghargai waktu dan usahamu, dan berharap dapat berkesempatan bekerja sama di lain waktu.</p>";
     }
 
     const subjekEmail = lolos
-        ? "Selamat! Kamu Lolos Tahap " + labelTahapan + " - " + posisi
+        ? "Selamat! Kamu Lolos Tahap " + labelTahapanRaw + " - " + posisi
         : "Informasi Hasil Seleksi - " + posisi;
 
     return kirimDanCatat({

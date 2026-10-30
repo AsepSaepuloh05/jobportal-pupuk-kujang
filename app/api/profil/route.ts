@@ -570,5 +570,15 @@ if (
     { status: 409 }
   );
 }
+
+console.error("PUT PROFIL ERROR:", error);
+
+return NextResponse.json(
+  {
+    success: false,
+    message: "Gagal memperbarui data profil",
+  },
+  { status: 500 }
+);
 }
 }

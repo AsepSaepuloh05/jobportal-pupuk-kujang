@@ -89,7 +89,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userRole } = await bacaIdentitas();
+    const { userId, userRole } = await bacaIdentitas();
 
     if (userRole !== "HR") {
       return NextResponse.json(
@@ -99,8 +99,17 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const targetId = Number(id);
+
+    if (Number(userId) === targetId) {
+      return NextResponse.json(
+        { message: "Tidak dapat menghapus akun sendiri yang sedang aktif" },
+        { status: 400 }
+      );
+    }
+
     await prisma.user.delete({
-      where: { id: Number(id) },
+      where: { id: targetId },
     });
 
     return NextResponse.json({ message: "User berhasil dihapus" });
