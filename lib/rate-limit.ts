@@ -99,18 +99,52 @@ export function resetRateLimit(key: string): void {
 }
 
 /**
- * Mengambil IP klien dari header request secara aman.
+ * Jumlah reverse proxy tepercaya di depan aplikasi yang MENAMBAHKAN IP
+ * peer ke akhir header X-Forwarded-For (Nginx, Cloudflare, Vercel, dll).
+ *
+ * - 1 (default): satu proxy di depan aplikasi.
+ * - 2: misalnya Cloudflare + Nginx.
+ * - 0: aplikasi diakses langsung tanpa proxy; header tidak dipercaya sama sekali.
+ *
+ * Atur lewat env TRUSTED_PROXY_COUNT.
+ */
+function jumlahProxyTepercaya(): number {
+    const mentah = process.env.TRUSTED_PROXY_COUNT;
+    if (mentah === undefined || mentah.trim() === "") return 1;
+
+    const angka = Number.parseInt(mentah, 10);
+    return Number.isInteger(angka) && angka >= 0 ? angka : 1;
+}
+
+/**
+ * Mengambil IP klien dari header request.
+ *
+ * Klien bebas mengirim X-Forwarded-For palsu; proxy tepercaya hanya
+ * MENAMBAHKAN IP asli di sebelah kanan. Maka IP yang dipercaya diambil dari
+ * kanan sebanyak jumlah proxy tepercaya, bukan entri paling kiri yang bisa
+ * dipalsukan penyerang untuk menghindari rate limit.
  */
 export function getClientIp(request: Request): string {
+    const proxy = jumlahProxyTepercaya();
+
+    // Tanpa proxy tepercaya tidak ada sumber IP yang bisa dipercaya
+    if (proxy === 0) return "unknown";
+
     const forwarded = request.headers.get("x-forwarded-for");
     if (forwarded) {
-        // Ambil IP klien pertama jika di belakang proxy/load balancer
-        const first = forwarded.split(",")[0]?.trim();
-        if (first) return first;
+        const daftar = forwarded
+            .split(",")
+            .map((ip) => ip.trim())
+            .filter(Boolean);
+
+        if (daftar.length > 0) {
+            const indeks = Math.max(0, daftar.length - proxy);
+            return daftar[indeks];
+        }
     }
 
     const realIp = request.headers.get("x-real-ip");
-    if (realIp) return realIp.trim();
+    if (realIp?.trim()) return realIp.trim();
 
-    return "127.0.0.1";
+    return "unknown";
 }

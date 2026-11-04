@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-import { createHash, randomInt } from "crypto";
+import { randomInt } from "crypto";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import { escapeHtml } from "@/lib/email";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { hashOtp } from "@/lib/otp";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-
-function hashOtp(otp: string) {
-  return createHash("sha256").update(otp).digest("hex");
-}
 
 // Respons sukses selalu sama (baik email terdaftar maupun tidak)
 // agar orang luar tidak bisa menebak email mana yang terdaftar.
@@ -78,7 +75,7 @@ export async function POST(request: Request) {
     }
 
     const otp = randomInt(100000, 1000000).toString();
-    const otpHash = hashOtp(otp);
+    const otpHash = hashOtp(email, otp);
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
     const now = new Date();
 

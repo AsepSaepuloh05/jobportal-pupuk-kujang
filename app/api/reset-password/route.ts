@@ -1,22 +1,11 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { createHash, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { validatePassword } from "@/lib/password";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { hashOtp, hashOtpSama, MAKS_PERCOBAAN_OTP } from "@/lib/otp";
 
-const MAX_ATTEMPTS = 5;
-
-function hashOtp(otp: string) {
-  return createHash("sha256").update(otp).digest("hex");
-}
-
-function safeEqual(a: string, b: string) {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-
-  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
-}
+const MAX_ATTEMPTS = MAKS_PERCOBAAN_OTP;
 
 const INVALID_OTP = {
   success: false,
@@ -87,8 +76,23 @@ export async function POST(request: Request) {
       return NextResponse.json(INVALID_OTP, { status: 400 });
     }
 
-    if (reset.attempts >= MAX_ATTEMPTS) {
-      await prisma.passwordReset.delete({ where: { email } });
+    // Klaim satu percobaan secara ATOMIK: cek batas + tambah counter dalam
+    // satu query UPDATE. Request paralel tidak bisa melewati batas percobaan.
+    // Percobaan dihitung sebelum OTP dibandingkan.
+    const klaim = await prisma.passwordReset.updateMany({
+      where: {
+        email,
+        attempts: { lt: MAX_ATTEMPTS },
+        expiresAt: { gt: new Date() },
+      },
+      data: { attempts: { increment: 1 } },
+    });
+
+    if (klaim.count === 0) {
+      // Batas percobaan habis: hapus agar harus minta OTP baru
+      await prisma.passwordReset.deleteMany({
+        where: { email, attempts: { gte: MAX_ATTEMPTS } },
+      });
 
       return NextResponse.json(
         {
@@ -99,27 +103,32 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!safeEqual(hashOtp(otp), reset.otpHash)) {
-      await prisma.passwordReset.update({
-        where: { email },
-        data: { attempts: { increment: 1 } },
-      });
-
+    if (!hashOtpSama(hashOtp(email, otp), reset.otpHash)) {
       return NextResponse.json(INVALID_OTP, { status: 400 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // SESUAIKAN nama kolom password dengan model User Anda.
+    // OTP dipakai sekali (atomik): hanya satu request yang berhasil menghapus
+    // data reset, request lain yang membawa OTP benar yang sama ditolak.
     // updateMany: semua akun dengan email ini ikut diperbarui,
     // karena pemilik email sudah terbukti lewat OTP.
-    const [updated] = await prisma.$transaction([
-      prisma.user.updateMany({
+    const updated = await prisma.$transaction(async (tx) => {
+      const dipakai = await tx.passwordReset.deleteMany({
+        where: { email, otpHash: reset.otpHash },
+      });
+
+      if (dipakai.count === 0) return null;
+
+      return tx.user.updateMany({
         where: { email },
         data: { password: passwordHash },
-      }),
-      prisma.passwordReset.delete({ where: { email } }),
-    ]);
+      });
+    });
+
+    if (!updated) {
+      return NextResponse.json(INVALID_OTP, { status: 400 });
+    }
 
     if (updated.count === 0) {
       return NextResponse.json(
