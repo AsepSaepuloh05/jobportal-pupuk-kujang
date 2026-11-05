@@ -119,6 +119,19 @@ export async function POST(request: Request) {
         const gajiMin = body.gajiMin ? Number(body.gajiMin) : null;
         const gajiMax = body.gajiMax ? Number(body.gajiMax) : null;
 
+        if (
+            gajiMin !== null &&
+            gajiMax !== null &&
+            gajiMin > gajiMax
+        ) {
+            return NextResponse.json(
+                {
+                    message: "Gaji minimum tidak boleh lebih besar dari maksimum",
+                },
+                { status: 400 }
+            );
+        }
+
         if (!posisi || !departemen || !lokasi || !tipe) {
             return NextResponse.json(
                 {
@@ -146,6 +159,15 @@ export async function POST(request: Request) {
                     message:
                         "Status tidak valid. Gunakan AKTIF, DRAFT, atau DITUTUP",
                 },
+                { status: 400 }
+            );
+        }
+
+        const KATEGORI_VALID = ["Pabrik", "Non Pabrik"];
+
+        if (kategori && !KATEGORI_VALID.includes(kategori)) {
+            return NextResponse.json(
+                { message: "Pilihan kategori tidak valid" },
                 { status: 400 }
             );
         }

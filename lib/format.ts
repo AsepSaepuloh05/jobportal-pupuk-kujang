@@ -11,7 +11,7 @@ export function formatGajiRange(
     gajiMax: number | null | undefined
 ): string {
     if (!gajiMin && !gajiMax) {
-        return "Nego";
+        return "Negotiable";
     }
 
     if (gajiMin && gajiMax) {

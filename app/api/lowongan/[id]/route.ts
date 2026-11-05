@@ -156,6 +156,15 @@ export async function PUT(
             }
         }
 
+        const KATEGORI_VALID = ["Pabrik", "Non Pabrik"];
+
+        if (kategori && !KATEGORI_VALID.includes(kategori)) {
+            return NextResponse.json(
+                { message: "Pilihan kategori tidak valid" },
+                { status: 400 }
+            );
+        }
+
         const PENGALAMAN_VALID = [
             "Fresh Graduate / Tidak Diperlukan",
             "1-2 Tahun",
