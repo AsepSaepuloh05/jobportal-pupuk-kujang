@@ -57,7 +57,7 @@ const getTodayString = () => {
 };
 
 const PENGALAMAN_OPTIONS = [
-    "Fresh Graduate / Tidak Diperlukan",
+    "Fresh Graduate",
     "1-2 Tahun",
     "3-5 Tahun",
     "Lebih dari 5 Tahun",
@@ -146,7 +146,11 @@ export default function EditLowonganPage() {
                     KATEGORI_OPTIONS.includes(data.kategori) ? data.kategori : ""
                 );
                 setPendidikan(data.pendidikan || "");
-                setPengalaman(data.pengalaman || "");
+                setPengalaman(
+                    data.pengalaman === "Fresh Graduate / Tidak Diperlukan"
+                        ? "Fresh Graduate"
+                        : data.pengalaman || ""
+                );
                 setTanggungJawab(data.tanggungJawab || "");
                 const hasGajiMin = data.gajiMin !== null && data.gajiMin !== undefined;
                 const hasGajiMax = data.gajiMax !== null && data.gajiMax !== undefined;

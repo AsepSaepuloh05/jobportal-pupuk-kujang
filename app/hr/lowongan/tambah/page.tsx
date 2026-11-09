@@ -55,7 +55,7 @@ const getTodayString = () => {
 };
 
 const PENGALAMAN_OPTIONS = [
-    "Fresh Graduate / Tidak Diperlukan",
+    "Fresh Graduate",
     "1-2 Tahun",
     "3-5 Tahun",
     "Lebih dari 5 Tahun",

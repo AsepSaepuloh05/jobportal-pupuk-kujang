@@ -24,7 +24,6 @@ import {
     ChevronDown,
     CheckCircle2,
     Hourglass,
-    Ban,
     ArrowUpDown,
     CalendarClock,
     Send,
@@ -209,7 +208,7 @@ export default function PelamarLowonganPage() {
     const [loadingDetail, setLoadingDetail] = useState(false);
 
     const [confirmAction, setConfirmAction] = useState<{
-        type: "tahapan" | "tolak" | "batalkan";
+        type: "tahapan" | "tolak";
         lamaranId: number;
         nama: string;
         tahapan?: string;
@@ -365,35 +364,6 @@ export default function PelamarLowonganPage() {
         }
     };
 
-    const eksekusiBatalkan = async (lamaranId: number) => {
-        try {
-            setProcessingId(lamaranId);
-
-            const response = await fetch(`/api/lamaran/${lamaranId}`, {
-                method: "DELETE",
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Gagal membatalkan lamaran");
-            }
-
-            setPelamar((prev) => prev.filter((item) => item.id !== lamaranId));
-
-            if (expandedId === lamaranId) {
-                setExpandedId(null);
-            }
-        } catch (error) {
-            console.error("BATALKAN LAMARAN ERROR:", error);
-            toast.error(
-                error instanceof Error ? error.message : "Gagal membatalkan lamaran"
-            );
-        } finally {
-            setProcessingId(null);
-        }
-    };
-
     const handleSelesaikanTahapan = (lamaranId: number, tahapan: string) => {
         const item = pelamar.find((p) => p.id === lamaranId);
         setKirimEmailConfirm(true);
@@ -410,10 +380,6 @@ export default function PelamarLowonganPage() {
         setConfirmAction({ type: "tolak", lamaranId, nama });
     };
 
-    const handleBatalkan = (lamaranId: number, nama: string) => {
-        setConfirmAction({ type: "batalkan", lamaranId, nama });
-    };
-
     const jalankanKonfirmasi = () => {
         if (!confirmAction) return;
 
@@ -425,8 +391,6 @@ export default function PelamarLowonganPage() {
             );
         } else if (confirmAction.type === "tolak") {
             eksekusiTolak(confirmAction.lamaranId, kirimEmailConfirm);
-        } else if (confirmAction.type === "batalkan") {
-            eksekusiBatalkan(confirmAction.lamaranId);
         }
 
         setConfirmAction(null);
@@ -1332,18 +1296,6 @@ export default function PelamarLowonganPage() {
                                                         Tolak Lamaran
                                                     </button>
 
-                                                    <button
-                                                        type="button"
-                                                        disabled={processingId === item.id}
-                                                        onClick={() =>
-                                                            handleBatalkan(item.id, item.user.nama)
-                                                        }
-                                                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                                                    >
-                                                        <Ban className="h-3.5 w-3.5" />
-                                                        Batalkan Lamaran
-                                                    </button>
-
                                                 </div>
 
                                             </div>
@@ -1553,16 +1505,12 @@ export default function PelamarLowonganPage() {
                 title={
                     confirmAction?.type === "tahapan"
                         ? `Tandai ${TAHAPAN_LABEL[confirmAction.tahapan || ""]} selesai?`
-                        : confirmAction?.type === "tolak"
-                            ? "Tolak Lamaran?"
-                            : "Batalkan Lamaran?"
+                        : "Tolak Lamaran?"
                 }
                 description={
                     confirmAction?.type === "tahapan"
                         ? `Kandidat "${confirmAction.nama}" akan lanjut ke tahapan berikutnya. Aksi ini tidak bisa dibatalkan.`
-                        : confirmAction?.type === "tolak"
-                            ? `Lamaran dari "${confirmAction?.nama}" akan ditandai Ditolak.`
-                            : `Lamaran dari "${confirmAction?.nama}" akan dihapus permanen dari sistem.`
+                        : `Lamaran dari "${confirmAction?.nama}" akan ditandai Ditolak.`
                 }
                 confirmText={
                     confirmAction?.type === "tahapan" ? "Ya, Selesaikan" : "Ya, Lanjutkan"
