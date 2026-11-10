@@ -152,7 +152,7 @@ export async function kirimEmailUndangan({
     const bodyHtml = `
     <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.7;">
       Selamat! Kamu diundang untuk mengikuti tahap <strong>${labelTahapan}</strong>
-      pada proses seleksi posisi <strong>${posisiAman}</strong> di PT Pupuk Kujang.
+      pada proses seleksi TKNO posisi <strong>${posisiAman}</strong> di PT Pupuk Kujang.
     </p>
 
     <table style="width: 100%; border-collapse: collapse; margin: 0 0 16px;">
@@ -262,13 +262,13 @@ export async function kirimEmailHasil({
         bodyHtml =
             "<p style=\"margin: 0 0 16px; font-size: 14px; line-height: 1.7;\">Selamat! Kamu <strong style=\"color: #16a34a;\">dinyatakan lolos</strong> tahap <strong>" +
             labelTahapan +
-            "</strong> pada proses seleksi posisi <strong>" +
+            "</strong> pada proses seleksi TKNO posisi <strong>" +
             posisiAman +
             "</strong> di PT Pupuk Kujang.</p>" +
             infoLanjutan;
     } else {
         bodyHtml =
-            "<p style=\"margin: 0; font-size: 14px; line-height: 1.7;\">Terima kasih telah mengikuti proses seleksi tahap <strong>" +
+            "<p style=\"margin: 0; font-size: 14px; line-height: 1.7;\">Terima kasih telah mengikuti proses seleksi TKNO tahap <strong>" +
             labelTahapan +
             "</strong> untuk posisi <strong>" +
             posisiAman +
