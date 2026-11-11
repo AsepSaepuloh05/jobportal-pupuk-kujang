@@ -3,6 +3,11 @@ import { bacaIdentitas } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { validatePassword } from "@/lib/password";
+import {
+    buatTokenSesi,
+    NAMA_COOKIE_SESI,
+    opsiCookieSesi,
+} from "@/lib/session";
 
 export async function PUT(request: Request) {
     try {
@@ -63,12 +68,25 @@ export async function PUT(request: Request) {
 
         const hash = await bcrypt.hash(passwordBaru, 10);
 
-        await prisma.user.update({
+        // tokenVersion dinaikkan agar semua sesi lain dicabut. Sesi perangkat
+        // ini diganti dengan token baru di bawah.
+        const diperbarui = await prisma.user.update({
             where: { id: userId },
-            data: { password: hash },
+            data: { password: hash, tokenVersion: { increment: 1 } },
+            select: { tokenVersion: true },
         });
 
-        return NextResponse.json({ message: "Password berhasil diubah" });
+        const tokenBaru = await buatTokenSesi({
+            userId,
+            role: "HR",
+            versi: diperbarui.tokenVersion,
+        });
+
+        const response = NextResponse.json({ message: "Password berhasil diubah" });
+
+        response.cookies.set(NAMA_COOKIE_SESI, tokenBaru, opsiCookieSesi());
+
+        return response;
     } catch (error) {
         console.error("PUT PASSWORD HR ERROR:", error);
 

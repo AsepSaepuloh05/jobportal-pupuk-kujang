@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bacaSesi } from "@/lib/session";
+import { bacaSesiValid } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { readFile } from "fs/promises";
 import path from "path";
@@ -77,7 +77,7 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   // Verifikasi sesi
-  const sesi = await bacaSesi();
+  const sesi = await bacaSesiValid();
 
   if (!sesi) {
     return NextResponse.json(

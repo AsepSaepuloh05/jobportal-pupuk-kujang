@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { toast } from "@/app/components/Toast";
 
+const KATEGORI_OPTIONS = ["Pabrik", "Non Pabrik"];
+
 const PENDIDIKAN_OPTIONS = [
     "SMA / SMK",
     "D1",
@@ -55,7 +57,7 @@ const getTodayString = () => {
 };
 
 const PENGALAMAN_OPTIONS = [
-    "Fresh Graduate / Tidak Diperlukan",
+    "Fresh Graduate",
     "1-2 Tahun",
     "3-5 Tahun",
     "Lebih dari 5 Tahun",
@@ -79,6 +81,7 @@ export default function EditLowonganPage() {
     const [tanggungJawab, setTanggungJawab] = useState("");
     const [gajiMin, setGajiMin] = useState("");
     const [gajiMax, setGajiMax] = useState("");
+    const [gajiNegotiable, setGajiNegotiable] = useState(false);
     const [tahapanSeleksi, setTahapanSeleksi] = useState<string[]>([]);
     const [tanggalBerakhir, setTanggalBerakhir] = useState("");
     const [filterDomisiliAktif, setFilterDomisiliAktif] = useState(false);
@@ -139,20 +142,22 @@ export default function EditLowonganPage() {
                 setStatus(data.status);
                 setDeskripsi(data.deskripsi || "");
                 setPersyaratan(data.persyaratan || "");
-                setKategori(data.kategori || "");
+                setKategori(
+                    KATEGORI_OPTIONS.includes(data.kategori) ? data.kategori : ""
+                );
                 setPendidikan(data.pendidikan || "");
-                setPengalaman(data.pengalaman || "");
+                setPengalaman(
+                    data.pengalaman === "Fresh Graduate / Tidak Diperlukan"
+                        ? "Fresh Graduate"
+                        : data.pengalaman || ""
+                );
                 setTanggungJawab(data.tanggungJawab || "");
-                setGajiMin(
-                    data.gajiMin !== null && data.gajiMin !== undefined
-                        ? String(data.gajiMin)
-                        : ""
-                );
-                setGajiMax(
-                    data.gajiMax !== null && data.gajiMax !== undefined
-                        ? String(data.gajiMax)
-                        : ""
-                );
+                const hasGajiMin = data.gajiMin !== null && data.gajiMin !== undefined;
+                const hasGajiMax = data.gajiMax !== null && data.gajiMax !== undefined;
+
+                setGajiMin(hasGajiMin ? String(data.gajiMin) : "");
+                setGajiMax(hasGajiMax ? String(data.gajiMax) : "");
+                setGajiNegotiable(!hasGajiMin && !hasGajiMax);
                 setTahapanSeleksi(data.tahapanSeleksi || []);
                 setFilterDomisiliAktif(data.filterDomisiliAktif || false);
                 setDesaDiizinkan(data.desaDiizinkan || []);
@@ -182,6 +187,16 @@ export default function EditLowonganPage() {
             return;
         }
 
+        if (
+            !gajiNegotiable &&
+            gajiMin &&
+            gajiMax &&
+            Number(gajiMin) > Number(gajiMax)
+        ) {
+            setError("Gaji minimum tidak boleh lebih besar dari maksimum");
+            return;
+        }
+
         setError("");
         setSaving(true);
 
@@ -203,8 +218,8 @@ export default function EditLowonganPage() {
                     pendidikan: pendidikan.trim() || undefined,
                     pengalaman: pengalaman.trim() || undefined,
                     tanggungJawab: tanggungJawab.trim() || undefined,
-                    gajiMin: gajiMin || undefined,
-                    gajiMax: gajiMax || undefined,
+                    gajiMin: gajiNegotiable ? undefined : gajiMin || undefined,
+                    gajiMax: gajiNegotiable ? undefined : gajiMax || undefined,
                     tahapanSeleksi,
                     filterDomisiliAktif,
                     desaDiizinkan,
@@ -433,15 +448,20 @@ export default function EditLowonganPage() {
                             <label htmlFor="kategori" className={labelClass}>
                                 Kategori
                             </label>
-                            <input
+                            <select
                                 id="kategori"
-                                type="text"
-                                placeholder="Contoh: Teknologi & IT"
                                 value={kategori}
                                 onChange={(e) => setKategori(e.target.value)}
                                 disabled={saving}
                                 className={inputClass}
-                            />
+                            >
+                                <option value="">Pilih kategori</option>
+                                {KATEGORI_OPTIONS.map((opt) => (
+                                    <option key={opt} value={opt}>
+                                        {opt}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>
@@ -571,56 +591,83 @@ export default function EditLowonganPage() {
                         </span>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-5 p-6 sm:grid-cols-3 sm:p-8">
+                    <div className="p-6 sm:p-8">
 
-                        <div>
-                            <label htmlFor="gajiMin" className={labelClass}>
-                                Gaji Minimum
-                            </label>
+                        <label className="mb-5 inline-flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 transition hover:border-emerald-300 hover:bg-emerald-50/40">
                             <input
-                                id="gajiMin"
-                                type="number"
-                                min="0"
-                                placeholder="5000000"
-                                value={gajiMin}
-                                onChange={(e) => setGajiMin(e.target.value)}
+                                type="checkbox"
+                                checked={gajiNegotiable}
+                                onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setGajiNegotiable(checked);
+                                    if (checked) {
+                                        setGajiMin("");
+                                        setGajiMax("");
+                                    }
+                                }}
                                 disabled={saving}
-                                className={inputClass}
+                                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                             />
-                        </div>
+                            <span className="text-sm font-semibold text-slate-700">
+                                Gaji Negotiable
+                            </span>
+                            <span className="text-xs text-slate-500">
+                                (Tampilkan sebagai &ldquo;Negotiable&rdquo; tanpa nominal angka)
+                            </span>
+                        </label>
 
-                        <div>
-                            <label htmlFor="gajiMax" className={labelClass}>
-                                Gaji Maksimum
-                            </label>
-                            <input
-                                id="gajiMax"
-                                type="number"
-                                min="0"
-                                placeholder="7000000"
-                                value={gajiMax}
-                                onChange={(e) => setGajiMax(e.target.value)}
-                                disabled={saving}
-                                className={inputClass}
-                            />
-                        </div>
+                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
 
-                        <div>
-                            <label htmlFor="tanggalBerakhir" className={labelClass}>
-                                Batas Lowongan Ditutup
-                            </label>
-                            <div className="relative">
-                                <CalendarClock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <div>
+                                <label htmlFor="gajiMin" className={labelClass}>
+                                    Gaji Minimum
+                                </label>
                                 <input
-                                    id="tanggalBerakhir"
-                                    type="date"
-                                    min={status === "AKTIF" ? getTodayString() : undefined}
-                                    value={tanggalBerakhir}
-                                    onChange={(e) => setTanggalBerakhir(e.target.value)}
-                                    disabled={saving}
-                                    className={`${inputClass} pl-10`}
+                                    id="gajiMin"
+                                    type="number"
+                                    min="0"
+                                    placeholder={gajiNegotiable ? "Negotiable" : "5000000"}
+                                    value={gajiMin}
+                                    onChange={(e) => setGajiMin(e.target.value)}
+                                    disabled={saving || gajiNegotiable}
+                                    className={inputClass}
                                 />
                             </div>
+
+                            <div>
+                                <label htmlFor="gajiMax" className={labelClass}>
+                                    Gaji Maksimum
+                                </label>
+                                <input
+                                    id="gajiMax"
+                                    type="number"
+                                    min="0"
+                                    placeholder={gajiNegotiable ? "Negotiable" : "7000000"}
+                                    value={gajiMax}
+                                    onChange={(e) => setGajiMax(e.target.value)}
+                                    disabled={saving || gajiNegotiable}
+                                    className={inputClass}
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="tanggalBerakhir" className={labelClass}>
+                                    Batas Lowongan Ditutup
+                                </label>
+                                <div className="relative">
+                                    <CalendarClock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        id="tanggalBerakhir"
+                                        type="date"
+                                        min={status === "AKTIF" ? getTodayString() : undefined}
+                                        value={tanggalBerakhir}
+                                        onChange={(e) => setTanggalBerakhir(e.target.value)}
+                                        disabled={saving}
+                                        className={`${inputClass} pl-10`}
+                                    />
+                                </div>
+                            </div>
+
                         </div>
 
                     </div>

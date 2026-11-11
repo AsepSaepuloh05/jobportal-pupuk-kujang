@@ -339,7 +339,7 @@ export default function LowonganPage() {
       return max;
     }
 
-    return "-";
+    return "Negotiable";
   }
 
   function getDeadline(job: Lowongan) {

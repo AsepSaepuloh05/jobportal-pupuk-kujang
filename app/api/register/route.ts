@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { createHash, randomInt } from "crypto";
+import { randomInt } from "crypto";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import { validatePassword } from "@/lib/password";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { hashOtp } from "@/lib/otp";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-
-function hashOtp(otp: string) {
-  return createHash("sha256").update(otp).digest("hex");
-}
 
 function escapeHtml(teks: string) {
   return teks
@@ -159,7 +156,7 @@ export async function POST(request: Request) {
 
     const otp = randomInt(100000, 1000000).toString();
 
-    const otpHash = hashOtp(otp);
+    const otpHash = hashOtp(email, otp);
 
     // OTP berlaku 5 menit
     const expiresAt = new Date(

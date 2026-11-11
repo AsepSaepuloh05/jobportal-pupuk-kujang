@@ -1,18 +1,7 @@
 import { NextResponse } from "next/server";
-import { createHash, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-
-function hashOtp(otp: string) {
-  return createHash("sha256").update(otp).digest("hex");
-}
-
-function safeEqual(a: string, b: string) {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-
-  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
-}
+import { hashOtp, hashOtpSama, MAKS_PERCOBAAN_OTP } from "@/lib/otp";
 
 export async function POST(request: Request) {
   try {
@@ -84,10 +73,36 @@ export async function POST(request: Request) {
     }
 
     // ==========================================
-    // BATAS PERCOBAAN OTP
+    // KLAIM SATU PERCOBAAN SECARA ATOMIK
+    // Pengecekan batas + penambahan counter terjadi dalam
+    // SATU query UPDATE, sehingga request paralel tidak bisa
+    // melewati batas percobaan (tidak ada celah check-then-update).
+    // Percobaan dihitung sebelum OTP dibandingkan.
     // ==========================================
 
-    if (verification.attempts >= 5) {
+    const klaim = await prisma.emailVerification.updateMany({
+      where: {
+        email,
+        attempts: { lt: MAKS_PERCOBAAN_OTP },
+        expiresAt: { gt: new Date() },
+      },
+      data: {
+        attempts: { increment: 1 },
+      },
+    });
+
+    if (klaim.count === 0) {
+      if (new Date() > verification.expiresAt) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Kode OTP sudah kedaluwarsa. Silakan kirim ulang OTP.",
+          },
+          { status: 400 }
+        );
+      }
+
       return NextResponse.json(
         {
           success: false,
@@ -99,38 +114,35 @@ export async function POST(request: Request) {
     }
 
     // ==========================================
-    // CEK MASA BERLAKU OTP
+    // CEK OTP
     // ==========================================
 
-    if (new Date() > verification.expiresAt) {
+    const otpHash = hashOtp(email, otp);
+
+    if (!hashOtpSama(otpHash, verification.otpHash)) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            "Kode OTP sudah kedaluwarsa. Silakan kirim ulang OTP.",
+          message: "Kode OTP tidak valid",
         },
         { status: 400 }
       );
     }
 
     // ==========================================
-    // CEK OTP
+    // OTP BENAR → PAKAI SEKALI (ATOMIK)
+    // Hanya satu request yang berhasil menghapus data OTP,
+    // jadi OTP yang benar tidak bisa dipakai dua kali.
     // ==========================================
 
-    const otpHash = hashOtp(otp);
+    const dipakai = await prisma.emailVerification.deleteMany({
+      where: {
+        email,
+        otpHash: verification.otpHash,
+      },
+    });
 
-    if (!safeEqual(otpHash, verification.otpHash)) {
-      await prisma.emailVerification.update({
-        where: {
-          email,
-        },
-        data: {
-          attempts: {
-            increment: 1,
-          },
-        },
-      });
-
+    if (dipakai.count === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -153,12 +165,6 @@ export async function POST(request: Request) {
     });
 
     if (existingNik) {
-      await prisma.emailVerification.delete({
-        where: {
-          email,
-        },
-      });
-
       return NextResponse.json(
         {
           success: false,
@@ -169,7 +175,7 @@ export async function POST(request: Request) {
     }
 
     // ==========================================
-    // OTP BENAR → BUAT USER
+    // BUAT USER
     // ==========================================
 
     const user = await prisma.user.create({
@@ -179,16 +185,6 @@ export async function POST(request: Request) {
         nik: verification.nik,
         password: verification.passwordHash,
         role: "KANDIDAT",
-      },
-    });
-
-    // ==========================================
-    // HAPUS DATA OTP
-    // ==========================================
-
-    await prisma.emailVerification.delete({
-      where: {
-        email,
       },
     });
 
