@@ -661,7 +661,7 @@ export default function KandidatDashboardPage() {
       {
         label: "Ijazah",
         complete: hasIjazah,
-        wajib: false,
+        wajib: true,
       },
       {
         label: "Transkrip Nilai",
@@ -671,7 +671,7 @@ export default function KandidatDashboardPage() {
       {
         label: "KTP",
         complete: hasDocument("KTP"),
-        wajib: false,
+        wajib: true,
       },
       {
         label: "Dokumen Pendukung",

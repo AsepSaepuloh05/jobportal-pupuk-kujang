@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AlertCircle } from "lucide-react";
 
 type StatusLowongan = "AKTIF" | "DRAFT" | "DITUTUP";
 
@@ -34,6 +35,7 @@ const isPendidikanSmaSmk = (pendidikan?: string | null) =>
 
 export default function LowonganPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const initialKeyword = searchParams.get("keyword") || "";
   const initialLocation = searchParams.get("location") || "";
@@ -56,6 +58,9 @@ export default function LowonganPage() {
 
   const [detailError, setDetailError] =
     useState("");
+
+  const [showLoginNotice, setShowLoginNotice] =
+    useState(false);
 
   // =====================================================
   // GET LOWONGAN
@@ -158,6 +163,34 @@ export default function LowonganPage() {
   };
 
   // =====================================================
+  // APPLY -> HALAMAN LOGIN
+  // =====================================================
+
+  // Tampilkan pemberitahuan bahwa melamar harus login dulu
+  const handleApply = () => {
+    if (!selectedJob) return;
+
+    setShowLoginNotice(true);
+  };
+
+  // Lanjut ke halaman login
+  const goToLogin = () => {
+    if (!selectedJob) return;
+
+    // Setelah login, kandidat langsung diarahkan ke formulir lamaran
+    const callback = encodeURIComponent(
+      `/kandidat/lowongan/${selectedJob.id}/lamar`
+    );
+
+    setShowLoginNotice(false);
+
+    // Tutup modal agar overflow body kembali normal
+    closeDetail();
+
+    router.push(`/login?callbackUrl=${callback}`);
+  };
+
+  // =====================================================
   // ESC
   // =====================================================
 
@@ -166,6 +199,7 @@ export default function LowonganPage() {
       event: KeyboardEvent
     ) => {
       if (event.key === "Escape") {
+        setShowLoginNotice(false);
         closeDetail();
       }
     };
@@ -526,12 +560,6 @@ export default function LowonganPage() {
                           {job.kategori ||
                             job.departemen}
                         </span>
-
-                        {/* {job.status === "AKTIF" && (
-                          <span className="rounded-full bg-[#f0f7f3] px-3 py-1 text-[10px] font-semibold text-[#6c8176]">
-                            Aktif
-                          </span>
-                        )} */}
 
                       </div>
 
@@ -1031,11 +1059,7 @@ export default function LowonganPage() {
                         selectedJob.status !==
                         "AKTIF"
                       }
-                      onClick={() => {
-                        alert(
-                          "Fitur lamaran dapat diarahkan ke halaman login/lamar."
-                        );
-                      }}
+                      onClick={handleApply}
                       className={`mt-5 w-full rounded-xl px-4 py-3 text-xs font-black ${
                         selectedJob.status ===
                         "AKTIF"
@@ -1086,13 +1110,6 @@ export default function LowonganPage() {
                         )}
                       />
 
-                      {/* <DetailItem
-                        label="Berlaku Hingga"
-                        value={formatDate(
-                          selectedJob.tanggalBerakhir
-                        )}
-                      /> */}
-
                     </div>
 
                   </div>
@@ -1119,6 +1136,68 @@ export default function LowonganPage() {
                 </button>
 
               </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {/* =====================================================
+          NOTIFIKASI WAJIB LOGIN
+      ===================================================== */}
+
+      {showLoginNotice && (
+
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#10251d]/60 p-4 backdrop-blur-sm"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowLoginNotice(false);
+            }
+          }}
+        >
+
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl"
+          >
+
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#e8f6ee] text-[#4da477]">
+              <AlertCircle className="h-7 w-7" strokeWidth={2.2} />
+            </div>
+
+            <h3 className="mt-4 text-lg font-black text-[#193d2e]">
+              Login Diperlukan
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-[#71877b]">
+              Untuk melamar pekerjaan, Anda harus
+              login terlebih dahulu.
+            </p>
+
+            <div className="mt-6 flex gap-3">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowLoginNotice(false)
+                }
+                className="flex-1 rounded-xl border border-[#dce9e2] px-4 py-2.5 text-xs font-bold text-[#4e7561] transition hover:bg-[#f3faf6]"
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                onClick={goToLogin}
+                className="flex-1 rounded-xl bg-[#315c4a] px-4 py-2.5 text-xs font-black text-white transition hover:bg-[#234236]"
+              >
+                Login Sekarang
+              </button>
 
             </div>
 

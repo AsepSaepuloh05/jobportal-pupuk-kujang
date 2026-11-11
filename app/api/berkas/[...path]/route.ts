@@ -40,7 +40,12 @@ async function userPemilikBerkas(urlPath: string): Promise<number | null> {
       select: { userId: true },
     }),
     prisma.pendidikan.findFirst({
-      where: { ijazahPathFile: urlPath },
+      where: {
+        OR: [
+          { ijazahPathFile: urlPath },
+          { transkripPathFile: urlPath },
+        ],
+      },
       select: { userId: true },
     }),
     prisma.pengalaman.findFirst({

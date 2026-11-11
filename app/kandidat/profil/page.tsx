@@ -84,18 +84,17 @@ export default function ProfilKandidatPage() {
             saving={p.savingPendidikan}
             ijazahFile={p.ijazahFile}
             uploadingIjazah={p.uploadingIjazah}
-            onIjazahFileChange={
-              p.handleIjazahFileChange
-            }
-            onClearIjazahFile={
-              p.clearIjazahFile
-            }
+            onIjazahFileChange={p.handleIjazahFileChange}
+            onClearIjazahFile={p.clearIjazahFile}
             onDeleteIjazah={p.deleteIjazah}
+            transkripFile={p.transkripFile}
+            uploadingTranskrip={p.uploadingTranskrip}
+            onTranskripFileChange={p.handleTranskripFileChange}
+            onClearTranskripFile={p.clearTranskripFile}
+            onDeleteTranskrip={p.deleteTranskrip}
             onOpenTambah={p.openTambahPendidikan}
             onOpenEdit={p.openEditPendidikan}
-            onClose={() =>
-              p.setShowPendidikanModal(false)
-            }
+            onClose={() => p.setShowPendidikanModal(false)}
             onSave={p.savePendidikan}
             onDelete={p.deletePendidikan}
           />

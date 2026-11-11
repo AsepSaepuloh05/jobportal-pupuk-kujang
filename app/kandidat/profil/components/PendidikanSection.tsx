@@ -44,6 +44,305 @@ const JENJANG_OPTIONS = [
   { value: "S3", label: "S3" },
 ];
 
+const FILE_ACCEPT =
+  ".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png";
+
+/* ============================================================
+   ATTACHMENT FIELD (dipakai untuk Ijazah & Transkrip)
+============================================================ */
+
+type ExistingFile = {
+  pathFile?: string | null;
+  namaAsli?: string | null;
+  namaFile?: string | null;
+  tipeFile?: string | null;
+  ukuranFile?: number | null;
+};
+
+function AttachmentField({
+  title,
+  noun,
+  file,
+  existing,
+  canDelete,
+  disabled,
+  uploading,
+  onFileChange,
+  onClearFile,
+  onDelete,
+}: {
+  title: string; // contoh: "Dokumen Ijazah"
+  noun: string; // contoh: "ijazah"
+  file: File | null;
+  existing: ExistingFile | null;
+  canDelete: boolean;
+  disabled: boolean;
+  uploading: boolean;
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onClearFile: () => void;
+  onDelete: () => void;
+}) {
+  const existingKind = getFileKind(
+    existing?.tipeFile,
+    existing?.namaAsli || existing?.pathFile
+  );
+
+  const pickerLabel =
+    "flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700";
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+      <div className="mb-3">
+        <p className="text-sm font-semibold text-slate-800">
+          {title}
+          <span className="ml-1 text-xs font-normal text-slate-400">
+            (Opsional)
+          </span>
+        </p>
+
+        <p className="mt-1 text-xs text-slate-400">
+          Format PDF, JPG, atau PNG. Maksimal 5 MB.
+        </p>
+      </div>
+
+      {file ? (
+        /* FILE BARU */
+        <div className="space-y-3">
+          <div className="flex items-center gap-3.5 rounded-xl border border-emerald-200 bg-white p-3 shadow-sm">
+            <NewFileThumb file={file} />
+
+            <div className="min-w-0 flex-1">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                <CheckCircle2 className="h-3 w-3" />
+                Siap diunggah
+              </span>
+
+              <p
+                className="mt-1.5 truncate text-sm font-semibold text-slate-800"
+                title={file.name}
+              >
+                {file.name}
+              </p>
+
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                {getKindLabel(getFileKind(file.type, file.name))} •{" "}
+                {formatFileSize(file.size)}
+              </p>
+
+              {existing?.pathFile && (
+                <p className="mt-1 text-[11px] font-medium text-amber-600">
+                  Akan menggantikan {noun} sebelumnya
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={onClearFile}
+              disabled={disabled}
+              className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+              title="Batalkan file"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <label className={pickerLabel}>
+            <Upload className="h-4 w-4" />
+            Pilih File Lain
+            <input
+              type="file"
+              hidden
+              accept={FILE_ACCEPT}
+              disabled={disabled}
+              onChange={onFileChange}
+            />
+          </label>
+        </div>
+      ) : existing?.pathFile ? (
+        /* FILE LAMA */
+        <div className="space-y-3">
+          <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <FileThumb
+              kind={existingKind}
+              src={existing.pathFile}
+              size="lg"
+            />
+
+            <div className="min-w-0 flex-1">
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                <CheckCircle2 className="h-3 w-3" />
+                Tersimpan
+              </span>
+
+              <p
+                className="mt-1.5 truncate text-sm font-semibold text-slate-800"
+                title={existing.namaAsli || existing.namaFile || undefined}
+              >
+                {existing.namaAsli ||
+                  existing.namaFile ||
+                  `${title} tersimpan`}
+              </p>
+
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                {getKindLabel(existingKind)}
+                {existing.ukuranFile
+                  ? ` • ${formatFileSize(existing.ukuranFile)}`
+                  : ""}
+              </p>
+            </div>
+
+            <div className="flex shrink-0 gap-1">
+              <a
+                href={existing.pathFile}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-600"
+                title={`Lihat ${noun}`}
+              >
+                <Eye className="h-4 w-4" />
+              </a>
+
+              {canDelete && (
+                <button
+                  type="button"
+                  disabled={uploading}
+                  onClick={onDelete}
+                  className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                  title={`Hapus ${noun}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <label className={pickerLabel}>
+            <Upload className="h-4 w-4" />
+            Ganti {title}
+            <input
+              type="file"
+              hidden
+              accept={FILE_ACCEPT}
+              disabled={disabled}
+              onChange={onFileChange}
+            />
+          </label>
+        </div>
+      ) : (
+        /* UPLOAD BARU */
+        <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white py-5 text-center transition hover:border-emerald-300 hover:bg-emerald-50/30">
+          <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400">
+            <Upload className="h-5 w-5" />
+          </div>
+
+          <p className="text-sm font-semibold text-slate-600">
+            Pilih file {noun}
+          </p>
+
+          <p className="mt-1 text-xs text-slate-400">
+            PDF, JPG, atau PNG • Maksimal 5 MB
+          </p>
+
+          <input
+            type="file"
+            hidden
+            accept={FILE_ACCEPT}
+            disabled={disabled}
+            onChange={onFileChange}
+          />
+        </label>
+      )}
+
+      {/* UPLOAD STATUS */}
+      {uploading && (
+        <div className="mt-3 flex items-center gap-2 text-xs text-emerald-700">
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-600" />
+          Mengunggah {noun}...
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   ATTACHMENT SUMMARY (ringkasan di kartu pendidikan)
+============================================================ */
+
+function AttachmentSummary({
+  className,
+  badge,
+  linkLabel,
+  emptyLabel,
+  defaultName,
+  pathFile,
+  namaAsli,
+  namaFile,
+  tipeFile,
+  ukuranFile,
+}: {
+  className?: string;
+  badge: string;
+  linkLabel: string;
+  emptyLabel: string;
+  defaultName: string;
+  pathFile?: string | null;
+  namaAsli?: string | null;
+  namaFile?: string | null;
+  tipeFile?: string | null;
+  ukuranFile?: number | null;
+}) {
+  const name = namaAsli || namaFile || defaultName;
+  const kind = getFileKind(tipeFile, namaAsli || pathFile);
+
+  return (
+    <div className={className}>
+      {pathFile ? (
+        <div className="group flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/60 to-white p-3 transition hover:border-emerald-200 hover:shadow-sm sm:flex-row sm:items-center sm:p-3.5">
+          <div className="flex min-w-0 flex-1 items-center gap-3.5">
+            <FileThumb kind={kind} src={pathFile} size="lg" />
+
+            <div className="min-w-0">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                <CheckCircle2 className="h-3 w-3" />
+                {badge}
+              </span>
+
+              <p
+                className="mt-1.5 truncate text-sm font-semibold text-slate-800"
+                title={name}
+              >
+                {name}
+              </p>
+
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                {getKindLabel(kind)}
+                {ukuranFile ? ` • ${formatFileSize(ukuranFile)}` : ""}
+              </p>
+            </div>
+          </div>
+
+          <a
+            href={pathFile}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+          >
+            <Eye className="h-4 w-4" />
+            {linkLabel}
+          </a>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3.5 py-3">
+          <FileCheck2 className="h-4 w-4 shrink-0 text-slate-300" />
+
+          <p className="text-xs text-slate-400">{emptyLabel}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ============================================================
    EDUCATION ITEM
 ============================================================ */
@@ -59,16 +358,6 @@ function EducationItem({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const hasIjazah = Boolean(item.ijazahPathFile);
-
-  const ijazahName =
-    item.ijazahNamaAsli || item.ijazahNamaFile || "Ijazah";
-
-  const ijazahKind = getFileKind(
-    item.ijazahTipeFile,
-    item.ijazahNamaAsli || item.ijazahPathFile
-  );
-
   return (
     <div
       className={`relative py-5 ${
@@ -124,67 +413,39 @@ function EducationItem({
 
           {item.nilai && (
             <span className="rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-700">
-              {isSmaSmk(item.jenjang)
-                ? "Nilai Rata-rata"
-                : "IPK"}
-              : {item.nilai}
+              {isSmaSmk(item.jenjang) ? "Nilai Rata-rata" : "IPK"}:{" "}
+              {item.nilai}
             </span>
           )}
         </div>
 
         {/* IJAZAH */}
-        <div className="mt-4">
-          {hasIjazah ? (
-            <div className="group flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/60 to-white p-3 transition hover:border-emerald-200 hover:shadow-sm sm:flex-row sm:items-center sm:p-3.5">
-              <div className="flex min-w-0 flex-1 items-center gap-3.5">
-                <FileThumb
-                  kind={ijazahKind}
-                  src={item.ijazahPathFile}
-                  size="lg"
-                />
+        <AttachmentSummary
+          className="mt-4"
+          badge="Ijazah terlampir"
+          linkLabel="Lihat Ijazah"
+          emptyLabel="Ijazah belum diunggah"
+          defaultName="Ijazah"
+          pathFile={item.ijazahPathFile}
+          namaAsli={item.ijazahNamaAsli}
+          namaFile={item.ijazahNamaFile}
+          tipeFile={item.ijazahTipeFile}
+          ukuranFile={item.ijazahUkuranFile}
+        />
 
-                <div className="min-w-0">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                    <CheckCircle2 className="h-3 w-3" />
-                    Ijazah terlampir
-                  </span>
-
-                  <p
-                    className="mt-1.5 truncate text-sm font-semibold text-slate-800"
-                    title={ijazahName}
-                  >
-                    {ijazahName}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-slate-400">
-                    {getKindLabel(ijazahKind)}
-                    {item.ijazahUkuranFile
-                      ? ` • ${formatFileSize(item.ijazahUkuranFile)}`
-                      : ""}
-                  </p>
-                </div>
-              </div>
-
-              <a
-                href={item.ijazahPathFile || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
-              >
-                <Eye className="h-4 w-4" />
-                Lihat Ijazah
-              </a>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3.5 py-3">
-              <FileCheck2 className="h-4 w-4 shrink-0 text-slate-300" />
-
-              <p className="text-xs text-slate-400">
-                Ijazah belum diunggah
-              </p>
-            </div>
-          )}
-        </div>
+        {/* TRANSKRIP NILAI */}
+        <AttachmentSummary
+          className="mt-3"
+          badge="Transkrip terlampir"
+          linkLabel="Lihat Transkrip"
+          emptyLabel="Transkrip belum diunggah"
+          defaultName="Transkrip Nilai"
+          pathFile={item.transkripPathFile}
+          namaAsli={item.transkripNamaAsli}
+          namaFile={item.transkripNamaFile}
+          tipeFile={item.transkripTipeFile}
+          ukuranFile={item.transkripUkuranFile}
+        />
       </div>
     </div>
   );
@@ -204,6 +465,11 @@ function PendidikanModal({
   onIjazahFileChange,
   onClearIjazahFile,
   onDeleteIjazah,
+  transkripFile,
+  uploadingTranskrip,
+  onTranskripFileChange,
+  onClearTranskripFile,
+  onDeleteTranskrip,
   onClose,
   onSave,
 }: {
@@ -220,18 +486,26 @@ function PendidikanModal({
   onClearIjazahFile: () => void;
   onDeleteIjazah: (id: number) => void;
 
+  transkripFile: File | null;
+  uploadingTranskrip: boolean;
+  onTranskripFileChange: (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => void;
+  onClearTranskripFile: () => void;
+  onDeleteTranskrip: (id: number) => void;
+
   onClose: () => void;
   onSave: () => void;
 }) {
-  const hasExistingIjazah = Boolean(form.ijazahPathFile);
   const sekolah = isSmaSmk(form.jenjang);
+  const busy = saving || uploadingIjazah || uploadingTranskrip;
 
   return (
     <Modal
       title={isEdit ? "Edit Pendidikan" : "Tambah Pendidikan"}
       description="Masukkan riwayat pendidikan formal Anda."
       onClose={() => {
-        if (!saving && !uploadingIjazah) {
+        if (!busy) {
           onClose();
         }
       }}
@@ -333,194 +607,53 @@ function PendidikanModal({
           />
         </div>
 
-        {/* ====================================================
-            IJAZAH
-        ==================================================== */}
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-          <div className="mb-3">
-            <p className="text-sm font-semibold text-slate-800">
-              Dokumen Ijazah
-              <span className="ml-1 text-xs font-normal text-slate-400">
-                (Opsional)
-              </span>
-            </p>
+        {/* IJAZAH */}
+        <AttachmentField
+          title="Dokumen Ijazah"
+          noun="ijazah"
+          file={ijazahFile}
+          existing={
+            form.ijazahPathFile
+              ? {
+                  pathFile: form.ijazahPathFile,
+                  namaAsli: form.ijazahNamaAsli,
+                  namaFile: form.ijazahNamaFile,
+                  tipeFile: form.ijazahTipeFile,
+                  ukuranFile: form.ijazahUkuranFile,
+                }
+              : null
+          }
+          canDelete={isEdit}
+          disabled={saving || uploadingIjazah}
+          uploading={uploadingIjazah}
+          onFileChange={onIjazahFileChange}
+          onClearFile={onClearIjazahFile}
+          onDelete={() => onDeleteIjazah(form.id)}
+        />
 
-            <p className="mt-1 text-xs text-slate-400">
-              Format PDF, JPG, atau PNG. Maksimal 5 MB.
-            </p>
-          </div>
-
-          {ijazahFile ? (
-            /* FILE BARU */
-            <div className="space-y-3">
-              <div className="flex items-center gap-3.5 rounded-xl border border-emerald-200 bg-white p-3 shadow-sm">
-                <NewFileThumb file={ijazahFile} />
-
-                <div className="min-w-0 flex-1">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                    <CheckCircle2 className="h-3 w-3" />
-                    Siap diunggah
-                  </span>
-
-                  <p
-                    className="mt-1.5 truncate text-sm font-semibold text-slate-800"
-                    title={ijazahFile.name}
-                  >
-                    {ijazahFile.name}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-slate-400">
-                    {getKindLabel(
-                      getFileKind(ijazahFile.type, ijazahFile.name)
-                    )}{" "}
-                    • {formatFileSize(ijazahFile.size)}
-                  </p>
-
-                  {hasExistingIjazah && (
-                    <p className="mt-1 text-[11px] font-medium text-amber-600">
-                      Akan menggantikan ijazah sebelumnya
-                    </p>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={onClearIjazahFile}
-                  disabled={saving || uploadingIjazah}
-                  className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
-                  title="Batalkan file"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
-                <Upload className="h-4 w-4" />
-                Pilih File Lain
-
-                <input
-                  type="file"
-                  hidden
-                  accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                  disabled={saving || uploadingIjazah}
-                  onChange={onIjazahFileChange}
-                />
-              </label>
-            </div>
-          ) : hasExistingIjazah ? (
-            /* FILE LAMA */
-            <div className="space-y-3">
-              <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                <FileThumb
-                  kind={getFileKind(
-                    form.ijazahTipeFile,
-                    form.ijazahNamaAsli || form.ijazahPathFile
-                  )}
-                  src={form.ijazahPathFile}
-                  size="lg"
-                />
-
-                <div className="min-w-0 flex-1">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                    <CheckCircle2 className="h-3 w-3" />
-                    Tersimpan
-                  </span>
-
-                  <p
-                    className="mt-1.5 truncate text-sm font-semibold text-slate-800"
-                    title={form.ijazahNamaAsli || form.ijazahNamaFile || undefined}
-                  >
-                    {form.ijazahNamaAsli ||
-                      form.ijazahNamaFile ||
-                      "Ijazah tersimpan"}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-slate-400">
-                    {getKindLabel(
-                      getFileKind(
-                        form.ijazahTipeFile,
-                        form.ijazahNamaAsli || form.ijazahPathFile
-                      )
-                    )}
-                    {form.ijazahUkuranFile
-                      ? ` • ${formatFileSize(form.ijazahUkuranFile)}`
-                      : ""}
-                  </p>
-                </div>
-
-                <div className="flex shrink-0 gap-1">
-                  {form.ijazahPathFile && (
-                    <a
-                      href={form.ijazahPathFile}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-600"
-                      title="Lihat ijazah"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </a>
-                  )}
-
-                  {isEdit && (
-                    <button
-                      type="button"
-                      disabled={uploadingIjazah}
-                      onClick={() => onDeleteIjazah(form.id)}
-                      className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
-                      title="Hapus ijazah"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
-                <Upload className="h-4 w-4" />
-                Ganti Ijazah
-
-                <input
-                  type="file"
-                  hidden
-                  accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                  disabled={saving || uploadingIjazah}
-                  onChange={onIjazahFileChange}
-                />
-              </label>
-            </div>
-          ) : (
-            /* UPLOAD BARU */
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white py-5 text-center transition hover:border-emerald-300 hover:bg-emerald-50/30">
-              <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400">
-                <Upload className="h-5 w-5" />
-              </div>
-
-              <p className="text-sm font-semibold text-slate-600">
-                Pilih file ijazah
-              </p>
-
-              <p className="mt-1 text-xs text-slate-400">
-                PDF, JPG, atau PNG • Maksimal 5 MB
-              </p>
-
-              <input
-                type="file"
-                hidden
-                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                disabled={saving || uploadingIjazah}
-                onChange={onIjazahFileChange}
-              />
-            </label>
-          )}
-
-          {/* UPLOAD STATUS */}
-          {uploadingIjazah && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-emerald-700">
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-600" />
-              Mengunggah ijazah...
-            </div>
-          )}
-        </div>
+        {/* TRANSKRIP NILAI */}
+        <AttachmentField
+          title="Transkrip Nilai"
+          noun="transkrip"
+          file={transkripFile}
+          existing={
+            form.transkripPathFile
+              ? {
+                  pathFile: form.transkripPathFile,
+                  namaAsli: form.transkripNamaAsli,
+                  namaFile: form.transkripNamaFile,
+                  tipeFile: form.transkripTipeFile,
+                  ukuranFile: form.transkripUkuranFile,
+                }
+              : null
+          }
+          canDelete={isEdit}
+          disabled={saving || uploadingTranskrip}
+          uploading={uploadingTranskrip}
+          onFileChange={onTranskripFileChange}
+          onClearFile={onClearTranskripFile}
+          onDelete={() => onDeleteTranskrip(form.id)}
+        />
       </div>
     </Modal>
   );
@@ -542,6 +675,11 @@ export function PendidikanSection({
   onIjazahFileChange,
   onClearIjazahFile,
   onDeleteIjazah,
+  transkripFile,
+  uploadingTranskrip,
+  onTranskripFileChange,
+  onClearTranskripFile,
+  onDeleteTranskrip,
   onOpenTambah,
   onOpenEdit,
   onClose,
@@ -562,6 +700,14 @@ export function PendidikanSection({
   ) => void;
   onClearIjazahFile: () => void;
   onDeleteIjazah: (id: number) => void;
+
+  transkripFile: File | null;
+  uploadingTranskrip: boolean;
+  onTranskripFileChange: (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => void;
+  onClearTranskripFile: () => void;
+  onDeleteTranskrip: (id: number) => void;
 
   onOpenTambah: () => void;
   onOpenEdit: (item: Pendidikan) => void;
@@ -617,6 +763,11 @@ export function PendidikanSection({
           onIjazahFileChange={onIjazahFileChange}
           onClearIjazahFile={onClearIjazahFile}
           onDeleteIjazah={onDeleteIjazah}
+          transkripFile={transkripFile}
+          uploadingTranskrip={uploadingTranskrip}
+          onTranskripFileChange={onTranskripFileChange}
+          onClearTranskripFile={onClearTranskripFile}
+          onDeleteTranskrip={onDeleteTranskrip}
           onClose={onClose}
           onSave={onSave}
         />

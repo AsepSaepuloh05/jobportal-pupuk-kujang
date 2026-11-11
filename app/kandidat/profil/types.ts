@@ -85,6 +85,17 @@ export interface Pendidikan {
   ijazahTipeFile?: string | null;
 
   ijazahUkuranFile?: number | null;
+
+  // Transkrip Nilai
+  transkripNamaFile?: string | null;
+
+  transkripNamaAsli?: string | null;
+
+  transkripPathFile?: string | null;
+
+  transkripTipeFile?: string | null;
+
+  transkripUkuranFile?: number | null;
 }
 
 export interface Pengalaman {
@@ -179,6 +190,16 @@ export const initialPendidikan: Pendidikan = {
   ijazahTipeFile: null,
 
   ijazahUkuranFile: null,
+
+  transkripNamaFile: null,
+
+  transkripNamaAsli: null,
+
+  transkripPathFile: null,
+
+  transkripTipeFile: null,
+
+  transkripUkuranFile: null,
 };
 
 export const initialPengalaman: Pengalaman = {
@@ -233,6 +254,7 @@ export const initialSertifikasi: Sertifikasi = {
   file: null,
 };
 
+// Transkrip Nilai dipindahkan ke PendidikanSection (per pendidikan)
 export const documents: DokumenConfig[] = [
   {
     key: "cv",
@@ -248,16 +270,6 @@ export const documents: DokumenConfig[] = [
     key: "ktp",
 
     label: "KTP",
-
-    description: "PDF, JPG, atau PNG — maksimal 5 MB",
-
-    accept: "application/pdf,image/jpeg,image/png",
-  },
-
-  {
-    key: "transkrip",
-
-    label: "Transkrip Nilai",
 
     description: "PDF, JPG, atau PNG — maksimal 5 MB",
 

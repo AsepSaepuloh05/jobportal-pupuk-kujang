@@ -29,7 +29,7 @@ export function DocumentsSection({
     <ModernSection
       icon={<FileText className="h-5 w-5" />}
       iconStyle="emerald"
-      title="Dokumen Pendukung"
+      title="Identitas Diri"
       description="Dokumen yang digunakan dalam proses rekrutmen."
     >
       <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">

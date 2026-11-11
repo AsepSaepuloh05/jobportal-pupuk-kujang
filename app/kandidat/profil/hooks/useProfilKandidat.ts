@@ -143,8 +143,14 @@ export function useProfilKandidat() {
   const [pendidikanForm, setPendidikanForm] =
     useState<Pendidikan>(initialPendidikan);
   const [savingPendidikan, setSavingPendidikan] = useState(false);
+
+  // Ijazah
   const [ijazahFile, setIjazahFile] = useState<File | null>(null);
   const [uploadingIjazah, setUploadingIjazah] = useState(false);
+
+  // Transkrip Nilai
+  const [transkripFile, setTranskripFile] = useState<File | null>(null);
+  const [uploadingTranskrip, setUploadingTranskrip] = useState(false);
 
   // ============================================================
   // PENGALAMAN
@@ -605,6 +611,7 @@ export function useProfilKandidat() {
     setEditingPendidikanId(null);
     setPendidikanForm({ ...initialPendidikan });
     setIjazahFile(null);
+    setTranskripFile(null);
     setShowPendidikanModal(true);
   };
 
@@ -616,6 +623,7 @@ export function useProfilKandidat() {
     setEditingPendidikanId(item.id);
     setPendidikanForm({ ...item });
     setIjazahFile(null);
+    setTranskripFile(null);
     setShowPendidikanModal(true);
   };
 
@@ -702,11 +710,16 @@ export function useProfilKandidat() {
         editingPendidikanId ??
         undefined;
 
-      // Upload ijazah (jika ada file baru)
+      // Upload lampiran (jika ada file baru)
       let ijazahBerhasil = true;
+      let transkripBerhasil = true;
 
       if (ijazahFile && savedId) {
         ijazahBerhasil = await uploadIjazah(savedId, ijazahFile);
+      }
+
+      if (transkripFile && savedId) {
+        transkripBerhasil = await uploadTranskrip(savedId, transkripFile);
       }
 
       await fetchPendidikan();
@@ -715,20 +728,24 @@ export function useProfilKandidat() {
       setEditingPendidikanId(null);
       setPendidikanForm({ ...initialPendidikan });
       setIjazahFile(null);
+      setTranskripFile(null);
 
       // Alert sukses
-      if (ijazahBerhasil) {
-        toast.success(
-          isEdit
-            ? "Pendidikan berhasil diperbarui!"
-            : "Pendidikan berhasil ditambahkan!"
-        );
+      const pesanDasar = isEdit
+        ? "Pendidikan berhasil diperbarui"
+        : "Pendidikan berhasil ditambahkan";
+
+      if (ijazahBerhasil && transkripBerhasil) {
+        toast.success(`${pesanDasar}!`);
       } else {
-        toast.warning(
-          isEdit
-            ? "Pendidikan berhasil diperbarui, tetapi ijazah gagal diunggah."
-            : "Pendidikan berhasil ditambahkan, tetapi ijazah gagal diunggah."
-        );
+        const gagal = [
+          !ijazahBerhasil && "ijazah",
+          !transkripBerhasil && "transkrip",
+        ]
+          .filter(Boolean)
+          .join(" dan ");
+
+        toast.warning(`${pesanDasar}, tetapi ${gagal} gagal diunggah.`);
       }
     } catch (error) {
       console.error("SAVE PENDIDIKAN ERROR:", error);
@@ -863,6 +880,132 @@ export function useProfilKandidat() {
     } catch (error) {
       console.error("DELETE IJAZAH ERROR:", error);
       toast.error("Terjadi kesalahan saat menghapus ijazah.");
+    }
+  };
+
+  // ============================================================
+  // PILIH FILE TRANSKRIP
+  // ============================================================
+
+  const handleTranskripFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+
+    e.target.value = "";
+
+    if (!file) return;
+
+    const allowedTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Format transkrip harus PDF, JPG, atau PNG.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran transkrip maksimal 5 MB.");
+      return;
+    }
+
+    setTranskripFile(file);
+  };
+
+  // ============================================================
+  // CLEAR FILE TRANSKRIP
+  // ============================================================
+
+  const clearTranskripFile = () => {
+    setTranskripFile(null);
+  };
+
+  // ============================================================
+  // UPLOAD TRANSKRIP
+  // ============================================================
+
+  const uploadTranskrip = async (pendidikanId: number, file: File) => {
+    setUploadingTranskrip(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("transkrip", file);
+
+      const res = await fetch(`/api/pendidikan/${pendidikanId}/transkrip`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toast.error(data.message || "Gagal mengunggah transkrip.");
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("UPLOAD TRANSKRIP ERROR:", error);
+      toast.error("Terjadi kesalahan saat mengunggah transkrip.");
+      return false;
+    } finally {
+      setUploadingTranskrip(false);
+    }
+  };
+
+  // ============================================================
+  // DELETE TRANSKRIP
+  // ============================================================
+
+  const deleteTranskrip = async (pendidikanId: number) => {
+    const ok = await confirmDialog({
+      title: "Hapus Transkrip",
+      message: "Apakah Anda yakin ingin menghapus transkrip ini?",
+      detail: "Data yang dihapus tidak dapat dikembalikan.",
+    });
+
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`/api/pendidikan/${pendidikanId}/transkrip`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toast.error(data.message || "Gagal menghapus transkrip.");
+        return;
+      }
+
+      const kosong = {
+        transkripNamaFile: null,
+        transkripNamaAsli: null,
+        transkripPathFile: null,
+        transkripTipeFile: null,
+        transkripUkuranFile: null,
+      };
+
+      setPendidikan((prev) =>
+        prev.map((item) =>
+          item.id === pendidikanId ? { ...item, ...kosong } : item
+        )
+      );
+
+      if (editingPendidikanId === pendidikanId) {
+        setPendidikanForm((prev) => ({ ...prev, ...kosong }));
+      }
+
+      setTranskripFile(null);
+
+      toast.success("Transkrip berhasil dihapus.");
+    } catch (error) {
+      console.error("DELETE TRANSKRIP ERROR:", error);
+      toast.error("Terjadi kesalahan saat menghapus transkrip.");
     }
   };
 
@@ -1403,6 +1546,13 @@ export function useProfilKandidat() {
     handleIjazahFileChange,
     clearIjazahFile,
     deleteIjazah,
+
+    // TRANSKRIP
+    transkripFile,
+    uploadingTranskrip,
+    handleTranskripFileChange,
+    clearTranskripFile,
+    deleteTranskrip,
 
     // PENGALAMAN
     pengalaman,

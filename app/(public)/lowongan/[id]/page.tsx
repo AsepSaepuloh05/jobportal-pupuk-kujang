@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { AlertCircle } from "lucide-react";
 
 type StatusLowongan = "AKTIF" | "DRAFT" | "DITUTUP";
 
@@ -30,6 +31,8 @@ export default function DetailLowonganPage() {
   const [error, setError] = useState("");
 
   const [bookmarked, setBookmarked] = useState(false);
+
+  const [showLoginNotice, setShowLoginNotice] = useState(false);
 
   // =====================================================
   // AMBIL DATA LOWONGAN BERDASARKAN ID
@@ -124,6 +127,29 @@ export default function DetailLowonganPage() {
 
   const toggleBookmark = () => {
     setBookmarked((prev) => !prev);
+  };
+
+  // =====================================================
+  // APPLY -> HALAMAN LOGIN
+  // =====================================================
+
+  // Tampilkan pemberitahuan bahwa melamar harus login dulu
+  const handleApply = () => {
+    if (lowongan.status !== "AKTIF") return;
+
+    setShowLoginNotice(true);
+  };
+
+  // Lanjut ke halaman login
+  const goToLogin = () => {
+    // Setelah login, kandidat langsung diarahkan ke formulir lamaran
+    const callback = encodeURIComponent(
+      `/kandidat/lowongan/${lowongan.id}/lamar`
+    );
+
+    setShowLoginNotice(false);
+
+    router.push(`/login?callbackUrl=${callback}`);
   };
 
   // =====================================================
@@ -294,11 +320,7 @@ export default function DetailLowonganPage() {
               <button
                 type="button"
                 disabled={lowongan.status !== "AKTIF"}
-                onClick={() => {
-                  if (lowongan.status === "AKTIF") {
-                    router.push(`/kandidat/lowongan/${lowongan.id}/lamar`);
-                  }
-                }}
+                onClick={handleApply}
                 className={`rounded-xl px-6 py-3 text-sm font-bold text-white transition ${
                   lowongan.status === "AKTIF"
                     ? "bg-[#315c4a] hover:bg-[#234236]"
@@ -325,6 +347,57 @@ export default function DetailLowonganPage() {
           <div>Platform Pencarian Kerja PT Pupuk Kujang</div>
         </div>
       </footer>
+
+      {/* =====================================================
+          NOTIFIKASI WAJIB LOGIN
+      ===================================================== */}
+
+      {showLoginNotice && (
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#10251d]/60 p-4 backdrop-blur-sm"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowLoginNotice(false);
+            }
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl"
+          >
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#e8f6ee] text-[#4da477]">
+              <AlertCircle className="h-7 w-7" strokeWidth={2.2} />
+            </div>
+
+            <h3 className="mt-4 text-lg font-black text-[#193d2e]">
+              Login Diperlukan
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-[#71877b]">
+              Untuk melamar pekerjaan, Anda harus login terlebih dahulu.
+            </p>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLoginNotice(false)}
+                className="flex-1 rounded-xl border border-[#dce9e2] px-4 py-2.5 text-xs font-bold text-[#4e7561] transition hover:bg-[#f3faf6]"
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                onClick={goToLogin}
+                className="flex-1 rounded-xl bg-[#315c4a] px-4 py-2.5 text-xs font-black text-white transition hover:bg-[#234236]"
+              >
+                Login Sekarang
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

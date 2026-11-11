@@ -11,7 +11,7 @@ export default function Navbar() {
       {/* =====================================================
           TOP BAR
       ===================================================== */}
-      <div className="bg-[#173c2d] text-white">
+      {/* <div className="bg-[#173c2d] text-white">
         <div className="mx-auto flex h-10 max-w-[1600px] items-center justify-between px-5 text-[11px] sm:px-8 lg:px-12">
 
           <div className="flex items-center gap-2 text-[#d8ebe2]">
@@ -41,7 +41,7 @@ export default function Navbar() {
           </div>
 
         </div>
-      </div>
+      </div> */}
 
 
       {/* =====================================================

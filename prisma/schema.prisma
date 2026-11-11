@@ -203,6 +203,13 @@ model Pendidikan {
   ijazahTipeFile   String?
   ijazahUkuranFile Int?
 
+  // Data transkrip nilai
+  transkripNamaFile   String?
+  transkripNamaAsli   String?
+  transkripPathFile   String?
+  transkripTipeFile   String?
+  transkripUkuranFile Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
