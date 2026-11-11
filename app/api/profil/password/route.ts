@@ -5,6 +5,11 @@ import bcrypt from "bcryptjs";
 // SESUAIKAN dengan project Anda:
 import { bacaIdentitas } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  buatTokenSesi,
+  NAMA_COOKIE_SESI,
+  opsiCookieSesi,
+} from "@/lib/session";
 
 const MIN_LENGTH = 8;
 
@@ -122,15 +127,28 @@ export async function PUT(req: Request) {
 
     const hash = await bcrypt.hash(passwordBaru, 12);
 
-    await prisma.user.update({
+    // tokenVersion dinaikkan agar semua sesi lain (perangkat lain / sesi curian)
+    // dicabut. Sesi perangkat ini diganti dengan token baru di bawah.
+    const diperbarui = await prisma.user.update({
       where: { id: user.id },
-      data: { password: hash },
+      data: { password: hash, tokenVersion: { increment: 1 } },
+      select: { tokenVersion: true },
     });
 
-    return NextResponse.json({
+    const tokenBaru = await buatTokenSesi({
+      userId: user.id,
+      role: user.role,
+      versi: diperbarui.tokenVersion,
+    });
+
+    const response = NextResponse.json({
       success: true,
       message: "Password berhasil diubah.",
     });
+
+    response.cookies.set(NAMA_COOKIE_SESI, tokenBaru, opsiCookieSesi());
+
+    return response;
   } catch (error) {
     console.error("CHANGE PASSWORD ERROR:", error);
 

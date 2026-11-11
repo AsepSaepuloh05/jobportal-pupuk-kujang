@@ -122,7 +122,8 @@ export async function POST(request: Request) {
 
       return tx.user.updateMany({
         where: { email },
-        data: { password: passwordHash },
+        // tokenVersion dinaikkan agar semua sesi lama (mis. milik penyerang) dicabut
+        data: { password: passwordHash, tokenVersion: { increment: 1 } },
       });
     });
 

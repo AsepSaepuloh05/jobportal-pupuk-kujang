@@ -58,6 +58,7 @@ export async function GET() {
         nik: true,
         role: true,
         isActive: true,
+        tokenVersion: true,
 
         // =================================================
         // NOMOR TELEPON
@@ -160,6 +161,20 @@ export async function GET() {
     // =====================================================
     // FOTO PROFIL
     // =====================================================
+
+    // Sesi dicabut jika password sudah diganti/direset atau role berubah
+    if (
+      sesi &&
+      (user.tokenVersion !== sesi.versi || user.role !== sesi.role)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Sesi tidak valid, silakan login kembali",
+        },
+        { status: 401 }
+      );
+    }
 
     const fotoProfil = user.dokumenProfil ?? null;
 

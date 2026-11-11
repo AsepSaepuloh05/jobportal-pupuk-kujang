@@ -47,6 +47,9 @@ model User {
 
   isActive  Boolean  @default(true)
 
+  // Dinaikkan setiap password diganti/direset; sesi (JWT) dengan versi lama dicabut
+  tokenVersion Int @default(0)
+
   dokumenProfil   DokumenProfil?
   dokumenKandidat DokumenKandidat[]
   pendidikan      Pendidikan[]

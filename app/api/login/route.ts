@@ -160,6 +160,7 @@ export async function POST(request: Request) {
     const token = await buatTokenSesi({
       userId: user.id,
       role: user.role,
+      versi: user.tokenVersion,
     });
 
     // ==========================================
