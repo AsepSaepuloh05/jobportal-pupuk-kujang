@@ -55,10 +55,21 @@ export async function POST(request: Request) {
 
     // ==========================================
     // 2. RATE LIMIT BERBASIS AKUN / EMAIL (Mencegah tebak password / credential stuffing)
-    // Maksimal 5 kali percobaan dalam 15 menit
+    // Dua lapis batas agar akun tidak bisa dikunci oleh orang lain:
+    // 1. Per kombinasi email + IP: maksimal 5 percobaan / 15 menit. Penyerang
+    //    dari satu IP hanya mengunci dirinya sendiri, pemilik akun yang login
+    //    dari IP lain tidak terdampak.
+    // 2. Total per email dari semua IP: maksimal 20 percobaan / 15 menit
+    //    untuk menahan tebakan password terdistribusi (banyak IP).
     // ==========================================
+    const pasanganKey = `login:email-ip:${email}:${ip}`;
     const emailKey = `login:email:${email}`;
-    const emailLimit = checkRateLimit(emailKey, 5, 15 * 60);
+    const pasanganLimit = checkRateLimit(pasanganKey, 5, 15 * 60);
+    // Batas total hanya dihitung jika batas pasangan belum habis, agar
+    // percobaan yang sudah diblokir tidak ikut menghabiskan jatah total.
+    const emailLimit = pasanganLimit.allowed
+      ? checkRateLimit(emailKey, 20, 15 * 60)
+      : pasanganLimit;
 
     if (!emailLimit.allowed) {
       const menit = Math.ceil(emailLimit.retryAfterSeconds / 60);
@@ -152,6 +163,7 @@ export async function POST(request: Request) {
     // LOGIN BERHASIL: RESET PERCOBAAN GAGAL
     // ==========================================
     resetRateLimit(emailKey);
+    resetRateLimit(pasanganKey);
 
     // ==========================================
     // BUAT SESI BERTANDA TANGAN
