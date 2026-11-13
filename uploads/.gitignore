@@ -10,6 +10,7 @@
 !pendidikan/
 !paklaring/
 !sertifikasi/
+!profil/
 dokumen/*
 !dokumen/.gitkeep
 pendidikan/*
@@ -18,3 +19,5 @@ paklaring/*
 !paklaring/.gitkeep
 sertifikasi/*
 !sertifikasi/.gitkeep
+profil/*
+!profil/.gitkeep

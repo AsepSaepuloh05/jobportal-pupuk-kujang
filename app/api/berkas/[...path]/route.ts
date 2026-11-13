@@ -34,35 +34,41 @@ function getMimeType(filename: string): string {
 // =====================================================
 
 async function userPemilikBerkas(urlPath: string): Promise<number | null> {
-  const [dokumen, pendidikan, pengalaman, sertifikasi] = await Promise.all([
-    prisma.dokumenKandidat.findFirst({
-      where: { pathFile: urlPath },
-      select: { userId: true },
-    }),
-    prisma.pendidikan.findFirst({
-      where: {
-        OR: [
-          { ijazahPathFile: urlPath },
-          { transkripPathFile: urlPath },
-        ],
-      },
-      select: { userId: true },
-    }),
-    prisma.pengalaman.findFirst({
-      where: { paklaringPathFile: urlPath },
-      select: { userId: true },
-    }),
-    prisma.sertifikasi.findFirst({
-      where: { sertifikatPathFile: urlPath },
-      select: { userId: true },
-    }),
-  ]);
+  const [dokumen, pendidikan, pengalaman, sertifikasi, fotoProfil] =
+    await Promise.all([
+      prisma.dokumenKandidat.findFirst({
+        where: { pathFile: urlPath },
+        select: { userId: true },
+      }),
+      prisma.pendidikan.findFirst({
+        where: {
+          OR: [
+            { ijazahPathFile: urlPath },
+            { transkripPathFile: urlPath },
+          ],
+        },
+        select: { userId: true },
+      }),
+      prisma.pengalaman.findFirst({
+        where: { paklaringPathFile: urlPath },
+        select: { userId: true },
+      }),
+      prisma.sertifikasi.findFirst({
+        where: { sertifikatPathFile: urlPath },
+        select: { userId: true },
+      }),
+      prisma.dokumenProfil.findFirst({
+        where: { pathFile: urlPath },
+        select: { userId: true },
+      }),
+    ]);
 
   return (
     dokumen?.userId ??
     pendidikan?.userId ??
     pengalaman?.userId ??
     sertifikasi?.userId ??
+    fotoProfil?.userId ??
     null
   );
 }

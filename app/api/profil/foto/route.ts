@@ -25,6 +25,24 @@ function getExtension(type: string, fileName: string) {
   return null;
 }
 
+// Path database -> path fisik. Mendukung format baru (/api/berkas/...,
+// folder privat uploads/) dan format lama (/uploads/..., public/).
+function resolvePhysicalPath(pathFile: string): string | null {
+  if (pathFile.startsWith("/api/berkas/")) {
+    return path.join(
+      process.cwd(),
+      "uploads",
+      pathFile.replace(/^\/api\/berkas\//, "")
+    );
+  }
+
+  if (pathFile.startsWith("/uploads/")) {
+    return path.join(process.cwd(), "public", pathFile.replace(/^\/+/, ""));
+  }
+
+  return null;
+}
+
 async function getUserId() {
   const { userId: userIdValue } = await bacaIdentitas();
 
@@ -163,9 +181,10 @@ export async function POST(request: Request) {
     // 7. FOLDER UPLOAD
     // =====================================================
 
+    // Simpan di folder private (di luar public/). Diakses lewat
+    // /api/berkas yang mewajibkan login dan mengecek kepemilikan.
     const uploadDir = path.join(
       process.cwd(),
-      "public",
       "uploads",
       "profil"
     );
@@ -195,7 +214,8 @@ export async function POST(request: Request) {
       namaFile
     );
 
-    const publicPath = `/uploads/profil/${namaFile}`;
+    // Path diakses melalui API berkas yang terautentikasi
+    const publicPath = `/api/berkas/profil/${namaFile}`;
 
     // =====================================================
     // 10. SIMPAN FILE
@@ -261,16 +281,11 @@ export async function POST(request: Request) {
       fotoLama.pathFile !== publicPath
     ) {
       try {
-        const oldFilePath = path.join(
-          process.cwd(),
-          "public",
-          fotoLama.pathFile.replace(
-            /^\/+/,
-            ""
-          )
-        );
+        const oldFilePath = resolvePhysicalPath(fotoLama.pathFile);
 
-        await unlink(oldFilePath);
+        if (oldFilePath) {
+          await unlink(oldFilePath);
+        }
       } catch (error) {
         console.error(
           "FOTO LAMA TIDAK DAPAT DIHAPUS:",
