@@ -56,6 +56,19 @@ export async function PUT(
             );
         }
 
+        if (
+            tahapanSaatIni.tahapan !== "SCREENING" &&
+            !tahapanSaatIni.jadwalTanggal
+        ) {
+            return NextResponse.json(
+                {
+                    message:
+                        "Atur jadwal terlebih dahulu sebelum menyelesaikan tahapan ini",
+                },
+                { status: 400 }
+            );
+        }
+
         await prisma.lamaranTahapan.update({
             where: { id: tahapanSaatIni.id },
             data: { selesaiPada: new Date() },
