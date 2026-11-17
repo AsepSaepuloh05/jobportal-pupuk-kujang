@@ -13,6 +13,7 @@ const ALLOWED_TYPES: Record<string, string[]> = {
   KTP: ["application/pdf", "image/jpeg", "image/png"],
   IJAZAH: ["application/pdf", "image/jpeg", "image/png"],
   TRANSKRIP: ["application/pdf", "image/jpeg", "image/png"],
+  PAS_FOTO: ["image/jpeg", "image/png"],
   LAINNYA: ["application/pdf", "image/jpeg", "image/png"],
 };
 
@@ -138,6 +139,16 @@ export async function POST(request: Request) {
         {
           success: false,
           message: "Dokumen CV harus berupa berkas PDF asli.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (jenisDokumen === "PAS_FOTO" && tipeAsli === "pdf") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Pas foto harus berupa gambar JPG atau PNG asli.",
         },
         { status: 400 }
       );

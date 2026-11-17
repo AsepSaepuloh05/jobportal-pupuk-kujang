@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { bacaIdentitas } from "@/lib/auth";
+import { unlink } from "fs/promises";
+import path from "path";
+import {
+  isTanggalDiMasaDepan,
+  parseTanggal,
+} from "@/app/kandidat/profil/skl";
 
 // =====================================================
 // HELPER
@@ -42,6 +48,68 @@ function parseNilai(
   if (!(value > 0 && value <= max)) return undefined;
 
   return value;
+}
+
+// Tanggal lulus: format "YYYY-MM-DD", tidak boleh di masa depan
+// Return: string | null (kosong) | undefined (tidak valid)
+function parseTanggalLulus(raw: unknown): string | null | undefined {
+  if (raw === null || raw === undefined) return null;
+
+  const str = String(raw).trim();
+
+  if (str === "") return null;
+
+  if (!parseTanggal(str)) return undefined;
+
+  if (isTanggalDiMasaDepan(str)) return undefined;
+
+  return str.slice(0, 10);
+}
+
+// Path database -> path fisik (format baru /api/berkas/ dan lama /uploads/)
+function resolvePhysicalPath(publicPath: string): string | null {
+  if (publicPath.startsWith("/api/berkas/")) {
+    return path.join(
+      process.cwd(),
+      "uploads",
+      publicPath.replace(/^\/api\/berkas\//, "")
+    );
+  }
+  if (publicPath.startsWith("/uploads/")) {
+    return path.join(
+      process.cwd(),
+      "public",
+      publicPath.replace(/^\/+/, "")
+    );
+  }
+  return null;
+}
+
+// Hapus berkas ijazah, SKL, dan transkrip milik satu data pendidikan
+async function hapusBerkasPendidikan(item: {
+  ijazahPathFile: string | null;
+  sklPathFile: string | null;
+  transkripPathFile: string | null;
+}) {
+  const daftar = [
+    item.ijazahPathFile,
+    item.sklPathFile,
+    item.transkripPathFile,
+  ];
+
+  for (const pathFile of daftar) {
+    if (!pathFile) continue;
+
+    try {
+      const physicalPath = resolvePhysicalPath(pathFile);
+
+      if (physicalPath) {
+        await unlink(physicalPath);
+      }
+    } catch (e) {
+      console.warn("Berkas pendidikan tidak ditemukan saat dihapus:", e);
+    }
+  }
 }
 
 // =====================================================
@@ -114,6 +182,7 @@ export async function POST(request: NextRequest) {
     const tahunMulai = String(body.tahunMulai ?? "").trim();
     const tahunSelesai = String(body.tahunSelesai ?? "").trim();
     const ipk = parseNilai(body.nilai, jenjang);
+    const tanggalLulus = parseTanggalLulus(body.tanggalLulus);
 
     // =================================================
     // VALIDASI
@@ -193,6 +262,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (tanggalLulus === undefined) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Tanggal lulus tidak valid atau berada di masa depan",
+        },
+        { status: 400 }
+      );
+    }
+
     // =================================================
     // CEK USER
     // =================================================
@@ -226,6 +306,7 @@ export async function POST(request: NextRequest) {
         tahunMulai: tahunMulai,
         tahunSelesai: tahunSelesai,
         ipk: ipk,
+        tanggalLulus: tanggalLulus,
       },
     });
 
@@ -282,6 +363,10 @@ export async function PUT(request: NextRequest) {
     const tahunMulai = String(body.tahunMulai ?? "").trim();
     const tahunSelesai = String(body.tahunSelesai ?? "").trim();
     const ipk = parseNilai(body.nilai, jenjang);
+
+    // tanggalLulus hanya diubah jika dikirim oleh klien
+    const adaTanggalLulus = body.tanggalLulus !== undefined;
+    const tanggalLulus = parseTanggalLulus(body.tanggalLulus);
 
     // =================================================
     // VALIDASI ID
@@ -375,6 +460,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    if (adaTanggalLulus && tanggalLulus === undefined) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Tanggal lulus tidak valid atau berada di masa depan",
+        },
+        { status: 400 }
+      );
+    }
+
     // =================================================
     // CEK DATA MILIK USER
     // =================================================
@@ -411,6 +507,7 @@ export async function PUT(request: NextRequest) {
         tahunMulai: tahunMulai,
         tahunSelesai: tahunSelesai,
         ipk: ipk,
+        ...(adaTanggalLulus && { tanggalLulus: tanggalLulus ?? null }),
       },
     });
 
@@ -498,6 +595,9 @@ export async function DELETE(request: NextRequest) {
         id: id,
       },
     });
+
+    // Hapus berkas ijazah, SKL, dan transkrip dari penyimpanan
+    await hapusBerkasPendidikan(existing);
 
     return NextResponse.json({
       success: true,

@@ -60,11 +60,20 @@ interface Pendidikan {
   tahunMulai: string;
   tahunSelesai: string;
   nilai?: string | null;
+
+  // Ijazah
   ijazahNamaFile?: string | null;
   ijazahNamaAsli?: string | null;
   ijazahPathFile?: string | null;
   ijazahTipeFile?: string | null;
   ijazahUkuranFile?: number | null;
+
+  // Transkrip Nilai
+  transkripNamaFile?: string | null;
+  transkripNamaAsli?: string | null;
+  transkripPathFile?: string | null;
+  transkripTipeFile?: string | null;
+  transkripUkuranFile?: number | null;
 }
 
 interface Pengalaman {
@@ -616,18 +625,12 @@ export default function KandidatDashboardPage() {
   // PROFILE COMPLETENESS
   // ============================================================
 
+  // Urutan: item wajib lebih dulu, lalu item biasa.
+  // Transkrip Nilai tidak dihitung terpisah karena sudah menjadi
+  // bagian dari data Pendidikan.
   const profileChecks = useMemo(() => {
     return [
-      {
-        label: "Nama lengkap",
-        complete: Boolean(user?.nama?.trim()),
-        wajib: false,
-      },
-      {
-        label: "Email",
-        complete: Boolean(user?.email?.trim()),
-        wajib: false,
-      },
+      // ---------------- WAJIB ----------------
       {
         label: "NIK",
         complete: Boolean(user?.nik?.trim()),
@@ -641,6 +644,38 @@ export default function KandidatDashboardPage() {
       {
         label: "Pendidikan",
         complete: pendidikan.length > 0,
+        wajib: true,
+      },
+      {
+        label: "CV",
+        complete: hasDocument("CV"),
+        wajib: true,
+      },
+      {
+        label: "KTP",
+        complete: hasDocument("KTP"),
+        wajib: true,
+      },
+      {
+        label: "Ijazah",
+        complete: hasIjazah,
+        wajib: true,
+      },
+
+      // ---------------- BIASA ----------------
+      {
+        label: "Nama lengkap",
+        complete: Boolean(user?.nama?.trim()),
+        wajib: false,
+      },
+      {
+        label: "Email",
+        complete: Boolean(user?.email?.trim()),
+        wajib: false,
+      },
+      {
+        label: "Pas Foto",
+        complete: hasDocument("PAS_FOTO"),
         wajib: false,
       },
       {
@@ -654,28 +689,8 @@ export default function KandidatDashboardPage() {
         wajib: false,
       },
       {
-        label: "CV",
-        complete: hasDocument("CV"),
-        wajib: true,
-      },
-      {
-        label: "Ijazah",
-        complete: hasIjazah,
-        wajib: true,
-      },
-      {
-        label: "Transkrip Nilai",
-        complete: hasDocument("Transkrip Nilai"),
-        wajib: false,
-      },
-      {
-        label: "KTP",
-        complete: hasDocument("KTP"),
-        wajib: true,
-      },
-      {
         label: "Dokumen Pendukung",
-        complete: hasDocument("Dokumen Pendukung"),
+        complete: hasDocument("LAINNYA"),
         wajib: false,
       },
     ];

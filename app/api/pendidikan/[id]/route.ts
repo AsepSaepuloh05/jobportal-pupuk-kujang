@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { bacaIdentitas } from "@/lib/auth";
 import { unlink } from "fs/promises";
 import path from "path";
+import {
+  isTanggalDiMasaDepan,
+  parseTanggal,
+} from "@/app/kandidat/profil/skl";
 
 type Params = {
   params: Promise<{
@@ -30,6 +34,33 @@ function resolvePhysicalPath(publicPath: string): string | null {
     );
   }
   return null;
+}
+
+// Hapus berkas ijazah, SKL, dan transkrip milik satu data pendidikan
+async function hapusBerkasPendidikan(item: {
+  ijazahPathFile: string | null;
+  sklPathFile: string | null;
+  transkripPathFile: string | null;
+}) {
+  const daftar = [
+    item.ijazahPathFile,
+    item.sklPathFile,
+    item.transkripPathFile,
+  ];
+
+  for (const pathFile of daftar) {
+    if (!pathFile) continue;
+
+    try {
+      const physicalPath = resolvePhysicalPath(pathFile);
+
+      if (physicalPath) {
+        await unlink(physicalPath);
+      }
+    } catch (e) {
+      console.warn("Berkas pendidikan tidak ditemukan saat dihapus:", e);
+    }
+  }
 }
 
 // Kolom database: ipk (Float). Frontend memakai: nilai (string).
@@ -67,6 +98,22 @@ function parseNilai(
   if (!(value > 0 && value <= max)) return undefined;
 
   return value;
+}
+
+// Tanggal lulus: format "YYYY-MM-DD", tidak boleh di masa depan
+// Return: string | null (kosong) | undefined (tidak valid)
+function parseTanggalLulus(raw: unknown): string | null | undefined {
+  if (raw === null || raw === undefined) return null;
+
+  const str = String(raw).trim();
+
+  if (str === "") return null;
+
+  if (!parseTanggal(str)) return undefined;
+
+  if (isTanggalDiMasaDepan(str)) return undefined;
+
+  return str.slice(0, 10);
 }
 
 function fail(message: string, status: number) {
@@ -144,6 +191,10 @@ export async function PUT(
     const tahunSelesai = String(body.tahunSelesai ?? "").trim();
     const ipk = parseNilai(body.nilai, jenjang);
 
+    // tanggalLulus hanya diubah jika dikirim oleh klien
+    const adaTanggalLulus = body.tanggalLulus !== undefined;
+    const tanggalLulus = parseTanggalLulus(body.tanggalLulus);
+
     // =================================================
     // VALIDASI
     // =================================================
@@ -172,6 +223,13 @@ export async function PUT(
         jenjang === "SMA / SMK"
           ? "Nilai rata-rata harus antara 0.01 dan 100"
           : "IPK harus antara 0.01 dan 4.00",
+        400
+      );
+    }
+
+    if (adaTanggalLulus && tanggalLulus === undefined) {
+      return fail(
+        "Tanggal lulus tidak valid atau berada di masa depan",
         400
       );
     }
@@ -206,6 +264,7 @@ export async function PUT(
         tahunMulai,
         tahunSelesai,
         ipk,
+        ...(adaTanggalLulus && { tanggalLulus: tanggalLulus ?? null }),
       },
     });
 
@@ -268,16 +327,8 @@ export async function DELETE(
       },
     });
 
-    if (existing.ijazahPathFile) {
-      try {
-        const physicalPath = resolvePhysicalPath(existing.ijazahPathFile);
-        if (physicalPath) {
-          await unlink(physicalPath);
-        }
-      } catch (e) {
-        console.warn("File ijazah tidak ditemukan saat pendidikan dihapus:", e);
-      }
-    }
+    // Hapus berkas ijazah, SKL, dan transkrip dari penyimpanan
+    await hapusBerkasPendidikan(existing);
 
     return NextResponse.json({
       success: true,

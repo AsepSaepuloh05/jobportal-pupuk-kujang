@@ -26,6 +26,8 @@ const ALLOWED_TYPES = [
 
 // =====================================================
 // POST - UPLOAD IJAZAH
+// Ijazah menggantikan SKL: SKL (jika ada) dihapus otomatis,
+// karena hanya satu dokumen kelulusan yang dipakai.
 // =====================================================
 
 export async function POST(
@@ -226,6 +228,27 @@ export async function POST(
     }
 
     // =================================================
+    // HAPUS FILE SKL (DIGANTIKAN OLEH IJAZAH)
+    // =================================================
+
+    if (pendidikan.sklPathFile) {
+      try {
+        const sklPath = getPhysicalPath(
+          pendidikan.sklPathFile
+        );
+
+        if (sklPath) {
+          await fs.unlink(sklPath);
+        }
+      } catch (error) {
+        console.warn(
+          "FILE SKL TIDAK DAPAT DIHAPUS:",
+          error
+        );
+      }
+    }
+
+    // =================================================
     // PATH UNTUK DATABASE
     // =================================================
 
@@ -248,6 +271,13 @@ export async function POST(
           ijazahPathFile: publicPath,
           ijazahTipeFile: file.type,
           ijazahUkuranFile: file.size,
+
+          // Ijazah menggantikan SKL
+          sklNamaFile: null,
+          sklNamaAsli: null,
+          sklPathFile: null,
+          sklTipeFile: null,
+          sklUkuranFile: null,
         },
       });
 

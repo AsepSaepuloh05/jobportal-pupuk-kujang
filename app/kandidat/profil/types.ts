@@ -1,288 +1,320 @@
-export interface UserData {
-  id: number;
+  export interface UserData {
+    id: number;
 
-  nama: string;
+    nama: string;
 
-  email: string;
+    email: string;
 
-  nik: string;
+    nik: string;
 
-  role: string;
+    role: string;
 
-  // Alamat
-  alamat?: string | null;
+    // Alamat
+    alamat?: string | null;
 
-  rt?: number | null;
+    rt?: number | null;
 
-  rw?: number | null;
+    rw?: number | null;
 
-  // Wilayah
-  provinsiId?: string | null;
+    // Wilayah
+    provinsiId?: string | null;
 
-  provinsi?: string | null;
+    provinsi?: string | null;
 
-  kabupatenId?: string | null;
+    kabupatenId?: string | null;
 
-  kabupaten?: string | null;
+    kabupaten?: string | null;
 
-  kecamatanId?: string | null;
+    kecamatanId?: string | null;
 
-  kecamatan?: string | null;
+    kecamatan?: string | null;
 
-  desaId?: string | null;
+    desaId?: string | null;
 
-  desa?: string | null;
+    desa?: string | null;
 
-  kodePos?: string | null;
+    kodePos?: string | null;
 
-  // Nomor Telepon
-  noTelepon?: string | null;
+    // Nomor Telepon
+    noTelepon?: string | null;
 
-  // Foto profil
-  dokumenProfil?: {
+    // Foto profil
+    dokumenProfil?: {
+      pathFile: string;
+    } | null;
+  }
+
+  export interface UploadedDokumen {
+    id: number;
+
+    jenisDokumen: string;
+
+    namaAsli: string;
+
     pathFile: string;
-  } | null;
-}
 
-export interface UploadedDokumen {
-  id: number;
+    tipeFile: string;
 
-  jenisDokumen: string;
+    ukuranFile: number;
 
-  namaAsli: string;
+    updatedAt: string;
+  }
 
-  pathFile: string;
+  export interface Pendidikan {
+    id: number;
 
-  tipeFile: string;
+    jenjang: string;
 
-  ukuranFile: number;
+    institusi: string;
 
-  updatedAt: string;
-}
+    jurusan: string;
 
-export interface Pendidikan {
-  id: number;
+    tahunMulai: string;
 
-  jenjang: string;
+    tahunSelesai: string;
 
-  institusi: string;
+    nilai: string | null;
 
-  jurusan: string;
+    // Ijazah
+    ijazahNamaFile?: string | null;
 
-  tahunMulai: string;
+    ijazahNamaAsli?: string | null;
 
-  tahunSelesai: string;
+    ijazahPathFile?: string | null;
 
-  nilai: string | null;
+    ijazahTipeFile?: string | null;
 
-  // Ijazah
-  ijazahNamaFile?: string | null;
+    ijazahUkuranFile?: number | null;
 
-  ijazahNamaAsli?: string | null;
+      // Tanggal lulus & SKL
+    tanggalLulus?: string | null;
 
-  ijazahPathFile?: string | null;
+    sklNamaFile?: string | null;
 
-  ijazahTipeFile?: string | null;
+    sklNamaAsli?: string | null;
+    
+    sklPathFile?: string | null;
+    
+    sklTipeFile?: string | null;
+    
+    sklUkuranFile?: number | null;
 
-  ijazahUkuranFile?: number | null;
+    // Transkrip Nilai
+    transkripNamaFile?: string | null;
 
-  // Transkrip Nilai
-  transkripNamaFile?: string | null;
+    transkripNamaAsli?: string | null;
 
-  transkripNamaAsli?: string | null;
+    transkripPathFile?: string | null;
 
-  transkripPathFile?: string | null;
+    transkripTipeFile?: string | null;
 
-  transkripTipeFile?: string | null;
+    transkripUkuranFile?: number | null;
+  }
 
-  transkripUkuranFile?: number | null;
-}
+  export interface Pengalaman {
+    id: number;
 
-export interface Pengalaman {
-  id: number;
+    posisi: string;
 
-  posisi: string;
+    perusahaan: string;
 
-  perusahaan: string;
+    lokasi: string | null;
 
-  lokasi: string | null;
+    tahunMulai: string;
 
-  tahunMulai: string;
+    tahunSelesai: string | null;
 
-  tahunSelesai: string | null;
+    deskripsi: string | null;
 
-  deskripsi: string | null;
+    // Paklaring
+    paklaringNamaFile?: string | null;
 
-  // Paklaring
-  paklaringNamaFile?: string | null;
+    paklaringNamaAsli?: string | null;
 
-  paklaringNamaAsli?: string | null;
+    paklaringPathFile?: string | null;
 
-  paklaringPathFile?: string | null;
+    paklaringTipeFile?: string | null;
 
-  paklaringTipeFile?: string | null;
+    paklaringUkuranFile?: number | null;
+  }
 
-  paklaringUkuranFile?: number | null;
-}
+  export interface Sertifikasi {
+    id: number;
 
-export interface Sertifikasi {
-  id: number;
+    nama: string;
 
-  nama: string;
+    penerbit: string;
 
-  penerbit: string;
+    nomor: string | null;
 
-  nomor: string | null;
+    tanggalTerbit: string | null;
 
-  tanggalTerbit: string | null;
+    tanggalKadaluarsa: string | null;
 
-  tanggalKadaluarsa: string | null;
+    // Sertifikat
+    sertifikatNamaFile?: string | null;
 
-  // Sertifikat
-  sertifikatNamaFile?: string | null;
+    sertifikatNamaAsli?: string | null;
 
-  sertifikatNamaAsli?: string | null;
+    sertifikatPathFile?: string | null;
 
-  sertifikatPathFile?: string | null;
+    sertifikatTipeFile?: string | null;
 
-  sertifikatTipeFile?: string | null;
+    sertifikatUkuranFile?: number | null;
 
-  sertifikatUkuranFile?: number | null;
+    /**
+     * File hanya digunakan sementara di frontend
+     * sebelum dikirim melalui FormData.
+     */
+    file?: File | null;
+  }
 
-  /**
-   * File hanya digunakan sementara di frontend
-   * sebelum dikirim melalui FormData.
-   */
-  file?: File | null;
-}
+  export interface DokumenConfig {
+    key: string;
 
-export interface DokumenConfig {
-  key: string;
+    label: string;
 
-  label: string;
+    description: string;
 
-  description: string;
+    accept: string;
+  }
 
-  accept: string;
-}
+  export const initialPendidikan: Pendidikan = {
+    id: 0,
 
-export const initialPendidikan: Pendidikan = {
-  id: 0,
+    jenjang: "",
 
-  jenjang: "",
+    institusi: "",
 
-  institusi: "",
+    jurusan: "",
 
-  jurusan: "",
+    tahunMulai: "",
 
-  tahunMulai: "",
+    tahunSelesai: "",
 
-  tahunSelesai: "",
+    nilai: null,
 
-  nilai: null,
+    ijazahNamaFile: null,
 
-  ijazahNamaFile: null,
+    ijazahNamaAsli: null,
 
-  ijazahNamaAsli: null,
+    ijazahPathFile: null,
 
-  ijazahPathFile: null,
+    ijazahTipeFile: null,
 
-  ijazahTipeFile: null,
+    ijazahUkuranFile: null,
 
-  ijazahUkuranFile: null,
+    tanggalLulus: "",
+    
+    sklNamaFile: null,
 
-  transkripNamaFile: null,
+    sklNamaAsli: null,
 
-  transkripNamaAsli: null,
+    sklPathFile: null,
 
-  transkripPathFile: null,
+    sklTipeFile: null,
 
-  transkripTipeFile: null,
+    sklUkuranFile: null,
 
-  transkripUkuranFile: null,
-};
+    transkripNamaFile: null,
 
-export const initialPengalaman: Pengalaman = {
-  id: 0,
+    transkripNamaAsli: null,
 
-  posisi: "",
+    transkripPathFile: null,
 
-  perusahaan: "",
+    transkripTipeFile: null,
 
-  lokasi: "",
+    transkripUkuranFile: null,
+  };
 
-  tahunMulai: "",
+  export const initialPengalaman: Pengalaman = {
+    id: 0,
 
-  tahunSelesai: "",
+    posisi: "",
 
-  deskripsi: "",
+    perusahaan: "",
 
-  paklaringNamaFile: null,
+    lokasi: "",
 
-  paklaringNamaAsli: null,
+    tahunMulai: "",
 
-  paklaringPathFile: null,
+    tahunSelesai: "",
 
-  paklaringTipeFile: null,
+    deskripsi: "",
 
-  paklaringUkuranFile: null,
-};
+    paklaringNamaFile: null,
 
-export const initialSertifikasi: Sertifikasi = {
-  id: 0,
+    paklaringNamaAsli: null,
 
-  nama: "",
+    paklaringPathFile: null,
 
-  penerbit: "",
+    paklaringTipeFile: null,
 
-  nomor: "",
+    paklaringUkuranFile: null,
+  };
 
-  tanggalTerbit: "",
+  export const initialSertifikasi: Sertifikasi = {
+    id: 0,
 
-  tanggalKadaluarsa: "",
+    nama: "",
 
-  sertifikatNamaFile: null,
+    penerbit: "",
 
-  sertifikatNamaAsli: null,
+    nomor: "",
 
-  sertifikatPathFile: null,
+    tanggalTerbit: "",
 
-  sertifikatTipeFile: null,
+    tanggalKadaluarsa: "",
 
-  sertifikatUkuranFile: null,
+    sertifikatNamaFile: null,
 
-  file: null,
-};
+    sertifikatNamaAsli: null,
 
-// Transkrip Nilai dipindahkan ke PendidikanSection (per pendidikan)
-export const documents: DokumenConfig[] = [
-  {
-    key: "cv",
+    sertifikatPathFile: null,
 
-    label: "Curriculum Vitae",
+    sertifikatTipeFile: null,
 
-    description: "PDF, maksimal 5 MB",
+    sertifikatUkuranFile: null,
 
-    accept: "application/pdf",
-  },
+    file: null,
+  };
 
-  {
-    key: "ktp",
+  // Transkrip Nilai dipindahkan ke PendidikanSection (per pendidikan)
+  export const documents: DokumenConfig[] = [
+    {
+      key: "cv",
 
-    label: "KTP",
+      label: "Curriculum Vitae",
 
-    description: "PDF, JPG, atau PNG — maksimal 5 MB",
+      description: "PDF, maksimal 5 MB",
 
-    accept: "application/pdf,image/jpeg,image/png",
-  },
+      accept: "application/pdf",
+    },
 
-  {
-    key: "lainnya",
+    {
+      key: "ktp",
 
-    label: "Dokumen Pendukung",
+      label: "KTP",
 
-    description: "PDF, JPG, atau PNG — maksimal 5 MB",
+      description: "PDF, JPG, atau PNG — maksimal 5 MB",
 
-    accept: "application/pdf,image/jpeg,image/png",
-  },
-];
+      accept: "application/pdf,image/jpeg,image/png",
+    },
+
+    {
+      key: "pas_foto",
+      label: "Pas Foto (4x6)",
+      description: "JPG atau PNG — maksimal 5 MB",
+      accept: "image/jpeg,image/png",
+    },
+
+    {
+      key: "lainnya",
+
+      label: "Dokumen Pendukung",
+
+      description: "PDF, JPG, atau PNG — maksimal 5 MB",
+
+      accept: "application/pdf,image/jpeg,image/png",
+    },
+  ];

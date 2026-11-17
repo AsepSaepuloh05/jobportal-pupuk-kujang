@@ -87,6 +87,11 @@ export default function ProfilKandidatPage() {
             onIjazahFileChange={p.handleIjazahFileChange}
             onClearIjazahFile={p.clearIjazahFile}
             onDeleteIjazah={p.deleteIjazah}
+            sklFile={p.sklFile}
+            uploadingSkl={p.uploadingSkl}
+            onSklFileChange={p.handleSklFileChange}
+            onClearSklFile={p.clearSklFile}
+            onDeleteSkl={p.deleteSkl}
             transkripFile={p.transkripFile}
             uploadingTranskrip={p.uploadingTranskrip}
             onTranskripFileChange={p.handleTranskripFileChange}

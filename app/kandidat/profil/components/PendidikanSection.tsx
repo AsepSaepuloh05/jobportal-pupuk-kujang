@@ -1,10 +1,14 @@
 "use client";
 
+import { useState } from "react";
+
 import {
+  AlertTriangle,
   CalendarDays,
   CheckCircle2,
   FileCheck2,
   GraduationCap,
+  Info,
   Pencil,
   Trash2,
   Upload,
@@ -18,6 +22,12 @@ import {
   onlyNilaiByJenjang,
   isSmaSmk,
 } from "../utils";
+import {
+  SKL_BATAS_BULAN,
+  formatTanggalIndo,
+  getStatusSkl,
+  hariIniISO,
+} from "../skl";
 import { AddButton, EmptyState, ModernSection } from "./Shared";
 import {
   FileThumb,
@@ -48,7 +58,68 @@ const FILE_ACCEPT =
   ".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png";
 
 /* ============================================================
-   ATTACHMENT FIELD (dipakai untuk Ijazah & Transkrip)
+   NOTICE STATUS SKL
+============================================================ */
+
+function SklStatusNotice({
+  adaIjazah,
+  adaSkl,
+  tanggalLulus,
+  className = "",
+}: {
+  adaIjazah: boolean;
+  adaSkl: boolean;
+  tanggalLulus?: string | null;
+  className?: string;
+}) {
+  const status = getStatusSkl(tanggalLulus);
+
+  let tone: "info" | "warn" | "danger" = "info";
+
+  let text = `SKL hanya berlaku ${SKL_BATAS_BULAN} bulan sejak tanggal lulus. Setelah itu wajib beralih ke ijazah.`;
+
+  if (status.status === "BERLAKU") {
+    tone = adaIjazah ? "info" : "warn";
+
+    text = `Masa berlaku SKL sampai ${formatTanggalIndo(
+      status.batas
+    )} (sisa ${status.sisaHari} hari).${
+      adaIjazah ? "" : " Setelah itu wajib beralih ke ijazah."
+    }`;
+  } else if (status.status === "KEDALUWARSA") {
+    tone = adaIjazah ? "info" : "danger";
+
+    text = `Masa berlaku SKL berakhir pada ${formatTanggalIndo(
+      status.batas
+    )}.${adaIjazah ? " Ijazah sudah terlampir." : " Ijazah wajib diunggah."}`;
+  } else if (adaSkl) {
+    tone = "warn";
+    text = "Isi tanggal lulus agar masa berlaku SKL dapat dihitung.";
+  }
+
+  const toneClass = {
+    info: "border-slate-200 bg-white text-slate-500",
+    warn: "border-amber-200 bg-amber-50 text-amber-700",
+    danger: "border-red-200 bg-red-50 text-red-700",
+  }[tone];
+
+  return (
+    <div
+      className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 text-xs leading-5 ${toneClass} ${className}`}
+    >
+      {tone === "danger" || tone === "warn" ? (
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      ) : (
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      )}
+
+      <p>{text}</p>
+    </div>
+  );
+}
+
+/* ============================================================
+   ATTACHMENT FIELD (Ijazah, SKL & Transkrip)
 ============================================================ */
 
 type ExistingFile = {
@@ -62,6 +133,7 @@ type ExistingFile = {
 function AttachmentField({
   title,
   noun,
+  labelTag = "(Opsional)",
   file,
   existing,
   canDelete,
@@ -73,6 +145,7 @@ function AttachmentField({
 }: {
   title: string; // contoh: "Dokumen Ijazah"
   noun: string; // contoh: "ijazah"
+  labelTag?: string; // contoh: "(Wajib)"
   file: File | null;
   existing: ExistingFile | null;
   canDelete: boolean;
@@ -96,7 +169,7 @@ function AttachmentField({
         <p className="text-sm font-semibold text-slate-800">
           {title}
           <span className="ml-1 text-xs font-normal text-slate-400">
-            (Opsional)
+            {labelTag}
           </span>
         </p>
 
@@ -219,7 +292,7 @@ function AttachmentField({
 
           <label className={pickerLabel}>
             <Upload className="h-4 w-4" />
-            Ganti {title}
+            Ganti file {noun}
             <input
               type="file"
               hidden
@@ -358,6 +431,9 @@ function EducationItem({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const adaIjazah = Boolean(item.ijazahPathFile);
+  const adaSkl = Boolean(item.sklPathFile);
+
   return (
     <div
       className={`relative py-5 ${
@@ -419,19 +495,50 @@ function EducationItem({
           )}
         </div>
 
-        {/* IJAZAH */}
-        <AttachmentSummary
-          className="mt-4"
-          badge="Ijazah terlampir"
-          linkLabel="Lihat Ijazah"
-          emptyLabel="Ijazah belum diunggah"
-          defaultName="Ijazah"
-          pathFile={item.ijazahPathFile}
-          namaAsli={item.ijazahNamaAsli}
-          namaFile={item.ijazahNamaFile}
-          tipeFile={item.ijazahTipeFile}
-          ukuranFile={item.ijazahUkuranFile}
-        />
+        {/* DOKUMEN KELULUSAN: IJAZAH ATAU SKL (pilih salah satu) */}
+        {adaIjazah ? (
+          <AttachmentSummary
+            className="mt-4"
+            badge="Ijazah terlampir"
+            linkLabel="Lihat Ijazah"
+            emptyLabel="Ijazah belum diunggah"
+            defaultName="Ijazah"
+            pathFile={item.ijazahPathFile}
+            namaAsli={item.ijazahNamaAsli}
+            namaFile={item.ijazahNamaFile}
+            tipeFile={item.ijazahTipeFile}
+            ukuranFile={item.ijazahUkuranFile}
+          />
+        ) : adaSkl ? (
+          <div className="mt-4 space-y-3">
+            <AttachmentSummary
+              badge="SKL terlampir"
+              linkLabel="Lihat SKL"
+              emptyLabel="SKL belum diunggah"
+              defaultName="Surat Keterangan Lulus"
+              pathFile={item.sklPathFile}
+              namaAsli={item.sklNamaAsli}
+              namaFile={item.sklNamaFile}
+              tipeFile={item.sklTipeFile}
+              ukuranFile={item.sklUkuranFile}
+            />
+
+            <SklStatusNotice
+              adaIjazah={false}
+              adaSkl={adaSkl}
+              tanggalLulus={item.tanggalLulus}
+            />
+          </div>
+        ) : (
+          <AttachmentSummary
+            className="mt-4"
+            badge="Ijazah terlampir"
+            linkLabel="Lihat Ijazah"
+            emptyLabel="Ijazah atau SKL belum diunggah"
+            defaultName="Ijazah"
+            pathFile={null}
+          />
+        )}
 
         {/* TRANSKRIP NILAI */}
         <AttachmentSummary
@@ -465,6 +572,11 @@ function PendidikanModal({
   onIjazahFileChange,
   onClearIjazahFile,
   onDeleteIjazah,
+  sklFile,
+  uploadingSkl,
+  onSklFileChange,
+  onClearSklFile,
+  onDeleteSkl,
   transkripFile,
   uploadingTranskrip,
   onTranskripFileChange,
@@ -486,6 +598,14 @@ function PendidikanModal({
   onClearIjazahFile: () => void;
   onDeleteIjazah: (id: number) => void;
 
+  sklFile: File | null;
+  uploadingSkl: boolean;
+  onSklFileChange: (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => void;
+  onClearSklFile: () => void;
+  onDeleteSkl: (id: number) => void;
+
   transkripFile: File | null;
   uploadingTranskrip: boolean;
   onTranskripFileChange: (
@@ -498,7 +618,35 @@ function PendidikanModal({
   onSave: () => void;
 }) {
   const sekolah = isSmaSmk(form.jenjang);
-  const busy = saving || uploadingIjazah || uploadingTranskrip;
+  const [jenisDokumenKelulusan, setJenisDokumenKelulusan] = useState<
+    "IJAZAH" | "SKL"
+  >(() => {
+    if (form.ijazahPathFile) return "IJAZAH";
+    if (form.sklPathFile) return "SKL";
+    return "IJAZAH";
+  });
+
+  const busy =
+    saving || uploadingIjazah || uploadingSkl || uploadingTranskrip;
+
+  const adaIjazah = Boolean(ijazahFile) || Boolean(form.ijazahPathFile);
+  const adaSkl = Boolean(sklFile) || Boolean(form.sklPathFile);
+
+  // Jika ijazah sudah tersimpan, SKL tidak diperlukan lagi
+  const sklTerkunci = Boolean(form.ijazahPathFile);
+
+  // Hanya satu dokumen kelulusan: file dari pilihan lain dibuang
+  const pilihJenis = (value: "IJAZAH" | "SKL") => {
+    if (value === jenisDokumenKelulusan) return;
+
+    if (value === "SKL") {
+      onClearIjazahFile();
+    } else {
+      onClearSklFile();
+    }
+
+    setJenisDokumenKelulusan(value);
+  };
 
   return (
     <Modal
@@ -607,29 +755,179 @@ function PendidikanModal({
           />
         </div>
 
-        {/* IJAZAH */}
-        <AttachmentField
-          title="Dokumen Ijazah"
-          noun="ijazah"
-          file={ijazahFile}
-          existing={
-            form.ijazahPathFile
-              ? {
-                  pathFile: form.ijazahPathFile,
-                  namaAsli: form.ijazahNamaAsli,
-                  namaFile: form.ijazahNamaFile,
-                  tipeFile: form.ijazahTipeFile,
-                  ukuranFile: form.ijazahUkuranFile,
+        {/* PILIH DOKUMEN KELULUSAN */}
+        <div className="space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">
+              Dokumen Kelulusan
+              <span className="ml-1 text-xs font-normal text-red-500">
+                (Pilih salah satu)
+              </span>
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              {sklTerkunci
+                ? "Ijazah sudah tersimpan, sehingga SKL tidak diperlukan lagi."
+                : "Silakan pilih dokumen kelulusan yang akan dilampirkan."}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => pilihJenis("IJAZAH")}
+              aria-pressed={jenisDokumenKelulusan === "IJAZAH"}
+              className={`rounded-xl border p-4 text-left transition ${
+                jenisDokumenKelulusan === "IJAZAH"
+                  ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-100"
+                  : "border-slate-200 bg-white hover:border-emerald-300"
+              } disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              <span className="flex items-center gap-2">
+                <span
+                  className={`flex h-4 w-4 items-center justify-center rounded-full border ${
+                    jenisDokumenKelulusan === "IJAZAH"
+                      ? "border-emerald-600"
+                      : "border-slate-300"
+                  }`}
+                >
+                  {jenisDokumenKelulusan === "IJAZAH" && (
+                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                  )}
+                </span>
+                <span className="text-sm font-semibold text-slate-800">
+                  Ijazah
+                </span>
+              </span>
+              <span className="mt-2 block pl-6 text-xs leading-5 text-slate-500">
+                Pilih jika sudah memiliki ijazah.
+              </span>
+            </button>
+
+            <button
+              type="button"
+              disabled={busy || sklTerkunci}
+              onClick={() => pilihJenis("SKL")}
+              aria-pressed={jenisDokumenKelulusan === "SKL"}
+              title={
+                sklTerkunci
+                  ? "Ijazah sudah tersimpan, SKL tidak diperlukan lagi."
+                  : undefined
+              }
+              className={`rounded-xl border p-4 text-left transition ${
+                jenisDokumenKelulusan === "SKL"
+                  ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-100"
+                  : "border-slate-200 bg-white hover:border-emerald-300"
+              } disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              <span className="flex items-center gap-2">
+                <span
+                  className={`flex h-4 w-4 items-center justify-center rounded-full border ${
+                    jenisDokumenKelulusan === "SKL"
+                      ? "border-emerald-600"
+                      : "border-slate-300"
+                  }`}
+                >
+                  {jenisDokumenKelulusan === "SKL" && (
+                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                  )}
+                </span>
+                <span className="text-sm font-semibold text-slate-800">
+                  Surat Keterangan Lulus (SKL)
+                </span>
+              </span>
+              <span className="mt-2 block pl-6 text-xs leading-5 text-slate-500">
+                Pilih jika ijazah belum diterbitkan.
+              </span>
+            </button>
+          </div>
+
+          {jenisDokumenKelulusan === "IJAZAH" ? (
+            <AttachmentField
+              title="Dokumen Ijazah"
+              noun="ijazah"
+              labelTag="(Wajib)"
+              file={ijazahFile}
+              existing={
+                form.ijazahPathFile
+                  ? {
+                      pathFile: form.ijazahPathFile,
+                      namaAsli: form.ijazahNamaAsli,
+                      namaFile: form.ijazahNamaFile,
+                      tipeFile: form.ijazahTipeFile,
+                      ukuranFile: form.ijazahUkuranFile,
+                    }
+                  : null
+              }
+              canDelete={isEdit}
+              disabled={saving || uploadingIjazah}
+              uploading={uploadingIjazah}
+              onFileChange={onIjazahFileChange}
+              onClearFile={onClearIjazahFile}
+              onDelete={() => onDeleteIjazah(form.id)}
+            />
+          ) : (
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                <label
+                  htmlFor="tanggal-lulus"
+                  className="text-sm font-semibold text-slate-800"
+                >
+                  Tanggal Lulus
+                  <span className="ml-1 text-xs font-normal text-slate-400">
+                    (sesuai tanggal pada SKL)
+                  </span>
+                </label>
+
+                <input
+                  id="tanggal-lulus"
+                  type="date"
+                  value={form.tanggalLulus || ""}
+                  max={hariIniISO()}
+                  disabled={saving}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      tanggalLulus: e.target.value,
+                    }))
+                  }
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
+                />
+
+                <SklStatusNotice
+                  className="mt-3"
+                  adaIjazah={adaIjazah}
+                  adaSkl={adaSkl}
+                  tanggalLulus={form.tanggalLulus}
+                />
+              </div>
+
+              <AttachmentField
+                title="Surat Keterangan Lulus (SKL)"
+                noun="SKL"
+                labelTag={`(Berlaku ${SKL_BATAS_BULAN} bulan)`}
+                file={sklFile}
+                existing={
+                  form.sklPathFile
+                    ? {
+                        pathFile: form.sklPathFile,
+                        namaAsli: form.sklNamaAsli,
+                        namaFile: form.sklNamaFile,
+                        tipeFile: form.sklTipeFile,
+                        ukuranFile: form.sklUkuranFile,
+                      }
+                    : null
                 }
-              : null
-          }
-          canDelete={isEdit}
-          disabled={saving || uploadingIjazah}
-          uploading={uploadingIjazah}
-          onFileChange={onIjazahFileChange}
-          onClearFile={onClearIjazahFile}
-          onDelete={() => onDeleteIjazah(form.id)}
-        />
+                canDelete={isEdit}
+                disabled={saving || uploadingSkl}
+                uploading={uploadingSkl}
+                onFileChange={onSklFileChange}
+                onClearFile={onClearSklFile}
+                onDelete={() => onDeleteSkl(form.id)}
+              />
+            </div>
+          )}
+        </div>
 
         {/* TRANSKRIP NILAI */}
         <AttachmentField
@@ -675,6 +973,11 @@ export function PendidikanSection({
   onIjazahFileChange,
   onClearIjazahFile,
   onDeleteIjazah,
+  sklFile,
+  uploadingSkl,
+  onSklFileChange,
+  onClearSklFile,
+  onDeleteSkl,
   transkripFile,
   uploadingTranskrip,
   onTranskripFileChange,
@@ -700,6 +1003,14 @@ export function PendidikanSection({
   ) => void;
   onClearIjazahFile: () => void;
   onDeleteIjazah: (id: number) => void;
+
+  sklFile: File | null;
+  uploadingSkl: boolean;
+  onSklFileChange: (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => void;
+  onClearSklFile: () => void;
+  onDeleteSkl: (id: number) => void;
 
   transkripFile: File | null;
   uploadingTranskrip: boolean;
@@ -763,6 +1074,11 @@ export function PendidikanSection({
           onIjazahFileChange={onIjazahFileChange}
           onClearIjazahFile={onClearIjazahFile}
           onDeleteIjazah={onDeleteIjazah}
+          sklFile={sklFile}
+          uploadingSkl={uploadingSkl}
+          onSklFileChange={onSklFileChange}
+          onClearSklFile={onClearSklFile}
+          onDeleteSkl={onDeleteSkl}
           transkripFile={transkripFile}
           uploadingTranskrip={uploadingTranskrip}
           onTranskripFileChange={onTranskripFileChange}

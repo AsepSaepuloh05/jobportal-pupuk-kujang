@@ -186,7 +186,7 @@ model DokumenKandidat {
 
 // =====================================================
 // PENDIDIKAN
-// IJAZAH DISATUKAN DI SINI
+// IJAZAH, SKL, DAN TRANSKRIP DISATUKAN DI SINI
 // =====================================================
 
 model Pendidikan {
@@ -199,12 +199,22 @@ model Pendidikan {
   tahunSelesai String
   ipk          Float?
 
+  // Tanggal lulus (format "YYYY-MM-DD"), dasar perhitungan masa berlaku SKL (4 bulan)
+  tanggalLulus String?
+
   // Data ijazah
   ijazahNamaFile   String?
   ijazahNamaAsli   String?
   ijazahPathFile   String?
   ijazahTipeFile   String?
   ijazahUkuranFile Int?
+
+  // Data SKL (Surat Keterangan Lulus)
+  sklNamaFile   String?
+  sklNamaAsli   String?
+  sklPathFile   String?
+  sklTipeFile   String?
+  sklUkuranFile Int?
 
   // Data transkrip nilai
   transkripNamaFile   String?
@@ -290,6 +300,7 @@ enum JenisDokumen {
   KTP
   IJAZAH
   TRANSKRIP
+  PAS_FOTO
   LAINNYA
 
   @@map("jenis_dokumen")

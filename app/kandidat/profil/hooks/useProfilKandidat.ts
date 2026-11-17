@@ -15,6 +15,12 @@ import {
 } from "../types";
 
 import { isYear4, isNilaiByJenjang } from "../utils";
+import {
+  cekSyaratLulusan,
+  isTanggalDiMasaDepan,
+  parseTanggal,
+  tentukanJenisKelulusan,
+} from "../skl";
 import { PreviewTarget } from "../components/Documentpreviewmodal";
 import { toast } from "../components/Toast";
 import { confirmDialog } from "../components/ConfirmDialog";
@@ -148,6 +154,10 @@ export function useProfilKandidat() {
   const [ijazahFile, setIjazahFile] = useState<File | null>(null);
   const [uploadingIjazah, setUploadingIjazah] = useState(false);
 
+  // SKL (Surat Keterangan Lulus)
+  const [sklFile, setSklFile] = useState<File | null>(null);
+  const [uploadingSkl, setUploadingSkl] = useState(false);
+
   // Transkrip Nilai
   const [transkripFile, setTranskripFile] = useState<File | null>(null);
   const [uploadingTranskrip, setUploadingTranskrip] = useState(false);
@@ -273,7 +283,17 @@ export function useProfilKandidat() {
       const data = await res.json();
 
       if (data.success) {
-        setPendidikan(data.pendidikan || data.data || []);
+        const list = data.pendidikan || data.data || [];
+
+        // tanggalLulus disimpan sebagai "YYYY-MM-DD"
+        setPendidikan(
+          list.map((item: any) => ({
+            ...item,
+            tanggalLulus: item.tanggalLulus
+              ? String(item.tanggalLulus).slice(0, 10)
+              : "",
+          }))
+        );
       }
     } catch (error) {
       console.error("FETCH PENDIDIKAN ERROR:", error);
@@ -611,6 +631,7 @@ export function useProfilKandidat() {
     setEditingPendidikanId(null);
     setPendidikanForm({ ...initialPendidikan });
     setIjazahFile(null);
+    setSklFile(null);
     setTranskripFile(null);
     setShowPendidikanModal(true);
   };
@@ -623,6 +644,7 @@ export function useProfilKandidat() {
     setEditingPendidikanId(item.id);
     setPendidikanForm({ ...item });
     setIjazahFile(null);
+    setSklFile(null);
     setTranskripFile(null);
     setShowPendidikanModal(true);
   };
@@ -671,6 +693,53 @@ export function useProfilKandidat() {
       return;
     }
 
+    // Hanya salah satu dokumen kelulusan: ijazah ATAU SKL
+    if (ijazahFile && sklFile) {
+      toast.error("Pilih salah satu saja: ijazah atau SKL.");
+      return;
+    }
+
+    if (sklFile && pendidikanForm.ijazahPathFile) {
+      toast.error("Ijazah sudah tersimpan, SKL tidak diperlukan lagi.");
+      return;
+    }
+
+    const jenis = tentukanJenisKelulusan({
+      ijazahBaru: Boolean(ijazahFile),
+      sklBaru: Boolean(sklFile),
+      ijazahTersimpan: Boolean(pendidikanForm.ijazahPathFile),
+      sklTersimpan: Boolean(pendidikanForm.sklPathFile),
+    });
+
+    // Validasi tanggal lulus (hanya relevan untuk SKL)
+    const tanggalLulus =
+      jenis === "SKL"
+        ? String(pendidikanForm.tanggalLulus ?? "").trim()
+        : "";
+
+    if (tanggalLulus !== "") {
+      if (!parseTanggal(tanggalLulus)) {
+        toast.error("Tanggal lulus tidak valid.");
+        return;
+      }
+
+      if (isTanggalDiMasaDepan(tanggalLulus)) {
+        toast.error("Tanggal lulus tidak boleh di masa depan.");
+        return;
+      }
+    }
+
+    // Syarat kelulusan sesuai dokumen yang dipakai (ijazah atau SKL)
+    const pesanSyarat = cekSyaratLulusan({
+      jenis,
+      tanggalLulus,
+    });
+
+    if (pesanSyarat) {
+      toast.error(pesanSyarat);
+      return;
+    }
+
     setSavingPendidikan(true);
 
     try {
@@ -689,6 +758,7 @@ export function useProfilKandidat() {
         tahunMulai: mulai,
         tahunSelesai: selesai,
         nilai: pendidikanForm.nilai || null,
+        tanggalLulus: tanggalLulus || null,
       };
 
       const res = await fetch(url, {
@@ -712,10 +782,18 @@ export function useProfilKandidat() {
 
       // Upload lampiran (jika ada file baru)
       let ijazahBerhasil = true;
+      let sklBerhasil = true;
       let transkripBerhasil = true;
 
-      if (ijazahFile && savedId) {
+      // Ijazah diunggah lebih dulu agar aturan SKL di server
+      // mengenali ijazah yang baru saja ditambahkan
+      // Hanya unggah file sesuai jenis yang dipilih
+      if (jenis === "IJAZAH" && ijazahFile && savedId) {
         ijazahBerhasil = await uploadIjazah(savedId, ijazahFile);
+      }
+
+      if (jenis === "SKL" && sklFile && savedId) {
+        sklBerhasil = await uploadSkl(savedId, sklFile);
       }
 
       if (transkripFile && savedId) {
@@ -728,6 +806,7 @@ export function useProfilKandidat() {
       setEditingPendidikanId(null);
       setPendidikanForm({ ...initialPendidikan });
       setIjazahFile(null);
+      setSklFile(null);
       setTranskripFile(null);
 
       // Alert sukses
@@ -735,11 +814,12 @@ export function useProfilKandidat() {
         ? "Pendidikan berhasil diperbarui"
         : "Pendidikan berhasil ditambahkan";
 
-      if (ijazahBerhasil && transkripBerhasil) {
+      if (ijazahBerhasil && sklBerhasil && transkripBerhasil) {
         toast.success(`${pesanDasar}!`);
       } else {
         const gagal = [
           !ijazahBerhasil && "ijazah",
+          !sklBerhasil && "SKL",
           !transkripBerhasil && "transkrip",
         ]
           .filter(Boolean)
@@ -1006,6 +1086,132 @@ export function useProfilKandidat() {
     } catch (error) {
       console.error("DELETE TRANSKRIP ERROR:", error);
       toast.error("Terjadi kesalahan saat menghapus transkrip.");
+    }
+  };
+
+  // ============================================================
+  // PILIH FILE SKL
+  // ============================================================
+
+  const handleSklFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+
+    e.target.value = "";
+
+    if (!file) return;
+
+    const allowedTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Format SKL harus PDF, JPG, atau PNG.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran SKL maksimal 5 MB.");
+      return;
+    }
+
+    setSklFile(file);
+  };
+
+  // ============================================================
+  // CLEAR FILE SKL
+  // ============================================================
+
+  const clearSklFile = () => {
+    setSklFile(null);
+  };
+
+  // ============================================================
+  // UPLOAD SKL
+  // ============================================================
+
+  const uploadSkl = async (pendidikanId: number, file: File) => {
+    setUploadingSkl(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("skl", file);
+
+      const res = await fetch(`/api/pendidikan/${pendidikanId}/skl`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toast.error(data.message || "Gagal mengunggah SKL.");
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("UPLOAD SKL ERROR:", error);
+      toast.error("Terjadi kesalahan saat mengunggah SKL.");
+      return false;
+    } finally {
+      setUploadingSkl(false);
+    }
+  };
+
+  // ============================================================
+  // DELETE SKL
+  // ============================================================
+
+  const deleteSkl = async (pendidikanId: number) => {
+    const ok = await confirmDialog({
+      title: "Hapus SKL",
+      message: "Apakah Anda yakin ingin menghapus SKL ini?",
+      detail: "Data yang dihapus tidak dapat dikembalikan.",
+    });
+
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`/api/pendidikan/${pendidikanId}/skl`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toast.error(data.message || "Gagal menghapus SKL.");
+        return;
+      }
+
+      const kosong = {
+        sklNamaFile: null,
+        sklNamaAsli: null,
+        sklPathFile: null,
+        sklTipeFile: null,
+        sklUkuranFile: null,
+      };
+
+      setPendidikan((prev) =>
+        prev.map((item) =>
+          item.id === pendidikanId ? { ...item, ...kosong } : item
+        )
+      );
+
+      if (editingPendidikanId === pendidikanId) {
+        setPendidikanForm((prev) => ({ ...prev, ...kosong }));
+      }
+
+      setSklFile(null);
+
+      toast.success("SKL berhasil dihapus.");
+    } catch (error) {
+      console.error("DELETE SKL ERROR:", error);
+      toast.error("Terjadi kesalahan saat menghapus SKL.");
     }
   };
 
@@ -1546,6 +1752,13 @@ export function useProfilKandidat() {
     handleIjazahFileChange,
     clearIjazahFile,
     deleteIjazah,
+
+    // SKL
+    sklFile,
+    uploadingSkl,
+    handleSklFileChange,
+    clearSklFile,
+    deleteSkl,
 
     // TRANSKRIP
     transkripFile,
