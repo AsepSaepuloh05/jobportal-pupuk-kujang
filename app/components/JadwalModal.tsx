@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, CalendarClock, MapPin, Mail } from "lucide-react";
+import TimePicker24 from "@/app/components/TimePicker24";
 
 interface JadwalModalProps {
     open: boolean;
@@ -24,10 +25,21 @@ export default function JadwalModal({
     onSubmit,
 }: JadwalModalProps) {
     const [tanggal, setTanggal] = useState("");
-    const [jam, setJam] = useState("");
+    const [jam, setJam] = useState("09:00");
     const [lokasi, setLokasi] = useState("");
     const [catatan, setCatatan] = useState("");
     const [kirimEmail, setKirimEmail] = useState(true);
+
+    // Reset seluruh field setiap kali modal dibuka agar tidak menyisakan jadwal dari tahapan sebelumnya
+    useEffect(() => {
+        if (open) {
+            setTanggal("");
+            setJam("09:00");
+            setLokasi("");
+            setCatatan("");
+            setKirimEmail(true);
+        }
+    }, [open, tahapanLabel]);
 
     if (!open) return null;
 
@@ -90,13 +102,10 @@ export default function JadwalModal({
                             <label className="mb-1.5 block text-xs font-medium text-slate-600">
                                 Jam
                             </label>
-                            <input
-                                type="time"
-                                required
+                            <TimePicker24
                                 value={jam}
-                                onChange={(e) => setJam(e.target.value)}
+                                onChange={setJam}
                                 disabled={loading}
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500"
                             />
                         </div>
                     </div>

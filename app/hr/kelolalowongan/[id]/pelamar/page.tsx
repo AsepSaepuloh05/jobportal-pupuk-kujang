@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import JadwalModal from "@/app/components/JadwalModal";
+import JadwalMassalModal from "@/app/components/JadwalMassalModal";
 import EmailBebasModal from "@/app/components/EmailBebasModal";
 import EmailHistoryModal from "@/app/components/EmailHistoryModal";
 import TahapanStepper from "@/app/components/TahapanStepper";
@@ -188,13 +189,14 @@ export default function PelamarLowonganPage() {
 
     const [keyword, setKeyword] = useState("");
     const [filterStatus, setFilterStatus] = useState("Semua");
+    const [filterTahap, setFilterTahap] = useState("Semua");
     const [urutan, setUrutan] = useState<"terbaru" | "terlama" | "nama-asc" | "nama-desc">("terbaru");
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [exporting, setExporting] = useState(false);
 
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
-    const [bulkAction, setBulkAction] = useState<"tolak" | "email" | null>(null);
+    const [bulkAction, setBulkAction] = useState<"tolak" | "email" | "lanjut" | "jadwal" | null>(null);
     const [bulkEmail, setBulkEmail] = useState(true);
     const [bulkRunning, setBulkRunning] = useState(false);
     const [bulkProgress, setBulkProgress] = useState<{ selesai: number; total: number } | null>(null);
@@ -595,6 +597,42 @@ export default function PelamarLowonganPage() {
         );
     }, [lowongan]);
 
+    const getProgressAktif = (item: Pelamar): TahapanProgress | null => {
+        if (item.status === "DITOLAK" || item.status === "LOLOS") {
+            return null;
+        }
+        const berjalan = [...item.tahapanProgress]
+            .sort((a, b) => a.urutan - b.urutan)
+            .find((t) => t.selesaiPada === null);
+        return berjalan || null;
+    };
+
+    const getTahapAktif = (item: Pelamar): string | null => {
+        const berjalan = getProgressAktif(item);
+        return berjalan ? berjalan.tahapan : null;
+    };
+
+    const sudahSiapLanjut = (item: Pelamar): boolean => {
+        const berjalan = getProgressAktif(item);
+        if (!berjalan) return false;
+        if (berjalan.tahapan === "SCREENING") return true;
+        return Boolean(berjalan.jadwalTanggal);
+    };
+
+    const jumlahPerTahap = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const t of kolomTahapan) {
+            counts[t] = 0;
+        }
+        for (const p of pelamar) {
+            const aktif = getTahapAktif(p);
+            if (aktif) {
+                counts[aktif] = (counts[aktif] || 0) + 1;
+            }
+        }
+        return counts;
+    }, [pelamar, kolomTahapan]);
+
     const filteredPelamar = useMemo(() => {
         const search = keyword.toLowerCase();
 
@@ -606,7 +644,10 @@ export default function PelamarLowonganPage() {
             const cocokStatus =
                 filterStatus === "Semua" || statusLabel[item.status] === filterStatus;
 
-            return cocokKeyword && cocokStatus;
+            const cocokTahap =
+                filterTahap === "Semua" || getTahapAktif(item) === filterTahap;
+
+            return cocokKeyword && cocokStatus && cocokTahap;
         });
 
         hasil = hasil.sort((a, b) => {
@@ -625,7 +666,7 @@ export default function PelamarLowonganPage() {
         });
 
         return hasil;
-    }, [pelamar, keyword, filterStatus, urutan]);
+    }, [pelamar, keyword, filterStatus, filterTahap, urutan]);
 
 
     const totalHalaman = Math.max(
@@ -649,6 +690,61 @@ export default function PelamarLowonganPage() {
     const bisaDitolak = selectedPelamar.filter(
         (p) => p.status === "DIPROSES" || p.status === "INTERVIEW"
     );
+
+    const kandidatAktifTerpilih = selectedPelamar.filter(
+        (p) => getTahapAktif(p) !== null
+    );
+
+    const tahapUnikTerpilih = Array.from(
+        new Set(
+            kandidatAktifTerpilih
+                .map((p) => getTahapAktif(p))
+                .filter((t): t is string => t !== null)
+        )
+    );
+
+    const satuTahapAktif =
+        tahapUnikTerpilih.length === 1 ? tahapUnikTerpilih[0] : null;
+
+    const bisaDijadwalkan = kandidatAktifTerpilih;
+
+    const bisaDilanjutkan = kandidatAktifTerpilih.filter((p) =>
+        sudahSiapLanjut(p)
+    );
+
+    const tahapBerikutnyaLabel = useMemo(() => {
+        if (!satuTahapAktif) return null;
+        const idx = kolomTahapan.indexOf(satuTahapAktif);
+        if (idx === -1) return null;
+        if (idx === kolomTahapan.length - 1) return "Lolos Akhir";
+        return TAHAPAN_LABEL[kolomTahapan[idx + 1]];
+    }, [satuTahapAktif, kolomTahapan]);
+
+    const bisaLanjutMassal =
+        bisaDilanjutkan.length > 0 && satuTahapAktif !== null;
+
+    const alasanLanjutDisabled =
+        kandidatAktifTerpilih.length === 0
+            ? "Tidak ada kandidat terpilih yang sedang aktif di tahapan seleksi"
+            : tahapUnikTerpilih.length > 1
+                ? "Pilih kandidat yang berada di tahap yang sama"
+                : bisaDilanjutkan.length === 0
+                    ? "Atur jadwal terlebih dahulu sebelum melanjutkan tahapan ini"
+                    : undefined;
+
+    const bisaJadwalMassal =
+        bisaDijadwalkan.length > 0 &&
+        satuTahapAktif !== null &&
+        satuTahapAktif !== "SCREENING";
+
+    const alasanJadwalDisabled =
+        bisaDijadwalkan.length === 0
+            ? "Tidak ada kandidat terpilih yang sedang aktif di tahapan seleksi"
+            : tahapUnikTerpilih.length > 1
+                ? "Pilih kandidat di tahap yang sama untuk mengatur jadwal"
+                : satuTahapAktif === "SCREENING"
+                    ? "Tahap Screening tidak memerlukan jadwal"
+                    : undefined;
 
     const semuaHalamanTerpilih =
         dataHalaman.length > 0 && dataHalaman.every((p) => selectedSet.has(p.id));
@@ -796,6 +892,125 @@ export default function PelamarLowonganPage() {
         selesaikanMassal("Tolak lamaran", hasil, dilewati);
     };
 
+    const bukaLanjutMassal = () => {
+        if (!bisaLanjutMassal) return;
+        setBulkEmail(true);
+        setBulkAction("lanjut");
+    };
+
+    const konfirmasiLanjutMassal = async () => {
+        if (!satuTahapAktif) return;
+        const daftar = bisaDilanjutkan;
+        const dilewati = jumlahTerpilih - daftar.length;
+        const kirimEmail = bulkEmail;
+        const tahapanTarget = satuTahapAktif;
+        const labelTahap = TAHAPAN_LABEL[tahapanTarget] || tahapanTarget;
+
+        setBulkAction(null);
+
+        const hasil = await jalankanMassal(
+            daftar,
+            async (item) => {
+                const response = await fetch(`/api/lamaran/${item.id}/tahapan`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tahapan: tahapanTarget, kirimEmail }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Gagal memperbarui tahapan");
+                }
+
+                setPelamar((prev) =>
+                    prev.map((p) =>
+                        p.id === item.id
+                            ? {
+                                ...p,
+                                status: data.lamaran.status,
+                                tahapanProgress: data.lamaran.tahapanProgress,
+                            }
+                            : p
+                    )
+                );
+
+                if (
+                    kirimEmail &&
+                    data.emailResult &&
+                    data.emailResult.success === false
+                ) {
+                    return "Tahapan diperbarui, tetapi email gagal terkirim";
+                }
+
+                return null;
+            },
+            kirimEmail ? 700 : 0
+        );
+
+        selesaikanMassal("Selesaikan tahap " + labelTahap, hasil, dilewati);
+    };
+
+    const bukaJadwalMassal = () => {
+        if (!bisaJadwalMassal) return;
+        setBulkAction("jadwal");
+    };
+
+    const handleSubmitJadwalMassal = async (formData: {
+        jadwalTanggal: string;
+        jadwalLokasi: string;
+        jadwalCatatan: string;
+        kirimEmail: boolean;
+    }) => {
+        if (!satuTahapAktif) return;
+        const daftar = bisaDijadwalkan;
+        const dilewati = jumlahTerpilih - daftar.length;
+        const labelTahap = TAHAPAN_LABEL[satuTahapAktif] || satuTahapAktif;
+
+        setBulkAction(null);
+
+        const hasil = await jalankanMassal(
+            daftar,
+            async (item) => {
+                const response = await fetch(
+                    `/api/lamaran/${item.id}/tahapan/jadwal`,
+                    {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(formData),
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Gagal mengatur jadwal");
+                }
+
+                setPelamar((prev) =>
+                    prev.map((p) =>
+                        p.id === item.id
+                            ? { ...p, tahapanProgress: data.lamaran.tahapanProgress }
+                            : p
+                    )
+                );
+
+                if (
+                    formData.kirimEmail &&
+                    data.emailResult &&
+                    data.emailResult.success === false
+                ) {
+                    return "Jadwal disimpan, tetapi email undangan gagal terkirim";
+                }
+
+                return null;
+            },
+            formData.kirimEmail ? 700 : 0
+        );
+
+        selesaikanMassal("Atur jadwal " + labelTahap, hasil, dilewati);
+    };
+
     const handleSubmitEmailMassal = async (formData: {
         subjek: string;
         isi: string;
@@ -922,7 +1137,23 @@ export default function PelamarLowonganPage() {
                         />
                     </div>
 
-                    <div className="flex flex-col gap-3 sm:flex-row">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                        <select
+                            value={filterTahap}
+                            onChange={(e) => {
+                                setFilterTahap(e.target.value);
+                                setPage(1);
+                            }}
+                            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                        >
+                            <option value="Semua">Semua Tahap Aktif</option>
+                            {kolomTahapan.map((t) => (
+                                <option key={t} value={t}>
+                                    {TAHAPAN_LABEL[t]} ({jumlahPerTahap[t] || 0})
+                                </option>
+                            ))}
+                        </select>
+
                         <select
                             value={filterStatus}
                             onChange={(e) => {
@@ -1034,6 +1265,32 @@ export default function PelamarLowonganPage() {
 
                             {jumlahTerpilih > 0 && (
                                 <div className="flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={bukaLanjutMassal}
+                                        disabled={bulkRunning || !bisaLanjutMassal}
+                                        title={alasanLanjutDisabled}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                        {satuTahapAktif
+                                            ? `Lanjutkan dari ${TAHAPAN_LABEL[satuTahapAktif]}`
+                                            : "Lanjutkan ke Tahap Berikutnya"}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={bukaJadwalMassal}
+                                        disabled={bulkRunning || !bisaJadwalMassal}
+                                        title={alasanJadwalDisabled}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <CalendarClock className="h-3.5 w-3.5" />
+                                        {satuTahapAktif && satuTahapAktif !== "SCREENING"
+                                            ? `Atur Jadwal ${TAHAPAN_LABEL[satuTahapAktif]}`
+                                            : "Atur Jadwal"}
+                                    </button>
+
                                     <button
                                         type="button"
                                         onClick={() => setBulkAction("email")}
@@ -1586,6 +1843,56 @@ export default function PelamarLowonganPage() {
                 loading={bulkRunning}
                 onClose={() => setBulkAction(null)}
                 onSubmit={handleSubmitEmailMassal}
+            />
+
+            <ConfirmDialog
+                open={bulkAction === "lanjut"}
+                title={
+                    "Selesaikan tahap " +
+                    (satuTahapAktif ? TAHAPAN_LABEL[satuTahapAktif] : "") +
+                    " untuk " +
+                    bisaDilanjutkan.length +
+                    " kandidat?"
+                }
+                description={
+                    "Kandidat " +
+                    ringkasNama(bisaDilanjutkan) +
+                    (tahapBerikutnyaLabel === "Lolos Akhir"
+                        ? " akan dinyatakan Lolos seluruh tahapan seleksi."
+                        : " akan lanjut ke tahap " + (tahapBerikutnyaLabel || "berikutnya") + ".") +
+                    " Tindakan ini tidak bisa dibatalkan." +
+                    (jumlahTerpilih - bisaDilanjutkan.length > 0
+                        ? " " +
+                        (jumlahTerpilih - bisaDilanjutkan.length) +
+                        " lamaran dilewati karena belum diatur jadwalnya atau sudah Lolos/Ditolak."
+                        : "")
+                }
+                confirmText={
+                    "Ya, Lanjutkan " + bisaDilanjutkan.length + " Kandidat"
+                }
+                variant="default"
+                loading={bulkRunning}
+                showEmailOption
+                emailChecked={bulkEmail}
+                onEmailCheckedChange={setBulkEmail}
+                emailLabel="Kirim email pemberitahuan lolos tahap ke tiap kandidat"
+                onConfirm={konfirmasiLanjutMassal}
+                onCancel={() => setBulkAction(null)}
+            />
+
+            <JadwalMassalModal
+                open={bulkAction === "jadwal"}
+                tahapanLabel={
+                    satuTahapAktif ? TAHAPAN_LABEL[satuTahapAktif] : ""
+                }
+                kandidat={bisaDijadwalkan.map((p) => ({
+                    id: p.id,
+                    nama: p.user.nama,
+                }))}
+                dilewatiCount={jumlahTerpilih - bisaDijadwalkan.length}
+                loading={bulkRunning}
+                onClose={() => setBulkAction(null)}
+                onSubmit={handleSubmitJadwalMassal}
             />
 
             {bulkProgress && (
