@@ -33,6 +33,12 @@ interface Kandidat {
   role: string;
   isActive: boolean;
   createdAt: string;
+  dokumenProfil?: {
+    pathFile: string;
+  } | null;
+  dokumenKandidat?: {
+    pathFile: string;
+  }[];
 }
 type KunciUrut = "nama" | "createdAt" | "status";
 
@@ -627,14 +633,26 @@ export default function KandidatPage() {
 
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div
-                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${item.isActive
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-slate-200 text-slate-500"
-                              }`}
-                          >
-                            {item.nama.charAt(0).toUpperCase()}
-                          </div>
+                          {item.dokumenProfil?.pathFile ||
+                          item.dokumenKandidat?.[0]?.pathFile ? (
+                            <img
+                              src={
+                                item.dokumenProfil?.pathFile ||
+                                item.dokumenKandidat?.[0]?.pathFile
+                              }
+                              alt={item.nama}
+                              className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+                            />
+                          ) : (
+                            <div
+                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${item.isActive
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-slate-200 text-slate-500"
+                                }`}
+                            >
+                              {item.nama.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <div>
                             <p className="font-semibold text-slate-800">
                               {item.nama}

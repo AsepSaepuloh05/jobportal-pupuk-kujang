@@ -44,6 +44,20 @@ export async function GET(request: Request) {
                             nik: true,
                             alamat: true,
                             noTelepon: true,
+                            dokumenProfil: {
+                                select: {
+                                    pathFile: true,
+                                },
+                            },
+                            dokumenKandidat: {
+                                where: {
+                                    jenisDokumen: "PAS_FOTO",
+                                },
+                                select: {
+                                    pathFile: true,
+                                },
+                                take: 1,
+                            },
                         },
                     },
 

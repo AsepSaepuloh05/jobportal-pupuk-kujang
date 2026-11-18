@@ -26,7 +26,30 @@ export async function GET(
                 email: true,
                 nik: true,
                 alamat: true,
+                rt: true,
+                rw: true,
+                desa: true,
+                kecamatan: true,
+                kabupaten: true,
+                provinsi: true,
+                kodePos: true,
                 noTelepon: true,
+                dokumenProfil: {
+                    select: {
+                        pathFile: true,
+                        namaAsli: true,
+                    },
+                },
+                dokumenKandidat: {
+                    select: {
+                        id: true,
+                        jenisDokumen: true,
+                        namaAsli: true,
+                        pathFile: true,
+                        tipeFile: true,
+                    },
+                    orderBy: { jenisDokumen: "asc" },
+                },
             },
         });
 

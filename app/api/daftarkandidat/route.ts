@@ -31,6 +31,20 @@ export async function GET() {
         role: true,
         isActive: true,
         createdAt: true,
+        dokumenProfil: {
+          select: {
+            pathFile: true,
+          },
+        },
+        dokumenKandidat: {
+          where: {
+            jenisDokumen: "PAS_FOTO",
+          },
+          select: {
+            pathFile: true,
+          },
+          take: 1,
+        },
       },
       orderBy: {
         createdAt: "desc",

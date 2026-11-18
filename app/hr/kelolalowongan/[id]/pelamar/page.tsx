@@ -69,6 +69,12 @@ interface Pelamar {
         nik: string;
         alamat: string | null;
         noTelepon: string | null;
+        dokumenProfil?: {
+            pathFile: string;
+        } | null;
+        dokumenKandidat?: {
+            pathFile: string;
+        }[];
     };
     tahapanProgress: TahapanProgress[];
 }
@@ -88,7 +94,25 @@ interface DetailKandidat {
         email: string;
         nik: string;
         alamat: string | null;
+        rt: number | null;
+        rw: number | null;
+        desa: string | null;
+        kecamatan: string | null;
+        kabupaten: string | null;
+        provinsi: string | null;
+        kodePos: string | null;
         noTelepon: string | null;
+        dokumenProfil?: {
+            pathFile: string;
+            namaAsli: string;
+        } | null;
+        dokumenKandidat?: {
+            id: number;
+            jenisDokumen: string;
+            namaAsli: string;
+            pathFile: string;
+            tipeFile: string;
+        }[];
     };
     pendidikan: {
         id: number;
@@ -97,16 +121,25 @@ interface DetailKandidat {
         jurusan: string;
         tahunMulai: string;
         tahunSelesai: string;
-        nilai: string | null;
+        ipk: number | null;
+        tanggalLulus: string | null;
+        ijazahNamaAsli: string | null;
+        ijazahPathFile: string | null;
+        sklNamaAsli: string | null;
+        sklPathFile: string | null;
+        transkripNamaAsli: string | null;
+        transkripPathFile: string | null;
     }[];
     pengalaman: {
         id: number;
         posisi: string;
         perusahaan: string;
         lokasi: string | null;
-        tahunMulai: string;
-        tahunSelesai: string | null;
+        tahunMulai: number | string;
+        tahunSelesai: number | string | null;
         deskripsi: string | null;
+        paklaringNamaAsli: string | null;
+        paklaringPathFile: string | null;
     }[];
     sertifikasi: {
         id: number;
@@ -114,6 +147,9 @@ interface DetailKandidat {
         penerbit: string;
         nomor: string | null;
         tanggalTerbit: string | null;
+        tanggalKadaluarsa: string | null;
+        sertifikatNamaAsli: string | null;
+        sertifikatPathFile: string | null;
     }[];
 }
 
@@ -1388,9 +1424,21 @@ export default function PelamarLowonganPage() {
                                                         <Check className="h-3.5 w-3.5" strokeWidth={3} />
                                                     )}
                                                 </div>
-                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
-                                                    {item.user.nama.charAt(0).toUpperCase()}
-                                                </div>
+                                                {item.user.dokumenProfil?.pathFile ||
+                                                item.user.dokumenKandidat?.[0]?.pathFile ? (
+                                                    <img
+                                                        src={
+                                                            item.user.dokumenProfil?.pathFile ||
+                                                            item.user.dokumenKandidat?.[0]?.pathFile
+                                                        }
+                                                        alt={item.user.nama}
+                                                        className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
+                                                        {item.user.nama.charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
                                                 <div>
                                                     <p className="font-semibold text-slate-800">
                                                         {item.user.nama}
@@ -1599,14 +1647,33 @@ export default function PelamarLowonganPage() {
                         <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 to-emerald-700 px-6 py-6">
                             <div className="relative flex items-start justify-between gap-4">
                                 <div className="flex items-start gap-4">
-                                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-lg font-bold text-white ring-1 ring-white/25">
-                                        {detailKandidat.user.nama.charAt(0).toUpperCase()}
-                                    </div>
+                                    {detailKandidat.user.dokumenProfil?.pathFile ||
+                                    detailKandidat.user.dokumenKandidat?.find(
+                                        (d) => d.jenisDokumen === "PAS_FOTO"
+                                    )?.pathFile ? (
+                                        <img
+                                            src={
+                                                detailKandidat.user.dokumenProfil?.pathFile ||
+                                                detailKandidat.user.dokumenKandidat?.find(
+                                                    (d) => d.jenisDokumen === "PAS_FOTO"
+                                                )?.pathFile
+                                            }
+                                            alt={detailKandidat.user.nama}
+                                            className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-2 ring-white/30"
+                                        />
+                                    ) : (
+                                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-lg font-bold text-white ring-1 ring-white/25">
+                                            {detailKandidat.user.nama.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
                                     <div>
                                         <h2 className="text-xl font-bold text-white">
                                             {detailKandidat.user.nama}
                                         </h2>
                                         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-emerald-50">
+                                            <span className="inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-xs font-semibold text-white">
+                                                NIK: {detailKandidat.user.nik}
+                                            </span>
                                             <span className="inline-flex items-center gap-1.5">
                                                 <Mail className="h-3.5 w-3.5" />
                                                 {detailKandidat.user.email}
@@ -1618,23 +1685,97 @@ export default function PelamarLowonganPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={tutupDetail}
-                                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-emerald-50 transition hover:bg-white/15"
-                                >
-                                    <X className="h-5 w-5" />
-                                </button>
+                                <div className="flex shrink-0 items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => bukaBerkas(detailKandidat.user.id)}
+                                        className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/25"
+                                    >
+                                        <FileText className="h-3.5 w-3.5" />
+                                        PDF Gabungan
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={tutupDetail}
+                                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-emerald-50 transition hover:bg-white/15"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         <div className="max-h-[calc(90vh-120px)] overflow-y-auto p-6">
 
-                            <div className="mb-6 flex items-start gap-2 text-sm text-slate-600">
-                                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                                {detailKandidat.user.alamat || "Alamat belum diisi"}
+                            {/* DOMISILI LENGKAP */}
+                            <div className="mb-7 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                                <div className="flex items-start gap-2.5 text-sm text-slate-700">
+                                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                    <div className="space-y-1">
+                                        <p className="font-semibold text-slate-800">
+                                            {detailKandidat.user.alamat || "Alamat jalan belum diisi"}
+                                            {(detailKandidat.user.rt !== null ||
+                                                detailKandidat.user.rw !== null) &&
+                                                ` (RT ${detailKandidat.user.rt ?? "-"} / RW ${detailKandidat.user.rw ?? "-"})`}
+                                        </p>
+                                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                                            {detailKandidat.user.desa && (
+                                                <span className="rounded-md bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-800">
+                                                    Desa/Kel. {detailKandidat.user.desa}
+                                                </span>
+                                            )}
+                                            {detailKandidat.user.kecamatan && (
+                                                <span>Kec. {detailKandidat.user.kecamatan} &middot;</span>
+                                            )}
+                                            {detailKandidat.user.kabupaten && (
+                                                <span>{detailKandidat.user.kabupaten} &middot;</span>
+                                            )}
+                                            {detailKandidat.user.provinsi && (
+                                                <span>{detailKandidat.user.provinsi}</span>
+                                            )}
+                                            {detailKandidat.user.kodePos && (
+                                                <span>({detailKandidat.user.kodePos})</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
+                            {/* DOKUMEN UTAMA (CV, KTP, PAS FOTO, DLL) */}
+                            <div className="mb-7">
+                                <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-slate-800">
+                                    <FileText className="h-4.5 w-4.5 text-emerald-600" />
+                                    Dokumen Utama
+                                </h3>
+                                {!detailKandidat.user.dokumenKandidat ||
+                                detailKandidat.user.dokumenKandidat.length === 0 ? (
+                                    <p className="text-sm italic text-slate-400">
+                                        Belum ada dokumen utama yang diunggah.
+                                    </p>
+                                ) : (
+                                    <div className="flex flex-wrap gap-2">
+                                        {detailKandidat.user.dokumenKandidat.map((dok) => (
+                                            <a
+                                                key={dok.id}
+                                                href={dok.pathFile}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                                            >
+                                                <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                                                <span>{dok.jenisDokumen.replace("_", " ")}</span>
+                                                {dok.namaAsli && (
+                                                    <span className="max-w-[160px] truncate font-normal text-slate-400">
+                                                        ({dok.namaAsli})
+                                                    </span>
+                                                )}
+                                            </a>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* PENDIDIKAN */}
                             <div className="mb-7">
                                 <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-slate-800">
                                     <GraduationCap className="h-4.5 w-4.5 text-emerald-600" />
@@ -1661,14 +1802,59 @@ export default function PelamarLowonganPage() {
                                                 </div>
                                                 <p className="mt-1 text-xs text-slate-600">
                                                     {p.jurusan}
-                                                    {p.nilai && ` · IPK/Nilai: ${p.nilai}`}
+                                                    {p.ipk !== null &&
+                                                        p.ipk !== undefined &&
+                                                        ` · IPK/Nilai: ${p.ipk}`}
+                                                    {p.tanggalLulus &&
+                                                        ` · Lulus: ${p.tanggalLulus}`}
                                                 </p>
+
+                                                {(p.ijazahPathFile ||
+                                                    p.sklPathFile ||
+                                                    p.transkripPathFile) && (
+                                                    <div className="mt-2.5 flex flex-wrap gap-2">
+                                                        {p.ijazahPathFile && (
+                                                            <a
+                                                                href={p.ijazahPathFile}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                                            >
+                                                                <FileText className="h-3 w-3" />
+                                                                Lihat Ijazah
+                                                            </a>
+                                                        )}
+                                                        {p.sklPathFile && (
+                                                            <a
+                                                                href={p.sklPathFile}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100"
+                                                            >
+                                                                <FileText className="h-3 w-3" />
+                                                                Lihat SKL
+                                                            </a>
+                                                        )}
+                                                        {p.transkripPathFile && (
+                                                            <a
+                                                                href={p.transkripPathFile}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
+                                                            >
+                                                                <FileText className="h-3 w-3" />
+                                                                Lihat Transkrip
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </div>
 
+                            {/* PENGALAMAN KERJA */}
                             <div className="mb-7">
                                 <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-slate-800">
                                     <Briefcase className="h-4.5 w-4.5 text-emerald-600" />
@@ -1703,12 +1889,26 @@ export default function PelamarLowonganPage() {
                                                         {p.deskripsi}
                                                     </p>
                                                 )}
+                                                {p.paklaringPathFile && (
+                                                    <div className="mt-2.5">
+                                                        <a
+                                                            href={p.paklaringPathFile}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                                        >
+                                                            <FileText className="h-3 w-3" />
+                                                            Lihat Paklaring
+                                                        </a>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </div>
 
+                            {/* SERTIFIKASI */}
                             <div>
                                 <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-slate-800">
                                     <Award className="h-4.5 w-4.5 text-emerald-600" />
@@ -1725,13 +1925,35 @@ export default function PelamarLowonganPage() {
                                                 key={s.id}
                                                 className="rounded-xl border border-slate-200 bg-slate-50 p-4"
                                             >
-                                                <p className="text-sm font-bold text-slate-800">
-                                                    {s.nama}
-                                                </p>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <p className="text-sm font-bold text-slate-800">
+                                                        {s.nama}
+                                                    </p>
+                                                    {s.nomor && (
+                                                        <span className="text-xs font-medium text-slate-500">
+                                                            No: {s.nomor}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className="mt-1 text-xs text-slate-600">
                                                     {s.penerbit}
-                                                    {s.tanggalTerbit && ` · ${s.tanggalTerbit}`}
+                                                    {s.tanggalTerbit && ` · Terbit: ${s.tanggalTerbit}`}
+                                                    {s.tanggalKadaluarsa &&
+                                                        ` · Berlaku s.d. ${s.tanggalKadaluarsa}`}
                                                 </p>
+                                                {s.sertifikatPathFile && (
+                                                    <div className="mt-2.5">
+                                                        <a
+                                                            href={s.sertifikatPathFile}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                                        >
+                                                            <FileText className="h-3 w-3" />
+                                                            Lihat Sertifikat
+                                                        </a>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
