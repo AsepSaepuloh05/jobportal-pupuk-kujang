@@ -44,6 +44,7 @@ async function userPemilikBerkas(urlPath: string): Promise<number | null> {
         where: {
           OR: [
             { ijazahPathFile: urlPath },
+            { sklPathFile: urlPath },
             { transkripPathFile: urlPath },
           ],
         },
