@@ -69,6 +69,8 @@ interface Lowongan {
   tanggungJawab?: string | null;
   tanggalBerakhir?: string | null;
   tahapanSeleksi?: string[];
+  filterDomisiliAktif?: boolean;
+  desaDiizinkan?: string[];
 }
 
 const statusLabel: Record<StatusLowongan, string> = {
@@ -1146,6 +1148,42 @@ export default function KelolaLowonganPage() {
                   </div>
 
                 </div>
+
+                {/* FILTER DOMISILI DESA KHUSUS */}
+
+                {selectedLowongan.filterDomisiliAktif && (
+                  <div className="mb-7 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wide text-amber-800">
+                        🎯 Filter Domisili Khusus (SLTA)
+                      </span>
+                      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                        Aktif
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-xs text-amber-700">
+                      Lowongan ini hanya dapat dilihat dan dilamar oleh kandidat dengan domisili desa berikut:
+                    </p>
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      {selectedLowongan.desaDiizinkan &&
+                      selectedLowongan.desaDiizinkan.length > 0 ? (
+                        selectedLowongan.desaDiizinkan.map((desa) => (
+                          <span
+                            key={desa}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-900"
+                          >
+                            <MapPin className="h-3.5 w-3.5 text-amber-600" />
+                            Desa {desa}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs italic text-amber-700">
+                          Belum ada desa yang dipilih
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* DESKRIPSI */}
 
