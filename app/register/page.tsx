@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Check, Eye, EyeOff, X } from "lucide-react";
 
 import { PASSWORD_RULES, validatePassword } from "@/lib/password";
+import { PersetujuanPrivasi } from "./components/PersetujuanPrivasi";
+import { VERSI_PERSETUJUAN } from "./components/persetujuan";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,6 +20,10 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Persetujuan Pernyataan Privasi Data & Syarat Penggunaan
+  const [setuju, setSetuju] = useState(false);
+  const [errorSetuju, setErrorSetuju] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -30,6 +36,7 @@ export default function RegisterPage() {
     if (loading) return;
 
     setError("");
+    setErrorSetuju(null);
 
     const passwordError = validatePassword(password);
 
@@ -40,6 +47,13 @@ export default function RegisterPage() {
 
     if (password !== confirmPassword) {
       setError("Password dan konfirmasi password tidak cocok");
+      return;
+    }
+
+    if (!setuju) {
+      setErrorSetuju(
+        "Anda harus membaca dan menyetujui Pernyataan Privasi Data dan Syarat Penggunaan."
+      );
       return;
     }
 
@@ -56,6 +70,8 @@ export default function RegisterPage() {
           email: email.trim(),
           nik: nik.trim(),
           password,
+          persetujuan: true,
+          versiPersetujuan: VERSI_PERSETUJUAN,
         }),
       });
 
@@ -327,6 +343,17 @@ export default function RegisterPage() {
                     </p>
                   )}
                 </div>
+
+                {/* Persetujuan Privasi Data & Syarat Penggunaan */}
+                <PersetujuanPrivasi
+                  value={setuju}
+                  onChange={(value) => {
+                    setSetuju(value);
+                    setErrorSetuju(null);
+                  }}
+                  error={errorSetuju}
+                  disabled={loading}
+                />
 
                 {/* Error */}
                 {error && (
