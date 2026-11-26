@@ -576,8 +576,8 @@ export default function TambahLowonganPage() {
                     </div>
 
                     <p className="border-t border-slate-100 bg-slate-50/60 px-6 py-3 text-xs text-slate-500">
-                        Kamu akan lihat pengingat kalau tanggal ini sudah
-                        lewat tapi lowongan masih Aktif.
+                        Lowongan akan otomatis berubah menjadi Ditutup ketika
+                        batas tanggal ini terlewati.
                     </p>
 
                 </div>

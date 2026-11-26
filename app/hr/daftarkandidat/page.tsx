@@ -680,12 +680,35 @@ export default function KandidatPage() {
                       </td>
 
                       <td className="px-5 py-4 text-sm text-slate-600">
-                        <span className="flex items-start gap-1.5">
+                        <div className="flex items-start gap-1.5">
                           <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
-                          <span className="line-clamp-2 max-w-[220px]">
-                            {item.alamat || "-"}
-                          </span>
-                        </span>
+                          <div className="max-w-[240px]">
+                            <p className="line-clamp-1 font-medium text-slate-700">
+                              {item.alamat ||
+                                [
+                                  item.desa ? `Desa ${item.desa}` : null,
+                                  item.kabupaten,
+                                ]
+                                  .filter(Boolean)
+                                  .join(", ") ||
+                                "-"}
+                            </p>
+                            {item.alamat &&
+                              (item.desa || item.kecamatan || item.kabupaten) && (
+                                <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">
+                                  {[
+                                    item.desa ? `Desa ${item.desa}` : null,
+                                    item.kecamatan
+                                      ? `Kec. ${item.kecamatan}`
+                                      : null,
+                                    item.kabupaten,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(", ")}
+                                </p>
+                              )}
+                          </div>
+                        </div>
                       </td>
 
                       <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-500">

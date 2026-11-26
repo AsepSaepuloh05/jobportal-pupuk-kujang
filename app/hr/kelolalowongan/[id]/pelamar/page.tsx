@@ -74,6 +74,9 @@ interface Pelamar {
         email: string;
         nik: string;
         alamat: string | null;
+        desa?: string | null;
+        kecamatan?: string | null;
+        kabupaten?: string | null;
         noTelepon: string | null;
         dokumenProfil?: {
             pathFile: string;
@@ -1485,7 +1488,15 @@ export default function PelamarLowonganPage() {
                                                         </span>
                                                         <span className="flex items-center gap-1">
                                                             <MapPin className="h-3 w-3" />
-                                                            {item.user.alamat || "-"}
+                                                            {[
+                                                                item.user.alamat,
+                                                                item.user.desa
+                                                                    ? `Desa ${item.user.desa}`
+                                                                    : null,
+                                                                item.user.kabupaten,
+                                                            ]
+                                                                .filter(Boolean)
+                                                                .join(", ") || "-"}
                                                         </span>
                                                     </div>
                                                 </div>

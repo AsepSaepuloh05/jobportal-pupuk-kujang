@@ -42,10 +42,10 @@ export default function ConfirmDialog({
                 if (e.target === e.currentTarget && !loading) onCancel();
             }}
         >
-            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
 
                 <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-full ${variant === "danger"
+                    className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${variant === "danger"
                             ? "bg-red-100 text-red-600"
                             : "bg-emerald-100 text-emerald-600"
                         }`}
@@ -59,7 +59,7 @@ export default function ConfirmDialog({
                 <p className="mt-1.5 text-sm text-slate-500">{description}</p>
 
                 {showEmailOption && (
-                    <label className="mt-4 flex cursor-pointer items-center gap-2.5 rounded-lg bg-slate-50 px-3.5 py-3">
+                    <label className="mt-4 flex cursor-pointer items-center justify-center gap-2.5 rounded-lg bg-slate-50 px-3.5 py-3 text-left">
                         <input
                             type="checkbox"
                             checked={emailChecked}

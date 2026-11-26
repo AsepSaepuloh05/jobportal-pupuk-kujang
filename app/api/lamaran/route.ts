@@ -43,6 +43,9 @@ export async function GET(request: Request) {
                             email: true,
                             nik: true,
                             alamat: true,
+                            desa: true,
+                            kecamatan: true,
+                            kabupaten: true,
                             noTelepon: true,
                             dokumenProfil: {
                                 select: {
