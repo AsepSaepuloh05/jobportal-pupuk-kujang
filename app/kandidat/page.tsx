@@ -68,6 +68,9 @@ interface Pendidikan {
   ijazahTipeFile?: string | null;
   ijazahUkuranFile?: number | null;
 
+  // SKL (Surat Keterangan Lulus)
+  sklPathFile?: string | null;
+
   // Transkrip Nilai
   transkripNamaFile?: string | null;
   transkripNamaAsli?: string | null;
@@ -301,10 +304,10 @@ export default function KandidatDashboardPage() {
         const lamaranList = Array.isArray(lamaranData)
           ? lamaranData
           : Array.isArray(lamaranData?.lamaran)
-          ? lamaranData.lamaran
-          : Array.isArray(lamaranData?.data)
-          ? lamaranData.data
-          : [];
+            ? lamaranData.lamaran
+            : Array.isArray(lamaranData?.data)
+              ? lamaranData.data
+              : [];
 
         setLamaran(lamaranList);
       }
@@ -319,8 +322,8 @@ export default function KandidatDashboardPage() {
         const dokumenList = Array.isArray(dokumenData?.dokumen)
           ? dokumenData.dokumen
           : Array.isArray(dokumenData?.data)
-          ? dokumenData.data
-          : [];
+            ? dokumenData.data
+            : [];
 
         setDokumen(dokumenList);
       }
@@ -337,8 +340,8 @@ export default function KandidatDashboardPage() {
         )
           ? pendidikanData.pendidikan
           : Array.isArray(pendidikanData?.data)
-          ? pendidikanData.data
-          : [];
+            ? pendidikanData.data
+            : [];
 
         setPendidikan(pendidikanList);
       }
@@ -355,10 +358,10 @@ export default function KandidatDashboardPage() {
         )
           ? pengalamanData.pengalaman
           : Array.isArray(pengalamanData?.data)
-          ? pengalamanData.data
-          : Array.isArray(pengalamanData)
-          ? pengalamanData
-          : [];
+            ? pengalamanData.data
+            : Array.isArray(pengalamanData)
+              ? pengalamanData
+              : [];
 
         setPengalaman(pengalamanList);
       }
@@ -375,10 +378,10 @@ export default function KandidatDashboardPage() {
         )
           ? sertifikasiData.sertifikasi
           : Array.isArray(sertifikasiData?.data)
-          ? sertifikasiData.data
-          : Array.isArray(sertifikasiData)
-          ? sertifikasiData
-          : [];
+            ? sertifikasiData.data
+            : Array.isArray(sertifikasiData)
+              ? sertifikasiData
+              : [];
 
         setSertifikasi(sertifikasiList);
       }
@@ -393,10 +396,10 @@ export default function KandidatDashboardPage() {
         const lowonganList = Array.isArray(lowonganData)
           ? lowonganData
           : Array.isArray(lowonganData?.lowongan)
-          ? lowonganData.lowongan
-          : Array.isArray(lowonganData?.data)
-          ? lowonganData.data
-          : [];
+            ? lowonganData.lowongan
+            : Array.isArray(lowonganData?.data)
+              ? lowonganData.data
+              : [];
 
         setLowongan(lowonganList);
       }
@@ -438,7 +441,8 @@ export default function KandidatDashboardPage() {
     );
 
     const dariPendidikan = pendidikan.some((item) =>
-      Boolean(item.ijazahPathFile?.trim())
+      Boolean(item.ijazahPathFile?.trim()) ||
+      Boolean(item.sklPathFile?.trim())
     );
 
     return dariDokumen || dariPendidikan;
@@ -510,9 +514,8 @@ export default function KandidatDashboardPage() {
           }
         });
 
-        const posisiText = `${job.posisi} ${
-          job.departemen
-        } ${job.kategori || ""}`.toLowerCase();
+        const posisiText = `${job.posisi} ${job.departemen
+          } ${job.kategori || ""}`.toLowerCase();
 
         if (posisiText.includes(keyword)) {
           score += 5;
@@ -657,7 +660,7 @@ export default function KandidatDashboardPage() {
         wajib: true,
       },
       {
-        label: "Ijazah",
+        label: "Ijazah / SKL",
         complete: hasIjazah,
         wajib: true,
       },
@@ -885,7 +888,7 @@ export default function KandidatDashboardPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-slate-500">
-                  Status Lamaran
+                  Status Lamaran Terakhir
                 </p>
 
                 <p className="mt-2 truncate text-xl font-bold text-slate-900">
@@ -986,13 +989,12 @@ export default function KandidatDashboardPage() {
           <div className="p-5 sm:p-6">
             {recommendedLowongan.length > 0 ? (
               <div
-                className={`grid gap-4 ${
-                  recommendedLowongan.length === 1
-                    ? "grid-cols-1"
-                    : recommendedLowongan.length === 2
+                className={`grid gap-4 ${recommendedLowongan.length === 1
+                  ? "grid-cols-1"
+                  : recommendedLowongan.length === 2
                     ? "grid-cols-1 md:grid-cols-2"
                     : "grid-cols-1 md:grid-cols-3"
-                }`}
+                  }`}
               >
                 {recommendedLowongan.map((job) => (
                   <RecommendedJobCard

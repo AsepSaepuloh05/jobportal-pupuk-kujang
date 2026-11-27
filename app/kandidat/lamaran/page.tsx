@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   XCircle,
   Info,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import TahapanStepperKandidat, {
   formatTanggalWib,
@@ -175,6 +177,10 @@ export default function LamaranPage() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("SEMUA");
 
+  // State untuk batal lamaran
+  const [batalTarget, setBatalTarget] = useState<Lamaran | null>(null);
+  const [membatalkan, setMembatalkan] = useState(false);
+
   useEffect(() => {
     const checkUser = async () => {
       try {
@@ -229,6 +235,35 @@ export default function LamaranPage() {
 
     getLamaran();
   }, [user]);
+
+  const batalkanLamaran = async () => {
+    if (!batalTarget) return;
+
+    setMembatalkan(true);
+
+    try {
+      const res = await fetch(`/api/lamaran/${batalTarget.id}`, {
+        method: "DELETE",
+        cache: "no-store",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Gagal membatalkan lamaran.");
+        return;
+      }
+
+      // Hapus dari state lokal tanpa reload
+      setLamaran((prev) => prev.filter((l) => l.id !== batalTarget.id));
+      setBatalTarget(null);
+    } catch (err) {
+      console.error("BATAL LAMARAN ERROR:", err);
+      setError("Terjadi kesalahan saat membatalkan lamaran.");
+    } finally {
+      setMembatalkan(false);
+    }
+  };
 
   const jumlahBerjalan = lamaran.filter(
     (item) => item.status === "DIPROSES" || item.status === "INTERVIEW"
@@ -813,6 +848,21 @@ export default function LamaranPage() {
                       </div>
                     )}
 
+                    {/* TOMBOL BATALKAN — hanya untuk DIPROSES */}
+
+                    {item.status === "DIPROSES" && (
+                      <div className="mt-5 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setBatalTarget(item)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3.5 py-2 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-50"
+                        >
+                          <XCircle size={14} />
+                          Batalkan Lamaran
+                        </button>
+                      </div>
+                    )}
+
                   </article>
                 );
               })}
@@ -824,6 +874,61 @@ export default function LamaranPage() {
         </section>
 
       </main>
+
+      {/* =====================================================
+          MODAL KONFIRMASI BATALKAN LAMARAN
+      ====================================================== */}
+
+      {batalTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-500">
+              <AlertTriangle size={22} />
+            </div>
+
+            <h3 className="mt-4 text-base font-bold text-slate-900">
+              Batalkan Lamaran?
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Kamu akan membatalkan lamaran untuk posisi{" "}
+              <span className="font-semibold text-slate-700">
+                {batalTarget.lowongan.posisi}
+              </span>
+              . Tindakan ini tidak dapat dibatalkan dan kamu bisa melamar
+              kembali ke lowongan lain setelahnya.
+            </p>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setBatalTarget(null)}
+                disabled={membatalkan}
+                className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Tidak, Kembali
+              </button>
+
+              <button
+                type="button"
+                onClick={batalkanLamaran}
+                disabled={membatalkan}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
+              >
+                {membatalkan ? (
+                  <>
+                    <Loader2 size={15} className="animate-spin" />
+                    Membatalkan...
+                  </>
+                ) : (
+                  "Ya, Batalkan"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

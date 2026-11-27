@@ -99,11 +99,18 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userRole } = await bacaIdentitas();
+        const { userId, userRole } = await bacaIdentitas();
 
-        if (userRole !== "HR") {
+        if (!userId) {
             return NextResponse.json(
-                { message: "Hanya HR yang bisa membatalkan lamaran" },
+                { message: "Belum login" },
+                { status: 401 }
+            );
+        }
+
+        if (userRole !== "HR" && userRole !== "KANDIDAT") {
+            return NextResponse.json(
+                { message: "Akses ditolak" },
                 { status: 403 }
             );
         }
@@ -119,6 +126,27 @@ export async function DELETE(
                 { message: "Lamaran tidak ditemukan" },
                 { status: 404 }
             );
+        }
+
+        // Kandidat hanya boleh membatalkan lamarannya sendiri
+        if (userRole === "KANDIDAT") {
+            if (existing.userId !== Number(userId)) {
+                return NextResponse.json(
+                    { message: "Lamaran tidak ditemukan" },
+                    { status: 404 }
+                );
+            }
+
+            // Hanya boleh dibatalkan jika masih berstatus DIPROSES
+            if (existing.status !== "DIPROSES") {
+                return NextResponse.json(
+                    {
+                        message:
+                            "Lamaran hanya dapat dibatalkan selama masih berstatus Diproses",
+                    },
+                    { status: 400 }
+                );
+            }
         }
 
         await prisma.lamaran.delete({
