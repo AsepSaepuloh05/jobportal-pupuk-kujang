@@ -32,11 +32,17 @@ import {
     Download,
     Check,
     Minus,
+    AlertTriangle,
 } from "lucide-react";
 import { toast } from "@/app/components/Toast";
 import Pagination from "@/app/components/Pagination";
 import { eksporExcel, tanggalExcel, teksTanggalJam, stempelFile } from "@/lib/export-excel";
 import type { KolomExcel, BarisExcel } from "@/lib/export-excel";
+import {
+    SKL_BATAS_BULAN,
+    formatTanggalIndo,
+    getStatusSkl,
+} from "@/app/kandidat/profil/skl";
 
 interface HRUser {
     id: number;
@@ -68,6 +74,9 @@ interface Pelamar {
         email: string;
         nik: string;
         alamat: string | null;
+        desa?: string | null;
+        kecamatan?: string | null;
+        kabupaten?: string | null;
         noTelepon: string | null;
         dokumenProfil?: {
             pathFile: string;
@@ -224,7 +233,6 @@ export default function PelamarLowonganPage() {
     const [loadingData, setLoadingData] = useState(true);
 
     const [keyword, setKeyword] = useState("");
-    const [filterStatus, setFilterStatus] = useState("Semua");
     const [filterTahap, setFilterTahap] = useState("Semua");
     const [urutan, setUrutan] = useState<"terbaru" | "terlama" | "nama-asc" | "nama-desc">("terbaru");
     const [page, setPage] = useState(1);
@@ -656,14 +664,25 @@ export default function PelamarLowonganPage() {
     };
 
     const jumlahPerTahap = useMemo(() => {
-        const counts: Record<string, number> = {};
+        const counts: Record<string, number> = {
+            BERJALAN: 0,
+            LOLOS: 0,
+            DITOLAK: 0,
+        };
         for (const t of kolomTahapan) {
             counts[t] = 0;
         }
         for (const p of pelamar) {
-            const aktif = getTahapAktif(p);
-            if (aktif) {
-                counts[aktif] = (counts[aktif] || 0) + 1;
+            if (p.status === "LOLOS") {
+                counts.LOLOS += 1;
+            } else if (p.status === "DITOLAK") {
+                counts.DITOLAK += 1;
+            } else {
+                const aktif = getTahapAktif(p);
+                if (aktif) {
+                    counts.BERJALAN += 1;
+                    counts[aktif] = (counts[aktif] || 0) + 1;
+                }
             }
         }
         return counts;
@@ -677,13 +696,21 @@ export default function PelamarLowonganPage() {
                 item.user.nama.toLowerCase().includes(search) ||
                 item.user.email.toLowerCase().includes(search);
 
-            const cocokStatus =
-                filterStatus === "Semua" || statusLabel[item.status] === filterStatus;
+            let cocokTahap = true;
 
-            const cocokTahap =
-                filterTahap === "Semua" || getTahapAktif(item) === filterTahap;
+            if (filterTahap === "Semua") {
+                cocokTahap = true;
+            } else if (filterTahap === "BERJALAN") {
+                cocokTahap = getTahapAktif(item) !== null;
+            } else if (filterTahap === "LOLOS") {
+                cocokTahap = item.status === "LOLOS";
+            } else if (filterTahap === "DITOLAK") {
+                cocokTahap = item.status === "DITOLAK";
+            } else {
+                cocokTahap = getTahapAktif(item) === filterTahap;
+            }
 
-            return cocokKeyword && cocokStatus && cocokTahap;
+            return cocokKeyword && cocokTahap;
         });
 
         hasil = hasil.sort((a, b) => {
@@ -702,7 +729,7 @@ export default function PelamarLowonganPage() {
         });
 
         return hasil;
-    }, [pelamar, keyword, filterStatus, filterTahap, urutan]);
+    }, [pelamar, keyword, filterTahap, urutan]);
 
 
     const totalHalaman = Math.max(
@@ -1182,27 +1209,27 @@ export default function PelamarLowonganPage() {
                             }}
                             className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                         >
-                            <option value="Semua">Semua Tahap Aktif</option>
-                            {kolomTahapan.map((t) => (
-                                <option key={t} value={t}>
-                                    {TAHAPAN_LABEL[t]} ({jumlahPerTahap[t] || 0})
+                            <option value="Semua">
+                                Semua Tahap &amp; Status ({pelamar.length})
+                            </option>
+                            <optgroup label="Tahap Sedang Berjalan">
+                                <option value="BERJALAN">
+                                    Semua Sedang Berjalan ({jumlahPerTahap.BERJALAN || 0})
                                 </option>
-                            ))}
-                        </select>
-
-                        <select
-                            value={filterStatus}
-                            onChange={(e) => {
-                                setFilterStatus(e.target.value);
-                                setPage(1);
-                            }}
-                            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-                        >
-                            <option value="Semua">Semua Status</option>
-                            <option value="Diproses">Diproses</option>
-                            <option value="Interview">Interview</option>
-                            <option value="Lolos">Lolos</option>
-                            <option value="Ditolak">Ditolak</option>
+                                {kolomTahapan.map((t) => (
+                                    <option key={t} value={t}>
+                                        {TAHAPAN_LABEL[t]} ({jumlahPerTahap[t] || 0})
+                                    </option>
+                                ))}
+                            </optgroup>
+                            <optgroup label="Hasil Akhir">
+                                <option value="LOLOS">
+                                    Lolos ({jumlahPerTahap.LOLOS || 0})
+                                </option>
+                                <option value="DITOLAK">
+                                    Ditolak ({jumlahPerTahap.DITOLAK || 0})
+                                </option>
+                            </optgroup>
                         </select>
 
                         <div className="relative">
@@ -1272,7 +1299,13 @@ export default function PelamarLowonganPage() {
                                     {sebagianHalamanTerpilih && <Minus className="h-3.5 w-3.5" strokeWidth={3} />}
                                 </div>
 
-                                <span className="text-xs font-medium text-slate-600">
+                                <span
+                                    className={
+                                        jumlahTerpilih > 0
+                                            ? "rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800"
+                                            : "text-xs font-medium text-slate-600"
+                                    }
+                                >
                                     {jumlahTerpilih > 0
                                         ? jumlahTerpilih + " dipilih"
                                         : "Pilih semua di halaman ini"}
@@ -1282,7 +1315,7 @@ export default function PelamarLowonganPage() {
                                     <button
                                         type="button"
                                         onClick={pilihSemuaHasil}
-                                        className="text-xs font-semibold text-emerald-700 hover:underline"
+                                        className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
                                     >
                                         Pilih semua {filteredPelamar.length} hasil
                                     </button>
@@ -1292,8 +1325,9 @@ export default function PelamarLowonganPage() {
                                     <button
                                         type="button"
                                         onClick={() => setSelectedIds([])}
-                                        className="text-xs font-medium text-slate-500 hover:underline"
+                                        className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:border-slate-400 hover:bg-slate-100"
                                     >
+                                        <X className="h-3.5 w-3.5 text-slate-500" />
                                         Batal pilihan
                                     </button>
                                 )}
@@ -1454,7 +1488,15 @@ export default function PelamarLowonganPage() {
                                                         </span>
                                                         <span className="flex items-center gap-1">
                                                             <MapPin className="h-3 w-3" />
-                                                            {item.user.alamat || "-"}
+                                                            {[
+                                                                item.user.alamat,
+                                                                item.user.desa
+                                                                    ? `Desa ${item.user.desa}`
+                                                                    : null,
+                                                                item.user.kabupaten,
+                                                            ]
+                                                                .filter(Boolean)
+                                                                .join(", ") || "-"}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -1787,69 +1829,109 @@ export default function PelamarLowonganPage() {
                                     </p>
                                 ) : (
                                     <div className="space-y-3">
-                                        {detailKandidat.pendidikan.map((p) => (
-                                            <div
-                                                key={p.id}
-                                                className="rounded-xl border border-slate-200 bg-slate-50 p-4"
-                                            >
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <p className="text-sm font-bold text-slate-800">
-                                                        {p.jenjang} - {p.institusi}
-                                                    </p>
-                                                    <span className="whitespace-nowrap text-xs text-slate-500">
-                                                        {p.tahunMulai} - {p.tahunSelesai}
-                                                    </span>
-                                                </div>
-                                                <p className="mt-1 text-xs text-slate-600">
-                                                    {p.jurusan}
-                                                    {p.ipk !== null &&
-                                                        p.ipk !== undefined &&
-                                                        ` · IPK/Nilai: ${p.ipk}`}
-                                                    {p.tanggalLulus &&
-                                                        ` · Lulus: ${p.tanggalLulus}`}
-                                                </p>
+                                        {detailKandidat.pendidikan.map((p) => {
+                                            const statusLamaranKandidat = pelamar.find(
+                                                (pl) => pl.user.id === detailKandidat.user.id
+                                            )?.status;
+                                            const masihDalamSeleksi =
+                                                statusLamaranKandidat !== "LOLOS" &&
+                                                statusLamaranKandidat !== "DITOLAK";
+                                            const pakaiSklSaja =
+                                                Boolean(p.sklPathFile) && !p.ijazahPathFile;
+                                            const statusSkl =
+                                                masihDalamSeleksi && pakaiSklSaja
+                                                    ? getStatusSkl(p.tanggalLulus)
+                                                    : null;
 
-                                                {(p.ijazahPathFile ||
-                                                    p.sklPathFile ||
-                                                    p.transkripPathFile) && (
-                                                    <div className="mt-2.5 flex flex-wrap gap-2">
-                                                        {p.ijazahPathFile && (
-                                                            <a
-                                                                href={p.ijazahPathFile}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                                                            >
-                                                                <FileText className="h-3 w-3" />
-                                                                Lihat Ijazah
-                                                            </a>
-                                                        )}
-                                                        {p.sklPathFile && (
-                                                            <a
-                                                                href={p.sklPathFile}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100"
-                                                            >
-                                                                <FileText className="h-3 w-3" />
-                                                                Lihat SKL
-                                                            </a>
-                                                        )}
-                                                        {p.transkripPathFile && (
-                                                            <a
-                                                                href={p.transkripPathFile}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
-                                                            >
-                                                                <FileText className="h-3 w-3" />
-                                                                Lihat Transkrip
-                                                            </a>
-                                                        )}
+                                            return (
+                                                <div
+                                                    key={p.id}
+                                                    className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                                                >
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <p className="text-sm font-bold text-slate-800">
+                                                            {p.jenjang} - {p.institusi}
+                                                        </p>
+                                                        <span className="whitespace-nowrap text-xs text-slate-500">
+                                                            {p.tahunMulai} - {p.tahunSelesai}
+                                                        </span>
                                                     </div>
-                                                )}
-                                            </div>
-                                        ))}
+                                                    <p className="mt-1 text-xs text-slate-600">
+                                                        {p.jurusan}
+                                                        {p.ipk !== null &&
+                                                            p.ipk !== undefined &&
+                                                            ` · IPK/Nilai: ${p.ipk}`}
+                                                        {p.tanggalLulus &&
+                                                            ` · Lulus: ${p.tanggalLulus}`}
+                                                    </p>
+
+                                                    {statusSkl && (
+                                                        <div
+                                                            className={
+                                                                "mt-2.5 flex items-start gap-2 rounded-lg border px-3 py-2 text-xs " +
+                                                                (statusSkl.status === "KEDALUWARSA"
+                                                                    ? "border-red-200 bg-red-50 text-red-700"
+                                                                    : "border-amber-200 bg-amber-50 text-amber-800")
+                                                            }
+                                                        >
+                                                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                                            <span>
+                                                                {statusSkl.status === "BERLAKU" &&
+                                                                    `Masa berlaku SKL sampai ${formatTanggalIndo(
+                                                                        statusSkl.batas
+                                                                    )} (sisa ${statusSkl.sisaHari} hari).`}
+                                                                {statusSkl.status === "KEDALUWARSA" &&
+                                                                    `Masa berlaku SKL sudah berakhir pada ${formatTanggalIndo(
+                                                                        statusSkl.batas
+                                                                    )} (lewat batas ${SKL_BATAS_BULAN} bulan — wajib unggah Ijazah).`}
+                                                                {statusSkl.status === "TANPA_TANGGAL" &&
+                                                                    `Tanggal lulus belum diisi sehingga masa berlaku SKL (${SKL_BATAS_BULAN} bulan) belum dapat dihitung.`}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {(p.ijazahPathFile ||
+                                                        p.sklPathFile ||
+                                                        p.transkripPathFile) && (
+                                                        <div className="mt-2.5 flex flex-wrap gap-2">
+                                                            {p.ijazahPathFile && (
+                                                                <a
+                                                                    href={p.ijazahPathFile}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                                                >
+                                                                    <FileText className="h-3 w-3" />
+                                                                    Lihat Ijazah
+                                                                </a>
+                                                            )}
+                                                            {p.sklPathFile && (
+                                                                <a
+                                                                    href={p.sklPathFile}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100"
+                                                                >
+                                                                    <FileText className="h-3 w-3" />
+                                                                    Lihat SKL
+                                                                </a>
+                                                            )}
+                                                            {p.transkripPathFile && (
+                                                                <a
+                                                                    href={p.transkripPathFile}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
+                                                                >
+                                                                    <FileText className="h-3 w-3" />
+                                                                    Lihat Transkrip
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
